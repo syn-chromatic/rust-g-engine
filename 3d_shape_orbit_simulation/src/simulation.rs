@@ -1,8 +1,6 @@
+use rand::Rng;
 use std::rc::Rc;
 
-use crate::shape::Shape;
-use crate::shape::ShapeBase;
-use rand::Rng;
 use speedy2d::color::Color;
 use speedy2d::dimen::Vector2;
 use speedy2d::font::Font;
@@ -10,6 +8,9 @@ use speedy2d::font::FormattedTextBlock;
 use speedy2d::font::TextLayout;
 use speedy2d::font::TextOptions;
 use speedy2d::Graphics2D;
+
+use crate::shape::Shape;
+use crate::shape::ShapeBase;
 
 pub struct Simulation {
     center_x: f64,
