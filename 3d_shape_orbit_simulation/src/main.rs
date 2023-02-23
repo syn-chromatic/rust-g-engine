@@ -1,5 +1,6 @@
 #![windows_subsystem = "windows"]
-use std::time::{Instant};
+use std::time::{Instant, Duration};
+use std::thread::sleep;
 
 use speedy2d::color::Color;
 use speedy2d::window::{WindowHandler, WindowHelper};
@@ -23,14 +24,15 @@ fn main() {
     )
     .unwrap();
 
-    let mut sim_obj: Simulation = simulation::Simulation::new(center_x, center_y);
-    sim_obj.setup_objects();
+    let mut simulation: Simulation = Simulation::new(center_x, center_y);
+    simulation.setup_objects();
+    sleep(Duration::from_secs(5));
 
-    window.run_loop(MyWindowHandler { sim_obj });
+    window.run_loop(MyWindowHandler { simulation });
 }
 
 struct MyWindowHandler {
-    sim_obj: Simulation,
+    simulation: Simulation,
 }
 
 impl WindowHandler for MyWindowHandler {
@@ -39,9 +41,9 @@ impl WindowHandler for MyWindowHandler {
 
         let background_color = Color::from_rgb(0.15, 0.15, 0.15);
         graphics.clear_screen(background_color);
-        self.sim_obj.compute_objects(graphics);
+        self.simulation.compute_objects(graphics);
         let frame_time: f32 = Instant::now().duration_since(frame_st).as_secs_f32();
-        self.sim_obj.write_fps(frame_time, graphics);
+        self.simulation.write_fps(frame_time, graphics);
         helper.request_redraw();
     }
 }
