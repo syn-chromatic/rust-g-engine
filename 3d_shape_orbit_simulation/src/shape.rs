@@ -1,7 +1,8 @@
-use crate::vector_3d::Vector3D;
 use speedy2d::color::Color;
 use speedy2d::dimen::Vector2;
 use speedy2d::Graphics2D;
+
+use crate::vector_3d::Vector3D;
 
 #[derive(Clone, Debug)]
 pub struct ShapeBase {
@@ -19,16 +20,16 @@ pub struct ShapeBase {
 
 impl ShapeBase {
     pub fn new(shape: Vec<[f64; 3]>, x: f64, y: f64, z: f64) -> ShapeBase {
-        let color = Color::from_rgb(1.0, 1.0, 1.0);
-        let x_angle = 0.0;
-        let y_angle = 0.0;
-        let z_angle = 0.0;
-        let scale = 1.0;
-        let mass = 1.0;
+        let color: Color = Color::from_rgb(1.0, 1.0, 1.0);
+        let x_angle: f64 = 0.0;
+        let y_angle: f64 = 0.0;
+        let z_angle: f64 = 0.0;
+        let scale: f64 = 1.0;
+        let mass: f64 = 1.0;
 
-        let position = Vector3D::new(x, y, z);
-        let velocity = Vector3D::new(0.0, 0.0, 0.0);
-        let acceleration = Vector3D::new(0.0, 0.0, 0.0);
+        let position: Vector3D = Vector3D::new(x, y, z);
+        let velocity: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
+        let acceleration: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
 
         ShapeBase {
             shape,
@@ -166,30 +167,30 @@ impl Shape {
     }
 
     pub fn add_x_angle_rotation(&mut self, rotation: f64) {
-        let x_angle = self.base.x_angle + rotation;
+        let x_angle: f64 = self.base.x_angle + rotation;
         let mut new_shape: Vec<[f64; 3]> = vec![];
         for p in &self.base.shape {
-            let edge = self.base.rotate_x(&p, x_angle);
+            let edge: [f64; 3] = self.base.rotate_x(&p, x_angle);
             new_shape.push(edge);
         }
         self.base.shape = new_shape;
     }
 
     pub fn add_y_angle_rotation(&mut self, rotation: f64) {
-        let y_angle = self.base.y_angle + rotation;
+        let y_angle: f64 = self.base.y_angle + rotation;
         let mut new_shape: Vec<[f64; 3]> = vec![];
         for p in &self.base.shape {
-            let edge = self.base.rotate_y(&p, y_angle);
+            let edge: [f64; 3] = self.base.rotate_y(&p, y_angle);
             new_shape.push(edge);
         }
         self.base.shape = new_shape;
     }
 
     pub fn add_z_angle_rotation(&mut self, rotation: f64) {
-        let z_angle = self.base.z_angle + rotation;
+        let z_angle: f64 = self.base.z_angle + rotation;
         let mut new_shape: Vec<[f64; 3]> = vec![];
         for p in &self.base.shape {
-            let edge = self.base.rotate_z(&p, z_angle);
+            let edge: [f64; 3] = self.base.rotate_z(&p, z_angle);
             new_shape.push(edge);
         }
         self.base.shape = new_shape;
@@ -205,7 +206,7 @@ impl Shape {
         let position: &Vector3D = &self.base.position;
         let base_scale: f64 = self.base.scale;
         let new_scale: f64 = base_scale + position.z;
-        let new_scale = new_scale.max(1.0).min(f64::INFINITY);
+        let new_scale: f64 = new_scale.max(1.0).min(f64::INFINITY);
 
         let norm_scale: f64 = f64::max(0.0, new_scale).min(f64::INFINITY);
         self.draw_shape(norm_scale, graphics);

@@ -18,7 +18,7 @@ fn main() {
     let center_x: f64 = canvas_width as f64 / 2.0;
     let center_y: f64 = canvas_height as f64 / 2.0;
 
-    let window = Window::new_centered(
+    let window: Window = Window::new_centered(
         "Physics System",
         (canvas_width.round() as u32, canvas_height.round() as u32),
     )
@@ -41,7 +41,6 @@ impl WindowHandler for MyWindowHandler {
         let background_color = Color::from_rgb(0.15, 0.15, 0.15);
         graphics.clear_screen(background_color);
         self.sim_obj.compute_objects(graphics);
-
         thread::sleep(Duration::from_millis(16));
 
         let frame_time = Instant::now().duration_since(frame_st).as_secs_f32();

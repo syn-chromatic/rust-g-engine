@@ -31,7 +31,7 @@ impl Vector3D {
     }
 
     pub fn set_magnitude(&mut self, magnitude: f64) -> &mut Vector3D {
-        let length = self.get_length();
+        let length: f64 = self.get_length();
         if length != 0.0 {
             self.x = (self.x / length) * magnitude;
             self.y = (self.y / length) * magnitude;
