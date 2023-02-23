@@ -1,6 +1,5 @@
 use crate::shape::Shape;
 use crate::shape::ShapeBase;
-use crate::vector_3d::Vector3D;
 use rand::Rng;
 use speedy2d::color::Color;
 use speedy2d::Graphics2D;
@@ -55,11 +54,11 @@ impl Simulation {
 
     pub fn create_orbiting_object(&mut self) {
         let mut rng = rand::thread_rng();
-        let xrnd = rng.gen_range(-100.0..-50.0);
-        let yrnd = rng.gen_range(-100.0..-50.0);
+        let x_rnd = rng.gen_range(-100.0..-50.0);
+        let y_rnd = rng.gen_range(-100.0..-50.0);
 
-        let x: f64 = self.center_x - xrnd;
-        let y: f64 = self.center_y - yrnd;
+        let x: f64 = self.center_x - x_rnd;
+        let y: f64 = self.center_y - y_rnd;
         let z: f64 = 0.0;
 
 

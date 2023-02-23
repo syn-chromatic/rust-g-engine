@@ -25,7 +25,6 @@ impl ShapeBase {
         let z_angle = 0.0;
         let scale = 1.0;
         let mass = 1.0;
-        let size = 1.0;
 
         let position = Vector3D::new(x, y, z);
         let velocity = Vector3D::new(0.0, 0.0, 0.0);
