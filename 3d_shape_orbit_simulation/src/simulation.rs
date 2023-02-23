@@ -103,7 +103,7 @@ impl Simulation {
     pub fn setup_objects(&mut self) {
         self.add_center_object();
 
-        for _ in 0..150 {
+        for _ in 0..250 {
             self.add_orbiting_object();
         }
     }
