@@ -69,7 +69,7 @@ impl ShapeBase {
         self.acceleration.z = acc_xyz[2];
     }
 
-    fn rotate_z(&self, xyz_point: &[f64; 3], theta: f64) -> [f64; 3] {
+    fn rotate_z(&self, xyz_point: [f64; 3], theta: f64) -> [f64; 3] {
         let cs: f64 = theta.cos();
         let sn: f64 = theta.sin();
         let x: f64 = cs * xyz_point[0] - sn * xyz_point[1];
@@ -80,7 +80,7 @@ impl ShapeBase {
         xyz_point
     }
 
-    fn rotate_x(&self, xyz_point: &[f64; 3], theta: f64) -> [f64; 3] {
+    fn rotate_x(&self, xyz_point: [f64; 3], theta: f64) -> [f64; 3] {
         let cs: f64 = theta.cos();
         let sn: f64 = theta.sin();
         let x: f64 = xyz_point[0];
@@ -90,7 +90,7 @@ impl ShapeBase {
         xyz_point
     }
 
-    fn rotate_y(&self, xyz_point: &[f64; 3], theta: f64) -> [f64; 3] {
+    fn rotate_y(&self, xyz_point: [f64; 3], theta: f64) -> [f64; 3] {
         let cs: f64 = theta.cos();
         let sn: f64 = theta.sin();
         let x: f64 = cs * xyz_point[0] + sn * xyz_point[2];
@@ -170,7 +170,7 @@ impl Shape {
         let x_angle: f64 = self.base.x_angle + rotation;
         let mut new_shape: Vec<[f64; 3]> = vec![];
         for p in &self.base.shape {
-            let edge: [f64; 3] = self.base.rotate_x(&p, x_angle);
+            let edge: [f64; 3] = self.base.rotate_x(*p, x_angle);
             new_shape.push(edge);
         }
         self.base.shape = new_shape;
@@ -180,7 +180,7 @@ impl Shape {
         let y_angle: f64 = self.base.y_angle + rotation;
         let mut new_shape: Vec<[f64; 3]> = vec![];
         for p in &self.base.shape {
-            let edge: [f64; 3] = self.base.rotate_y(&p, y_angle);
+            let edge: [f64; 3] = self.base.rotate_y(*p, y_angle);
             new_shape.push(edge);
         }
         self.base.shape = new_shape;
@@ -190,7 +190,7 @@ impl Shape {
         let z_angle: f64 = self.base.z_angle + rotation;
         let mut new_shape: Vec<[f64; 3]> = vec![];
         for p in &self.base.shape {
-            let edge: [f64; 3] = self.base.rotate_z(&p, z_angle);
+            let edge: [f64; 3] = self.base.rotate_z(*p, z_angle);
             new_shape.push(edge);
         }
         self.base.shape = new_shape;
