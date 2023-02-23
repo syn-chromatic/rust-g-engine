@@ -1,6 +1,5 @@
 #![windows_subsystem = "windows"]
-use std::time::{Instant, Duration};
-use std::thread::sleep;
+use std::time::Instant;
 
 use speedy2d::color::Color;
 use speedy2d::window::{WindowHandler, WindowHelper};
@@ -26,8 +25,6 @@ fn main() {
 
     let mut simulation: Simulation = Simulation::new(center_x, center_y);
     simulation.setup_objects();
-    sleep(Duration::from_secs(5));
-
     window.run_loop(MyWindowHandler { simulation });
 }
 
