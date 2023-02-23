@@ -19,7 +19,7 @@ fn main() {
     let center_y: f64 = canvas_height as f64 / 2.0;
 
     let window = Window::new_centered(
-        "Title",
+        "Physics System",
         (canvas_width.round() as u32, canvas_height.round() as u32),
     )
     .unwrap();
