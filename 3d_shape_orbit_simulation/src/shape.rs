@@ -206,9 +206,7 @@ impl Shape {
         let position: &Vector3D = &self.base.position;
         let base_scale: f64 = self.base.scale;
         let new_scale: f64 = base_scale + position.z;
-        let new_scale: f64 = new_scale.max(1.0).min(f64::INFINITY);
-
-        let norm_scale: f64 = f64::max(0.0, new_scale).min(f64::INFINITY);
+        let norm_scale: f64 = f64::max(0.1, new_scale).min(f64::INFINITY);
         self.draw_shape(norm_scale, graphics);
     }
 
