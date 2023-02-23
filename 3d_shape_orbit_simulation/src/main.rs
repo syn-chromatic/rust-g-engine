@@ -35,12 +35,12 @@ struct MyWindowHandler {
 
 impl WindowHandler for MyWindowHandler {
     fn on_draw(&mut self, helper: &mut WindowHelper, graphics: &mut Graphics2D) {
-        let frame_st = Instant::now();
+        let frame_st: Instant = Instant::now();
 
         let background_color = Color::from_rgb(0.15, 0.15, 0.15);
         graphics.clear_screen(background_color);
         self.sim_obj.compute_objects(graphics);
-        let frame_time = Instant::now().duration_since(frame_st).as_secs_f32();
+        let frame_time: f32 = Instant::now().duration_since(frame_st).as_secs_f32();
         self.sim_obj.write_fps(frame_time, graphics);
         helper.request_redraw();
     }
