@@ -11,7 +11,6 @@ mod simulation;
 mod vector_3d;
 use crate::simulation::Simulation;
 
-
 fn main() {
     let canvas_width: f32 = 960.0;
     let canvas_height: f32 = 768.0;
@@ -25,15 +24,9 @@ fn main() {
     .unwrap();
 
     let mut sim_obj: Simulation = simulation::Simulation::new(center_x, center_y);
-    sim_obj.create_center_object();
+    sim_obj.setup_objects();
 
-    for _ in 0..200 {
-        sim_obj.create_orbiting_object();
-    }
-
-    window.run_loop(MyWindowHandler {
-        sim_obj: sim_obj,
-    });
+    window.run_loop(MyWindowHandler { sim_obj });
 }
 
 struct MyWindowHandler {

@@ -34,7 +34,7 @@ impl Simulation {
         shape
     }
 
-    pub fn create_center_object(&mut self) {
+    pub fn add_center_object(&mut self) {
         let x: f64 = self.center_x;
         let y: f64 = self.center_y;
         let z: f64 = 0.0;
@@ -52,7 +52,7 @@ impl Simulation {
         self.objects.push(shape);
     }
 
-    pub fn create_orbiting_object(&mut self) {
+    pub fn add_orbiting_object(&mut self) {
         let mut rng = rand::thread_rng();
         let x_rnd = rng.gen_range(-100.0..-50.0);
         let y_rnd = rng.gen_range(-100.0..-50.0);
@@ -60,7 +60,6 @@ impl Simulation {
         let x: f64 = self.center_x - x_rnd;
         let y: f64 = self.center_y - y_rnd;
         let z: f64 = 0.0;
-
 
         let mass: f64 = rng.gen_range(50.0..100.0);
         let shape = self.get_shape();
@@ -71,9 +70,16 @@ impl Simulation {
         shape_base.set_mass(mass);
         shape_base.set_scale(scale);
 
-
         let shape = Shape::new(shape_base);
         self.objects.push(shape);
+    }
+
+    pub fn setup_objects(&mut self) {
+        self.add_center_object();
+
+        for _ in 0..200 {
+            self.add_orbiting_object();
+        }
     }
 
     pub fn compute_objects(&mut self, graphics: &mut Graphics2D) {
