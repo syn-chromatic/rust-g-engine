@@ -1,14 +1,13 @@
 #![windows_subsystem = "windows"]
-use std::time::Instant;
-
-use speedy2d::color::Color;
 use speedy2d::window::{WindowHandler, WindowHelper};
 use speedy2d::Graphics2D;
 use speedy2d::Window;
 
+mod physics;
 mod shape;
 mod simulation;
 mod vector_3d;
+
 use crate::simulation::Simulation;
 
 fn main() {
@@ -34,13 +33,6 @@ struct MyWindowHandler {
 
 impl WindowHandler for MyWindowHandler {
     fn on_draw(&mut self, helper: &mut WindowHelper, graphics: &mut Graphics2D) {
-        let frame_st: Instant = Instant::now();
-
-        let background_color = Color::from_rgb(0.15, 0.15, 0.15);
-        graphics.clear_screen(background_color);
-        self.simulation.compute_objects(graphics);
-        let frame_time: f32 = Instant::now().duration_since(frame_st).as_secs_f32();
-        self.simulation.write_fps(frame_time, graphics);
-        helper.request_redraw();
+        self.simulation.simulate(helper, graphics);
     }
 }

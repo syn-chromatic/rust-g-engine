@@ -1,4 +1,4 @@
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 pub struct Vector3D {
     pub x: f64,
     pub y: f64,
@@ -18,11 +18,11 @@ impl Vector3D {
         Vector3D::new(self.x / num, self.y / num, self.z / num)
     }
 
-    pub fn add_vector(&self, vec: &Vector3D) -> Vector3D {
+    pub fn add_vector(&self, vec: Vector3D) -> Vector3D {
         Vector3D::new(self.x + vec.x, self.y + vec.y, self.z + vec.z)
     }
 
-    pub fn subtract_vector(&self, vec: &Vector3D) -> Vector3D {
+    pub fn subtract_vector(&self, vec: Vector3D) -> Vector3D {
         Vector3D::new(self.x - vec.x, self.y - vec.y, self.z - vec.z)
     }
 
@@ -30,13 +30,13 @@ impl Vector3D {
         (self.x.powi(2) + self.y.powi(2) + self.z.powi(2)).sqrt()
     }
 
-    pub fn set_magnitude(&mut self, magnitude: f64) -> &mut Vector3D {
+    pub fn set_magnitude(&mut self, magnitude: f64) -> Vector3D {
         let length: f64 = self.get_length();
         if length != 0.0 {
             self.x = (self.x / length) * magnitude;
             self.y = (self.y / length) * magnitude;
             self.z = (self.z / length) * magnitude;
         }
-        self
+        Vector3D::new(self.x, self.y, self.z)
     }
 }
