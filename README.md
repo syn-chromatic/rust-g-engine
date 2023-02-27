@@ -1,4 +1,4 @@
-# Rust Physics Simulations
+# Rust Physics Simulation
 
 
 ### Simulating ~1000 Objects 
