@@ -12,22 +12,25 @@ use speedy2d::font::TextOptions;
 use speedy2d::window::WindowHelper;
 use speedy2d::Graphics2D;
 
+use crate::body::Body;
+use crate::particle::Particle;
 use crate::shape::Shape;
 
 pub struct Simulation {
     center_x: f64,
     center_y: f64,
-    objects: Vec<Shape>,
+    objects: Vec<Box<dyn Body>>,
     font: Font,
     fps_txp: [f32; 2],
     fps_txc: Color,
     objects_txp: [f32; 2],
     objects_txc: Color,
+    text: String,
 }
 
 impl Simulation {
     pub fn new(center_x: f64, center_y: f64) -> Simulation {
-        let objects: Vec<Shape> = vec![];
+        let objects: Vec<Box<dyn Body>> = vec![];
         let bytes: &[u8; 367112] = include_bytes!("../fonts/arial.ttf");
         let font: Font = Font::new(bytes).unwrap();
 
@@ -40,6 +43,7 @@ impl Simulation {
         let fps_txc: Color = Color::from_rgb(1.0, 1.0, 1.0);
         let objects_txp: [f32; 2] = [ox, oy];
         let objects_txc: Color = Color::from_rgb(1.0, 1.0, 1.0);
+        let text = String::new();
 
         Simulation {
             center_x,
@@ -50,8 +54,84 @@ impl Simulation {
             fps_txc,
             objects_txp,
             objects_txc,
+            text,
         }
     }
+
+
+    pub fn scale_up(&mut self) {
+        for object in self.objects.iter_mut() {
+            let physics = object.mutable_physics();
+            // physics.scale += 1.0;
+            physics.position.x += 1.0;
+            physics.position.y += 1.0;
+            physics.position.z += 1.0;
+            // self.text = physics.scale.to_string();
+            self.text = String::from("SCALE UP");
+            // println!("{:?}", physics.scale.to_string());
+        }
+    }
+
+
+    pub fn scale_down(&mut self) {
+        for object in self.objects.iter_mut() {
+            let physics = object.mutable_physics();
+            // physics.scale -= 1.0;
+
+            physics.position.x -= 1.0;
+            physics.position.y -= 1.0;
+            physics.position.z -= 1.0;
+
+
+            self.text = String::from("SCALE DOWN");
+            // println!("{:?}", physics.scale.to_string());
+        }
+    }
+
+
+
+
+    pub fn move_up(&mut self) {
+        for object in self.objects.iter_mut() {
+            let physics = object.mutable_physics();
+            physics.position.y += 10.0;
+            self.text = String::from("MOVE UP");
+        }
+    }
+
+    pub fn move_down(&mut self) {
+        for object in self.objects.iter_mut() {
+            let physics = object.mutable_physics();
+            physics.position.y -= 10.0;
+            self.text = String::from("MOVE DOWN");
+        }
+    }
+
+
+
+
+
+
+    pub fn move_left(&mut self) {
+        for object in self.objects.iter_mut() {
+            let physics = object.mutable_physics();
+            physics.position.x += 10.0;
+            self.text = String::from("MOVE LEFT");
+        }
+    }
+
+
+    pub fn move_right(&mut self) {
+        for object in self.objects.iter_mut() {
+            let physics = object.mutable_physics();
+            physics.position.x -= 10.0;
+            self.text = String::from("MOVE RIGHT");
+        }
+    }
+
+
+
+
 
     fn get_shape(&self) -> Vec<[f64; 3]> {
         let shape: Vec<[f64; 3]> = vec![
@@ -82,7 +162,9 @@ impl Simulation {
         shape.physics.set_mass(mass);
         shape.physics.set_scale(scale);
         shape.physics.set_spin_velocity(0.0, 0.0, 0.0);
-        self.objects.push(shape);
+        let shape_box = Box::new(shape);
+
+        self.objects.push(shape_box);
     }
 
     pub fn add_orbiting_object(&mut self) {
@@ -100,10 +182,12 @@ impl Simulation {
 
         let mut shape: Shape = Shape::new(shape);
         shape.physics.set_position(x, y, z);
-        shape.physics.set_velocity(10.0, 30.0, 5.0);
+        shape.physics.set_velocity(10.0, 30.0, 1.0);
         shape.physics.set_mass(mass);
         shape.physics.set_scale(scale);
-        self.objects.push(shape);
+        let shape_box = Box::new(shape);
+
+        self.objects.push(shape_box);
     }
 
     pub fn setup_objects(&mut self) {
@@ -115,16 +199,19 @@ impl Simulation {
     }
 
     pub fn compute_objects(&mut self, graphics: &mut Graphics2D) {
-        let mut objects_clone: Vec<Shape> = self.objects.clone();
+        let objects_clone: Vec<Box<dyn Body>> = self.objects.clone();
 
         for (i, pl1) in self.objects.iter_mut().enumerate() {
-            for (j, pl2) in objects_clone.iter_mut().enumerate() {
+            let pl1_physics = pl1.mutable_physics();
+            for (j, pl2) in objects_clone.iter().enumerate() {
                 if i == j {
                     continue;
                 }
-                pl1.physics.apply_attraction(&pl2.physics);
+
+                let pl2_physics = pl2.physics();
+                pl1_physics.apply_attraction(&pl2_physics);
             }
-            pl1.physics.move_object();
+            pl1_physics.move_object();
             pl1.draw_shape(graphics);
         }
     }
@@ -135,6 +222,19 @@ impl Simulation {
         let text_block: Rc<FormattedTextBlock> =
             self.font.layout_text(&string, text_scale, text_options);
         text_block
+    }
+
+    pub fn set_text(&mut self, text: String) {
+        self.text = text;
+
+    }
+
+    pub fn write_text(&self, graphics: &mut Graphics2D) {
+        let objects_block: Rc<FormattedTextBlock> = self.get_text_block(self.text.clone());
+        let x: f32 = self.objects_txp[0];
+        let y: f32 = self.objects_txp[1];
+        let position: Vector2<f32> = Vector2::new(x, y);
+        graphics.draw_text(position, self.objects_txc, &objects_block);
     }
 
     pub fn write_object_count(&self, graphics: &mut Graphics2D) {
@@ -163,6 +263,7 @@ impl Simulation {
         self.compute_objects(graphics);
         let frame_time: f32 = Instant::now().duration_since(frame_st).as_secs_f32();
         self.write_fps(frame_time, graphics);
+        self.write_text(graphics);
         helper.request_redraw();
     }
 }

@@ -10,6 +10,7 @@ pub struct Physics {
     pub spin_acceleration: Vector3D,
     pub mass: f64,
     pub scale: f64,
+    pub g_const: f64,
 }
 
 impl Physics {
@@ -21,6 +22,7 @@ impl Physics {
         let spin_acceleration: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
         let mass: f64 = 1.0;
         let scale: f64 = 1.0;
+        let g_const: f64 = 0.0001;
 
         Physics {
             shape,
@@ -31,6 +33,7 @@ impl Physics {
             spin_acceleration,
             mass,
             scale,
+            g_const,
         }
     }
 
@@ -117,8 +120,7 @@ impl Physics {
     pub fn apply_attraction(&mut self, target: &Physics) {
         let mut force: Vector3D = target.position.subtract_vector(self.position);
         let distance: f64 = force.get_length();
-        let g_const: f64 = 0.0001;
-        let strength: f64 = g_const * ((self.mass * target.mass) / distance);
+        let strength: f64 = self.g_const * ((self.mass * target.mass) / distance);
         force = force.set_magnitude(strength);
         force = force.divide(self.mass);
         self.acceleration = self.acceleration.add_vector(force);

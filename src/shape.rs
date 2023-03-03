@@ -2,6 +2,7 @@ use speedy2d::color::Color;
 use speedy2d::dimen::Vector2;
 use speedy2d::Graphics2D;
 
+use crate::body::Body;
 use crate::physics::Physics;
 
 #[derive(Clone, Debug)]
@@ -9,6 +10,35 @@ pub struct Shape {
     pub physics: Physics,
     color: Color,
     line_thickness: f64,
+}
+
+impl Body for Shape {
+    fn set_color(&mut self, r: f32, g: f32, b: f32) {
+        self.color = Color::from_rgb(r, g, b);
+    }
+
+    fn draw_shape(&self, graphics: &mut Graphics2D) {
+        for i in 0..4 {
+            let s1: usize = (i + 1) % 4;
+            let s2: usize = i + 4;
+            let s3: usize = s1 + 4;
+            let shape_i: [f64; 3] = self.physics.shape[i];
+            let shape_s1: [f64; 3] = self.physics.shape[s1];
+            let shape_s2: [f64; 3] = self.physics.shape[s2];
+            let shape_s3: [f64; 3] = self.physics.shape[s3];
+            self.draw_edge(shape_i, shape_s1, 1.0, graphics);
+            self.draw_edge(shape_i, shape_s2, 0.85, graphics);
+            self.draw_edge(shape_s2, shape_s3, 0.75, graphics);
+        }
+    }
+
+    fn physics(&self) -> &Physics {
+        &self.physics
+    }
+
+    fn mutable_physics(&mut self) -> &mut Physics {
+        &mut self.physics
+    }
 }
 
 impl Shape {
@@ -65,24 +95,5 @@ impl Shape {
         let a: [f64; 3] = self.perspective_projection(a);
         let b: [f64; 3] = self.perspective_projection(b);
         self.draw_edge(a, b, color_shading, graphics)
-    }
-
-    pub fn set_color(&mut self, r: f32, g: f32, b: f32) {
-        self.color = Color::from_rgb(r, g, b);
-    }
-
-    pub fn draw_shape(&self, graphics: &mut Graphics2D) {
-        for i in 0..4 {
-            let s1: usize = (i + 1) % 4;
-            let s2: usize = i + 4;
-            let s3: usize = s1 + 4;
-            let shape_i: [f64; 3] = self.physics.shape[i];
-            let shape_s1: [f64; 3] = self.physics.shape[s1];
-            let shape_s2: [f64; 3] = self.physics.shape[s2];
-            let shape_s3: [f64; 3] = self.physics.shape[s3];
-            self.draw_edge(shape_i, shape_s1, 1.0, graphics);
-            self.draw_edge(shape_i, shape_s2, 0.85, graphics);
-            self.draw_edge(shape_s2, shape_s3, 0.75, graphics);
-        }
     }
 }
