@@ -184,7 +184,7 @@ impl Physics {
         // Target-To-Self Distance
         let tts_distance: Vector3D = target.position.subtract_vector(self.position);
 
-        // self.apply_attraction(target, tts_distance);
+        self.apply_attraction(target, tts_distance);
         self.apply_collision(target, tts_distance, timestep);
     }
 

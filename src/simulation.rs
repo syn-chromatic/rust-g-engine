@@ -158,7 +158,7 @@ impl Simulation {
         self.add_particle_t1();
         self.add_particle_t2();
 
-        for _ in 0..2000 {
+        for _ in 0..1500 {
             self.add_particle_t3();
         }
     }
