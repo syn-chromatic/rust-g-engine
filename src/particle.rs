@@ -16,15 +16,11 @@ impl Body for Particle {
         self.color = Color::from_rgb(r, g, b);
     }
 
-    fn draw_shape(&self, graphics: &mut Graphics2D) {
+    fn draw(&self, graphics: &mut Graphics2D) {
         self.draw_circle(graphics);
     }
 
-    fn physics(&self) -> &Physics {
-        &self.physics
-    }
-
-    fn mutable_physics(&mut self) -> &mut Physics {
+    fn physics(&mut self) ->  &mut Physics {
         &mut self.physics
     }
 }
