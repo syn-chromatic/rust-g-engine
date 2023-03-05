@@ -18,30 +18,10 @@ impl Body for Shape {
     }
 
     fn draw(&self, graphics: &mut Graphics2D) {
-        let shape: &Vec<[f64; 3]> = &self.physics.shape;
-        let shape_length: usize = shape.len();
-        let shading: Vec<f32> = self.get_static_shading_sequence(shape_length);
-
-        let color: [f32; 3] = [self.color.r(), self.color.g(), self.color.b()];
-
-        for idx in 0..shape_length {
-            let nxt_idx: usize = idx + 1;
-            let color: [f32; 3] = self.get_shaded_rgb(color, shading[idx]);
-            if nxt_idx < shape_length {
-                let p1: [f64; 3] = shape[idx];
-                let p2: [f64; 3] = shape[nxt_idx];
-
-                self.draw_edge(p1, p2, color, graphics);
-                continue;
-            }
-
-            let p1: [f64; 3] = shape[idx];
-            let p2: [f64; 3] = shape[0];
-            self.draw_edge(p1, p2, color, graphics);
-        }
+        self.draw_shape(graphics);
     }
 
-    fn physics(&mut self) ->  &mut Physics {
+    fn physics(&mut self) -> &mut Physics {
         &mut self.physics
     }
 }
@@ -95,6 +75,30 @@ impl Shape {
         let a: [f64; 3] = self.perspective_projection(a);
         let b: [f64; 3] = self.perspective_projection(b);
         self.draw_edge(a, b, color, graphics)
+    }
+
+    fn draw_shape(&self, graphics: &mut Graphics2D) {
+        let shape: &Vec<[f64; 3]> = &self.physics.shape;
+        let shape_length: usize = shape.len();
+        let shading: Vec<f32> = self.get_static_shading_sequence(shape_length);
+
+        let color: [f32; 3] = [self.color.r(), self.color.g(), self.color.b()];
+
+        for idx in 0..shape_length {
+            let nxt_idx: usize = idx + 1;
+            let color: [f32; 3] = self.get_shaded_rgb(color, shading[idx]);
+            if nxt_idx < shape_length {
+                let p1: [f64; 3] = shape[idx];
+                let p2: [f64; 3] = shape[nxt_idx];
+
+                self.draw_edge(p1, p2, color, graphics);
+                continue;
+            }
+
+            let p1: [f64; 3] = shape[idx];
+            let p2: [f64; 3] = shape[0];
+            self.draw_edge(p1, p2, color, graphics);
+        }
     }
 
     fn get_static_shading_sequence(&self, shape_length: usize) -> Vec<f32> {

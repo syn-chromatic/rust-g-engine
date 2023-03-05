@@ -141,7 +141,7 @@ impl Simulation {
         let y: f64 = self.center_point.1 - 0.0;
         let z: f64 = 0.0;
 
-        let mass: f64 = rng.gen_range(2.0..40.0);
+        let mass: f64 = rng.gen_range(1.0..30.0);
         let shape: Vec<[f64; 3]> = vec![[0.0, 0.0, 0.0]];
         let scale: f64 = mass / 10.0;
 
