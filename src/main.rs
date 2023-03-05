@@ -1,32 +1,26 @@
-#![windows_subsystem = "windows"]
-use speedy2d::dimen::Vector2;
-use speedy2d::window::MouseScrollDistance;
-use speedy2d::window::{WindowHandler, WindowHelper};
-use speedy2d::Graphics2D;
-use speedy2d::Window;
-use std::io::{self, Write};
+// #![windows_subsystem = "windows"]
 mod body;
 mod particle;
 mod physics;
 mod shape;
 mod simulation;
 mod vector_3d;
+mod vertices;
+
+use speedy2d::window::{WindowHandler, WindowHelper};
+use speedy2d::Graphics2D;
+use speedy2d::Window;
+
 use crate::simulation::Simulation;
-use speedy2d::window::VirtualKeyCode;
 
 fn main() {
-    let canvas_width: f32 = 960.0;
-    let canvas_height: f32 = 768.0;
-    let center_x: f64 = canvas_width as f64 / 2.0;
-    let center_y: f64 = canvas_height as f64 / 2.0;
+    let canvas_resolution: (u32, u32) = (1200, 800);
+    let center_x: f64 = canvas_resolution.0 as f64 / 2.0;
+    let center_y: f64 = canvas_resolution.1 as f64 / 2.0;
+    let center_point: (f64, f64) = (center_x, center_y);
 
-    let window: Window = Window::new_centered(
-        "Physics System",
-        (canvas_width.round() as u32, canvas_height.round() as u32),
-    )
-    .unwrap();
-
-    let mut simulation: Simulation = Simulation::new(center_x, center_y);
+    let window: Window = Window::new_centered("Physics System", canvas_resolution).unwrap();
+    let mut simulation: Simulation = Simulation::new(center_point);
     simulation.setup_objects();
     window.run_loop(MyWindowHandler { simulation });
 }
