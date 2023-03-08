@@ -48,6 +48,8 @@ impl Simulation {
         let fps_txp: (f32, f32) = (fx, fy);
         let fps_txc: Color = Color::from_rgb(1.0, 1.0, 1.0);
 
+        let center_point = (0.0, 0.0);
+
         Simulation {
             camera,
             background_color,
@@ -132,7 +134,7 @@ impl Simulation {
     pub fn add_particle_t1(&mut self, z: f64) {
         let px = -1000.0 + self.center_point.0;
         let py = 40.0 + self.center_point.1;
-        let pz = z;
+        let pz = z - 5.0;
 
         let mass = 500_000_000.0;
         let shape = vec![[0.0, 0.0, 0.0]];

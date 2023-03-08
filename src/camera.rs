@@ -29,14 +29,16 @@ impl Camera {
     }
 
     pub fn perspective_projection(&self, position: Vector3D) -> Vector3D {
-        let x = (position.x * self.near_plane) / position.z;
-        let y = (position.y * self.near_plane) / position.z;
+        let x: f64 = (position.x * self.near_plane) / position.z;
+        let y: f64 = (position.y * self.near_plane) / position.z;
 
         let z: f64 = (self.far_plane + self.near_plane) / (self.near_plane - self.far_plane);
         let w: f64 = -position.z / (self.far_plane - self.near_plane);
 
-        let xp: f64 = x * w;
-        let yp: f64 = y * w;
+        let half_w: f64 = self.width as f64 / 2.0;
+        let half_h: f64 = self.height as f64 / 2.0;
+        let xp: f64 = (x * w) + half_w;
+        let yp: f64 = (y * w) + half_h;
         let zp: f64 = z * w;
 
         return Vector3D::new(xp, yp, zp);

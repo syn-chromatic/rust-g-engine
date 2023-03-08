@@ -62,11 +62,11 @@ impl WindowHandler for MyWindowHandler {
         // }
 
         if let Some(VirtualKeyCode::W) = virtual_key_code {
-            self.simulation.camera.increase_distance(0.5);
+            self.simulation.camera.increase_distance(1.0);
         }
 
         if let Some(VirtualKeyCode::S) = virtual_key_code {
-            self.simulation.camera.decrease_distance(0.5);
+            self.simulation.camera.decrease_distance(1.0);
         }
 
         // if let Some(VirtualKeyCode::D) = virtual_key_code {

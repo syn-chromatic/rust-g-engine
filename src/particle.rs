@@ -124,15 +124,7 @@ impl Particle {
         let position = camera.perspective_projection(self.physics.position);
         let x = position.x;
         let y = position.y;
-
-        let radius = camera.interpolate_radius(position, self.physics.scale);
-        // let radius = radius + self.physics.scale;
-
-        let x = (1200.0 / 2.0) + x;
-        let y = (800.0 / 2.0) + y;
-
-        // let radius = f64::max(f64::INFINITY, radius).min(0.1);
-        // println!("{:?} | {:?} | {:?}", x, y, radius);
+        let radius = camera.interpolate_radius(self.physics.position, self.physics.scale);
 
         let z_alpha: f32 = self.get_z_alpha(radius);
         let rgb: (f32, f32, f32) = self.get_rgb_values(self.color);
@@ -141,17 +133,4 @@ impl Particle {
         let p: Vector2<f32> = Vector2::new(x, y).into_f32();
         graphics.draw_circle(p, radius as f32, color);
     }
-
-    // fn draw_circle(&self, graphics: &mut Graphics2D, camera: &Camera) {
-    //     let x: f64 = self.physics.position.x;
-    //     let y: f64 = self.physics.position.y;
-    //     let radius: f64 = self.get_relative_z();
-
-    //     let z_alpha: f32 = self.get_z_alpha(radius);
-    //     let rgb: (f32, f32, f32) = self.get_rgb_values(self.color);
-    //     let color: Color = Color::from_rgba(rgb.0, rgb.1, rgb.2, z_alpha);
-
-    //     let p: Vector2<f32> = Vector2::new(x, y).into_f32();
-    //     graphics.draw_circle(p, radius as f32, color);
-    // }
 }
