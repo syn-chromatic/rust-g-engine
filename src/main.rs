@@ -14,6 +14,8 @@ use speedy2d::window::VirtualKeyCode;
 use speedy2d::window::{WindowHandler, WindowHelper};
 use speedy2d::Graphics2D;
 use speedy2d::Window;
+use speedy2d::window::MouseScrollDistance;
+use speedy2d::window::MouseScrollDistance::Lines;
 
 use crate::camera::Camera;
 use crate::simulation::Simulation;
@@ -40,14 +42,22 @@ struct MyWindowHandler {
 }
 
 impl WindowHandler for MyWindowHandler {
+    fn on_mouse_wheel_scroll(
+        &mut self,
+        helper: &mut WindowHelper<()>,
+        distance: MouseScrollDistance,
+    ) {
+
+        if let MouseScrollDistance::Lines { x, y, z } = distance {
+            self.simulation.camera.increment_distance(y);
+        }
+    }
 
     fn on_mouse_move(&mut self, helper: &mut WindowHelper<()>, position: speedy2d::dimen::Vec2) {
         let dx = position.x as f64;
         let dy = position.y as f64;
         self.simulation.camera.handle_mouse_movement(dx, dy);
     }
-
-
 
     fn on_key_down(
         &mut self,
@@ -70,13 +80,13 @@ impl WindowHandler for MyWindowHandler {
         //     self.simulation.camera.decrease_near_plane(0.1);
         // }
 
-        if let Some(VirtualKeyCode::W) = virtual_key_code {
-            self.simulation.camera.increase_distance(1.0);
-        }
+        // if let Some(VirtualKeyCode::W) = virtual_key_code {
+        //     self.simulation.camera.increase_distance(1.0);
+        // }
 
-        if let Some(VirtualKeyCode::S) = virtual_key_code {
-            self.simulation.camera.decrease_distance(1.0);
-        }
+        // if let Some(VirtualKeyCode::S) = virtual_key_code {
+        //     self.simulation.camera.decrease_distance(1.0);
+        // }
 
         // if let Some(VirtualKeyCode::D) = virtual_key_code {
         //     self.simulation.move_right();

@@ -33,10 +33,9 @@ impl Camera {
         let px = self.prev_mouse_pos.0;
         let py = self.prev_mouse_pos.1;
 
-        let dx = x - px ;
+        let dx = x - px;
         let dy = y - py;
         println!("{:?} {:?}", dx, dy);
-
 
         let sensitivity = 0.5;
         self.yaw += dx * sensitivity;
@@ -90,25 +89,14 @@ impl Camera {
         return Vector3D::new(xp, yp, zp);
     }
 
-    pub fn increase_distance(&mut self, increment: f64) {
-        if self.near_plane >= 0.0 && self.far_plane >= 0.0 {
-        self.near_plane += increment;
-        self.far_plane += increment;
-        self.near_plane = self.near_plane.clamp(0.0, f64::INFINITY);
-        self.far_plane = self.far_plane.clamp(0.0, f64::INFINITY);
-        println!("{:?}: {:.2?}", "Near Plane", self.near_plane);
-        println!("{:?}: {:.2?}", "Far Plane", self.far_plane);
-        }
-    }
-
-    pub fn decrease_distance(&mut self, increment: f64) {
-        if self.near_plane > 0.0 && self.far_plane > 0.0 {
-            self.near_plane -= increment;
-            self.far_plane -= increment;
+    pub fn increment_distance(&mut self, increment: f64) {
+        if (self.near_plane + increment) >= 0.0 {
+            self.near_plane += increment;
+            self.far_plane += increment;
             self.near_plane = self.near_plane.clamp(0.0, f64::INFINITY);
             self.far_plane = self.far_plane.clamp(0.0, f64::INFINITY);
             println!("{:?}: {:.2?}", "Near Plane", self.near_plane);
             println!("{:?}: {:.2?}", "Far Plane", self.far_plane);
-            }
+        }
     }
 }
