@@ -2,9 +2,9 @@ use speedy2d::color::Color;
 use speedy2d::dimen::Vector2;
 use speedy2d::Graphics2D;
 
+use crate::body::Body;
+use crate::camera::Camera;
 use crate::physics::Physics;
-use crate::vector_3d::Vector3D;
-use crate::{body::Body, camera::Camera};
 
 #[derive(Clone, Debug)]
 pub struct Particle {
@@ -32,66 +32,6 @@ impl Particle {
         let color: Color = Color::from_rgb(1.0, 1.0, 1.0);
         Particle { physics, color }
     }
-
-    fn perspective_projection(
-        &self,
-        position: Vector3D,
-        fov: f64,
-        near_clipping_plane: f64,
-        far_clipping_plane: f64,
-    ) -> Vector3D {
-        let aspect: f64 = 1200.0 / 800.0;
-        let h: f64 = (fov.to_radians() / 2.0).tan() * near_clipping_plane;
-        let w: f64 = h * aspect;
-
-        let x: f64 = position.x * (2.0 * near_clipping_plane) / (w + w - position.x * w);
-        let y: f64 = position.y * (2.0 * near_clipping_plane) / (h + h - position.y * h);
-        let z: f64 = -(far_clipping_plane + near_clipping_plane)
-            / (far_clipping_plane - near_clipping_plane)
-            - (2.0 * far_clipping_plane * near_clipping_plane)
-                / (position.z * (far_clipping_plane - near_clipping_plane));
-        let w: f64 = -1.0 * (position.z * (far_clipping_plane - near_clipping_plane))
-            / (far_clipping_plane * near_clipping_plane);
-
-        let xp: f64 = x / w;
-        let yp: f64 = y / w;
-        let zp: f64 = z / w;
-
-        return Vector3D::new(xp, yp, zp);
-    }
-
-    // fn perspective_projection(&self, position: Vector3D) -> Vector3D {
-    //     let distance: f64 = 5.0;
-    //     let zp: f64 = 1.0 / (distance - position.z);
-    //     let xp: f64 = position.x * zp;
-    //     let yp: f64 = position.y * zp;
-    //     return Vector3D::new(xp, yp, zp);
-    // }
-
-    // fn perspective_projection(&self, position: Vector3D) -> Vector3D {
-    //     let camera_position = Point3::new(0.0, 0.0, 0.0); // assume camera at origin
-    //     let camera_direction = Point3::new(0.0, 0.0, -1.0); // assume camera points in -z direction
-    //     let up_direction = Vector3::new(0.0, 1.0, 0.0); // assume up direction is +y
-
-    //     let aspect_ratio = 1200 / 800; // assume screen aspect ratio
-    //     let fov = 60; // assume field of view of 60 degrees
-    //     let znear = 0.1; // assume near clipping plane distance of 0.1 units
-    //     let zfar = 100.0; // assume far clipping plane distance of 100 units
-
-    //     let view = Matrix4::look_at_lh(&camera_position, &camera_direction, &up_direction);
-    //     let projection = Matrix4::new_perspective(aspect_ratio, fov, znear, zfar);
-
-    //     let view_projection = projection * view;
-
-    //     let mut position_homogeneous = position.to_homogeneous();
-    //     position_homogeneous.w = 1.0; // set w component to 1
-
-    //     let projected_homogeneous = view_projection * position_homogeneous;
-    //     let mut projected = projected_homogeneous.to_vector();
-    //     projected /= projected.w; // normalize by w component
-
-    //     Vector3D::new(projected.x, projected.y, projected.z)
-    // }
 
     fn get_scale_alpha(&self, scale: f64) -> f32 {
         let max_scale: f32 = 300.0;
