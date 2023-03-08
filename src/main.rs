@@ -30,8 +30,8 @@ fn main() {
     let camera = Camera::new(width, height);
 
     let mut simulation: Simulation = Simulation::new(camera, center_point);
-    simulation.setup_collision_configuration();
-    // simulation.setup_gravity_configuration();
+    // simulation.setup_collision_configuration();
+    simulation.setup_gravity_configuration();
     window.run_loop(MyWindowHandler { simulation });
 }
 

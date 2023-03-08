@@ -37,7 +37,7 @@ pub struct Simulation {
 impl Simulation {
     pub fn new(camera: Camera, center_point: (f64, f64)) -> Simulation {
         let objects: Vec<BodyType> = vec![];
-        let timestep: f64 = 1.0 / 10000.0;
+        let timestep: f64 = 1.0 / 10.0;
         let bytes: &[u8; 367112] = include_bytes!("../fonts/arial.ttf");
         let font: Font = Font::new(bytes).unwrap();
         let background_color = Color::from_rgb(0.15, 0.15, 0.15);
@@ -108,7 +108,7 @@ impl Simulation {
     pub fn add_center_particle(&mut self) {
         let x: f64 = self.center_point.0;
         let y: f64 = self.center_point.1;
-        let z: f64 = 0.0;
+        let z: f64 = -10.0;
         let mass: f64 = 10_000_000.0;
         let shape: Vec<[f64; 3]> = vec![[0.0, 0.0, 0.0]];
         let color = (0.8, 0.3, 0.3);
@@ -225,11 +225,11 @@ impl Simulation {
 
         let x: f64 = self.center_point.0 - x_rnd;
         let y: f64 = self.center_point.1 - y_rnd;
-        let z: f64 = -500.0;
+        let z: f64 = -10.0;
 
         let mass: f64 = rng.gen_range(10.0..50.0);
         let shape: Vec<[f64; 3]> = vec![[0.0, 0.0, 0.0]];
-        let scale: f64 = 100.0;
+        let scale: f64 = 10.0;
 
         let mut particle: Particle = Particle::new(shape);
         let physics: &mut Physics = particle.physics();
