@@ -40,6 +40,15 @@ struct MyWindowHandler {
 }
 
 impl WindowHandler for MyWindowHandler {
+
+    fn on_mouse_move(&mut self, helper: &mut WindowHelper<()>, position: speedy2d::dimen::Vec2) {
+        let dx = position.x as f64;
+        let dy = position.y as f64;
+        self.simulation.camera.handle_mouse_movement(dx, dy);
+    }
+
+
+
     fn on_key_down(
         &mut self,
         _helper: &mut WindowHelper,

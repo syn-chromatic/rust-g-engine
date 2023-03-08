@@ -5,8 +5,8 @@ use speedy2d::dimen::Vector2;
 use speedy2d::Graphics2D;
 
 use crate::body::Body;
-use crate::physics::Physics;
 use crate::camera::Camera;
+use crate::physics::Physics;
 
 #[derive(Clone, Debug)]
 pub struct Shape {
@@ -57,8 +57,8 @@ impl Shape {
         let x2: f64 = b[0] * z + self.physics.position.x;
         let y2: f64 = b[1] * z + self.physics.position.y;
 
-        let z_alpha: f32 = self.get_z_alpha(z);
-        let color: Color = Color::from_rgba(rgb.0, rgb.1, rgb.2, z_alpha);
+        let alpha: f32 = self.get_scale_alpha(z);
+        let color: Color = Color::from_rgba(rgb.0, rgb.1, rgb.2, alpha);
 
         let p1: Vector2<f32> = Vector2::new(x1, y1).into_f32();
         let p2: Vector2<f32> = Vector2::new(x2, y2).into_f32();
@@ -111,13 +111,13 @@ impl Shape {
         shading
     }
 
-    fn get_z_alpha(&self, z: f64) -> f32 {
-        let max_z: f32 = 300.0;
-        let min_z: f32 = max_z / 2.0;
-        if z < min_z as f64 {
+    fn get_scale_alpha(&self, scale: f64) -> f32 {
+        let max_scale: f32 = 300.0;
+        let min_scale: f32 = max_scale / 2.0;
+        if scale < min_scale as f64 {
             return 1.0;
         }
-        let alpha_normalized = (z as f32 - min_z) / (max_z - min_z);
+        let alpha_normalized = (scale as f32 - min_scale) / (max_scale - min_scale);
         let alpha_clamped = alpha_normalized.clamp(0.0, 1.0);
         let alpha = 1.0 - alpha_clamped;
         alpha

@@ -93,13 +93,13 @@ impl Particle {
     //     Vector3D::new(projected.x, projected.y, projected.z)
     // }
 
-    fn get_z_alpha(&self, z: f64) -> f32 {
-        let max_z: f32 = 300.0;
-        let min_z: f32 = max_z / 2.0;
-        if z < min_z as f64 {
+    fn get_scale_alpha(&self, scale: f64) -> f32 {
+        let max_scale: f32 = 300.0;
+        let min_scale: f32 = max_scale / 2.0;
+        if scale < min_scale as f64 {
             return 1.0;
         }
-        let alpha_normalized = (z as f32 - min_z) / (max_z - min_z);
+        let alpha_normalized = (scale as f32 - min_scale) / (max_scale - min_scale);
         let alpha_clamped = alpha_normalized.clamp(0.0, 1.0);
         let alpha = 1.0 - alpha_clamped;
         alpha
@@ -126,9 +126,9 @@ impl Particle {
         let y = position.y;
         let radius = camera.interpolate_radius(self.physics.position, self.physics.scale);
 
-        let z_alpha: f32 = self.get_z_alpha(radius);
         let rgb: (f32, f32, f32) = self.get_rgb_values(self.color);
-        let color: Color = Color::from_rgba(rgb.0, rgb.1, rgb.2, z_alpha);
+        let alpha: f32 = self.get_scale_alpha(radius);
+        let color: Color = Color::from_rgba(rgb.0, rgb.1, rgb.2, alpha);
 
         let p: Vector2<f32> = Vector2::new(x, y).into_f32();
         graphics.draw_circle(p, radius as f32, color);
