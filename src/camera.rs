@@ -3,6 +3,7 @@ use crate::vector_3d::Vector3D;
 pub struct Camera {
     width: u32,
     height: u32,
+    camera_position: (f64, f64, f64),
     near_plane: f64,
     far_plane: f64,
     yaw: f64,
@@ -12,6 +13,7 @@ pub struct Camera {
 
 impl Camera {
     pub fn new(width: u32, height: u32) -> Camera {
+        let camera_position = (0.0, 0.0, 0.0);
         let near_plane = 60.0;
         let far_plane = 160.0;
         let yaw = 0.0;
@@ -21,6 +23,7 @@ impl Camera {
         Camera {
             width,
             height,
+            camera_position,
             near_plane,
             far_plane,
             yaw,
@@ -39,7 +42,7 @@ impl Camera {
 
         let sensitivity = 0.5;
         self.yaw += dx * sensitivity;
-        self.pitch += dy * sensitivity;
+        self.pitch += dy * -sensitivity;
         self.prev_mouse_pos = (x, y);
     }
 
@@ -71,6 +74,8 @@ impl Camera {
     }
 
     pub fn perspective_projection(&self, position: Vector3D) -> Vector3D {
+        let (cx, cy, cz): (f64, f64, f64) = self.camera_position;
+
         let position: Vector3D = self.yaw_projection(position);
         let position: Vector3D = self.pitch_projection(position);
 
@@ -82,9 +87,9 @@ impl Camera {
 
         let half_w: f64 = self.width as f64 / 2.0;
         let half_h: f64 = self.height as f64 / 2.0;
-        let xp: f64 = (x * w) + half_w;
-        let yp: f64 = (y * w) + half_h;
-        let zp: f64 = z * w;
+        let xp: f64 = ((x * w) + half_w) + cx;
+        let yp: f64 = ((y * w) + half_h) + cy;
+        let zp: f64 = (z * w) + cz;
 
         return Vector3D::new(xp, yp, zp);
     }
@@ -99,4 +104,12 @@ impl Camera {
             println!("{:?}: {:.2?}", "Far Plane", self.far_plane);
         }
     }
+
+    pub fn forward(&mut self, increment: f64) {}
+
+    pub fn backward(&mut self, increment: f64) {}
+
+    pub fn left(&mut self, increment: f64) {}
+
+    pub fn right(&mut self, increment: f64) {}
 }

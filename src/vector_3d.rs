@@ -10,6 +10,10 @@ impl Vector3D {
         Vector3D { x, y, z }
     }
 
+    pub fn get_tuple(&self) -> (f64, f64, f64) {
+        (self.x, self.y, self.z)
+    }
+
     pub fn multiply(&self, num: f64) -> Vector3D {
         Vector3D::new(self.x * num, self.y * num, self.z * num)
     }

@@ -15,13 +15,13 @@ use speedy2d::window::WindowHelper;
 use speedy2d::Graphics2D;
 
 use crate::body::{Body, BodyType};
+use crate::camera::Camera;
+use crate::debug;
 use crate::particle::Particle;
 use crate::physics::Physics;
 use crate::shape::Shape;
 use crate::vertices::ParticleCircle;
 use crate::vertices::{CubeShape, SphereShape};
-use crate::debug;
-use crate::camera::Camera;
 
 pub struct Simulation {
     pub camera: Camera,
@@ -37,7 +37,7 @@ pub struct Simulation {
 impl Simulation {
     pub fn new(camera: Camera, center_point: (f64, f64)) -> Simulation {
         let objects: Vec<BodyType> = vec![];
-        let timestep: f64 = 1.0 / 10.0;
+        let timestep: f64 = 1.0 / 5000.0;
         let bytes: &[u8; 367112] = include_bytes!("../fonts/arial.ttf");
         let font: Font = Font::new(bytes).unwrap();
         let background_color = Color::from_rgb(0.15, 0.15, 0.15);
@@ -104,7 +104,6 @@ impl Simulation {
         self.objects.push(BodyType::Shape(shape));
     }
 
-
     pub fn add_center_particle(&mut self) {
         let x: f64 = self.center_point.0;
         let y: f64 = self.center_point.1;
@@ -125,11 +124,6 @@ impl Simulation {
 
         self.objects.push(BodyType::Particle(particle));
     }
-
-
-
-
-
 
     pub fn add_particle_t1(&mut self, z: f64) {
         let px = -1000.0 + self.center_point.0;
@@ -243,6 +237,7 @@ impl Simulation {
     }
 
     pub fn setup_gravity_configuration(&mut self) {
+        self.timestep = (1.0 / 10.0);
         self.add_center_particle();
 
         for _ in 0..100 {
@@ -251,12 +246,12 @@ impl Simulation {
     }
 
     pub fn setup_collision_configuration(&mut self) {
+        self.timestep = (1.0 / 5000.0);
         let z = -10.0;
 
         self.add_particle_t1(z);
         self.add_particle_t2(z);
         self.add_particle_t4(z);
-
 
         // for _ in 0..1500 {
         //     self.add_particle_t3();

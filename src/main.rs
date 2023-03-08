@@ -32,8 +32,8 @@ fn main() {
     let camera = Camera::new(width, height);
 
     let mut simulation: Simulation = Simulation::new(camera, center_point);
-    // simulation.setup_collision_configuration();
-    simulation.setup_gravity_configuration();
+    simulation.setup_collision_configuration();
+    // simulation.setup_gravity_configuration();
     window.run_loop(MyWindowHandler { simulation });
 }
 
@@ -81,19 +81,19 @@ impl WindowHandler for MyWindowHandler {
         // }
 
         // if let Some(VirtualKeyCode::W) = virtual_key_code {
-        //     self.simulation.camera.increase_distance(1.0);
+        //     self.simulation.camera.forward(1.0);
         // }
 
         // if let Some(VirtualKeyCode::S) = virtual_key_code {
-        //     self.simulation.camera.decrease_distance(1.0);
+        //     self.simulation.camera.backward(1.0);
         // }
 
         // if let Some(VirtualKeyCode::D) = virtual_key_code {
-        //     self.simulation.move_right();
+        //     self.simulation.camera.right(1.0);
         // }
 
         // if let Some(VirtualKeyCode::A) = virtual_key_code {
-        //     self.simulation.move_left();
+        //     self.simulation.camera.left(1.0);
         // }
     }
 

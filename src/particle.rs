@@ -5,6 +5,7 @@ use speedy2d::Graphics2D;
 use crate::body::Body;
 use crate::camera::Camera;
 use crate::physics::Physics;
+use crate::vector_3d::Vector3D;
 
 #[derive(Clone, Debug)]
 pub struct Particle {
@@ -45,31 +46,34 @@ impl Particle {
         alpha
     }
 
-    fn get_rgb_values(&self, color: Color) -> (f32, f32, f32) {
+    fn get_rgb_values(&self) -> (f32, f32, f32) {
         let r: f32 = self.color.r();
         let g: f32 = self.color.g();
         let b: f32 = self.color.b();
         (r, g, b)
     }
 
-    fn get_relative_z(&self) -> f64 {
-        let z: f64 = self.physics.position.z;
-        let scale: f64 = self.physics.scale;
-        let mut relative_z: f64 = scale + z;
-        relative_z = f64::max(0.5, relative_z).min(f64::INFINITY);
-        relative_z
+    fn get_particle_position(&self) -> Vector3D {
+        self.physics.position
+    }
+
+    fn get_particle_scale(&self) -> f64 {
+        self.physics.scale
     }
 
     fn draw_circle(&self, graphics: &mut Graphics2D, camera: &Camera) {
-        let position = camera.perspective_projection(self.physics.position);
-        let x = position.x;
-        let y = position.y;
-        let radius = camera.interpolate_radius(self.physics.position, self.physics.scale);
+        let position: Vector3D = self.get_particle_position();
+        let scale: f64 = self.get_particle_scale();
 
-        let rgb: (f32, f32, f32) = self.get_rgb_values(self.color);
+        let projected: Vector3D = camera.perspective_projection(position);
+        let radius: f64 = camera.interpolate_radius(projected, scale);
+
+        let rgb: (f32, f32, f32) = self.get_rgb_values();
         let alpha: f32 = self.get_scale_alpha(radius);
         let color: Color = Color::from_rgba(rgb.0, rgb.1, rgb.2, alpha);
 
+        let x: f64 = projected.x;
+        let y: f64 = projected.y;
         let p: Vector2<f32> = Vector2::new(x, y).into_f32();
         graphics.draw_circle(p, radius as f32, color);
     }
