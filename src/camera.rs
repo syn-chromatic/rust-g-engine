@@ -74,8 +74,6 @@ impl Camera {
     }
 
     pub fn perspective_projection(&self, position: Vector3D) -> Vector3D {
-        let (cx, cy, cz): (f64, f64, f64) = self.camera_position;
-
         let position: Vector3D = self.yaw_projection(position);
         let position: Vector3D = self.pitch_projection(position);
 
@@ -87,9 +85,9 @@ impl Camera {
 
         let half_w: f64 = self.width as f64 / 2.0;
         let half_h: f64 = self.height as f64 / 2.0;
-        let xp: f64 = ((x * w) + half_w) + cx;
-        let yp: f64 = ((y * w) + half_h) + cy;
-        let zp: f64 = (z * w) + cz;
+        let xp: f64 = (x * w) + half_w;
+        let yp: f64 = (y * w) + half_h;
+        let zp: f64 = (z * w);
 
         return Vector3D::new(xp, yp, zp);
     }
@@ -105,11 +103,12 @@ impl Camera {
         }
     }
 
-    pub fn forward(&mut self, increment: f64) {}
-
-    pub fn backward(&mut self, increment: f64) {}
-
-    pub fn left(&mut self, increment: f64) {}
-
-    pub fn right(&mut self, increment: f64) {}
+    pub fn move_camera(&mut self, direction: Vector3D) {
+        let movement_speed = 10.0;
+        let (x, y, z) = self.camera_position;
+        let new_x = x + direction.x * movement_speed;
+        let new_y = y + direction.y * movement_speed;
+        let new_z = z + direction.z * movement_speed;
+        self.camera_position = (new_x, new_y, new_z);
+    }
 }

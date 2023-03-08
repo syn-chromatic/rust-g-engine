@@ -128,7 +128,7 @@ impl Simulation {
     pub fn add_particle_t1(&mut self, z: f64) {
         let px = -1000.0 + self.center_point.0;
         let py = 40.0 + self.center_point.1;
-        let pz = z - 5.0;
+        let pz = z ;
 
         let mass = 500_000_000.0;
         let shape = vec![[0.0, 0.0, 0.0]];
@@ -247,7 +247,7 @@ impl Simulation {
 
     pub fn setup_collision_configuration(&mut self) {
         self.timestep = (1.0 / 5000.0);
-        let z = -10.0;
+        let z = 0.0;
 
         self.add_particle_t1(z);
         self.add_particle_t2(z);

@@ -16,6 +16,7 @@ use speedy2d::Graphics2D;
 use speedy2d::Window;
 use speedy2d::window::MouseScrollDistance;
 use speedy2d::window::MouseScrollDistance::Lines;
+use vector_3d::Vector3D;
 
 use crate::camera::Camera;
 use crate::simulation::Simulation;
@@ -80,21 +81,25 @@ impl WindowHandler for MyWindowHandler {
         //     self.simulation.camera.decrease_near_plane(0.1);
         // }
 
-        // if let Some(VirtualKeyCode::W) = virtual_key_code {
-        //     self.simulation.camera.forward(1.0);
-        // }
+        if let Some(VirtualKeyCode::W) = virtual_key_code {
+            let direction = Vector3D::new(0.0, 0.0, 1.0);
+            self.simulation.camera.move_camera(direction);
+        }
 
-        // if let Some(VirtualKeyCode::S) = virtual_key_code {
-        //     self.simulation.camera.backward(1.0);
-        // }
+        if let Some(VirtualKeyCode::S) = virtual_key_code {
+            let direction = Vector3D::new(0.0, 0.0, -1.0);
+            self.simulation.camera.move_camera(direction);
+        }
 
-        // if let Some(VirtualKeyCode::D) = virtual_key_code {
-        //     self.simulation.camera.right(1.0);
-        // }
+        if let Some(VirtualKeyCode::D) = virtual_key_code {
+            let direction = Vector3D::new(1.0, 0.0, 0.0);
+            self.simulation.camera.move_camera(direction);
+        }
 
-        // if let Some(VirtualKeyCode::A) = virtual_key_code {
-        //     self.simulation.camera.left(1.0);
-        // }
+        if let Some(VirtualKeyCode::A) = virtual_key_code {
+            let direction = Vector3D::new(-1.0, 0.0, 0.0);
+            self.simulation.camera.move_camera(direction);
+        }
     }
 
     fn on_draw(&mut self, helper: &mut WindowHelper, graphics: &mut Graphics2D) {
