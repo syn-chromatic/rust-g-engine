@@ -3,10 +3,11 @@ use speedy2d::Graphics2D;
 use crate::particle::Particle;
 use crate::physics::Physics;
 use crate::shape::Shape;
+use crate::camera::Camera;
 
 pub trait Body {
     fn set_color(&mut self, r: f32, g: f32, b: f32);
-    fn draw(&self, graphics: &mut Graphics2D);
+    fn draw(&self, graphics: &mut Graphics2D, camera: &Camera);
     fn physics(&mut self) -> &mut Physics;
 }
 
@@ -24,10 +25,10 @@ impl Body for BodyType {
         }
     }
 
-    fn draw(&self, graphics: &mut Graphics2D) {
+    fn draw(&self, graphics: &mut Graphics2D, camera: &Camera) {
         match self {
-            BodyType::Shape(s) => s.draw(graphics),
-            BodyType::Particle(s) => s.draw(graphics),
+            BodyType::Shape(s) => s.draw(graphics, camera),
+            BodyType::Particle(s) => s.draw(graphics, camera),
         }
     }
 

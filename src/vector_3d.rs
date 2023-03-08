@@ -31,8 +31,8 @@ impl Vector3D {
     }
 
     pub fn get_length(&self) -> f64 {
-        let length_squared = self.get_length_squared();
-        if length_squared == 0.0 {
+        let length_squared: f64 = self.get_length_squared();
+        if length_squared <= 0.0 {
             return 0.0;
         }
 
@@ -40,7 +40,7 @@ impl Vector3D {
     }
 
     pub fn normalize(&self) -> Vector3D {
-        let length = self.get_length();
+        let length: f64 = self.get_length();
 
         if length == 0.0 {
             return Vector3D::new(0.0, 0.0, 0.0);
@@ -66,9 +66,9 @@ impl Vector3D {
         let mut z: f64 = self.z;
 
         if length != 0.0 {
-            x = (self.x / length) * magnitude;
-            y = (self.y / length) * magnitude;
-            z = (self.z / length) * magnitude;
+            x = (x / length) * magnitude;
+            y = (y / length) * magnitude;
+            z = (z / length) * magnitude;
         }
         Vector3D::new(x, y, z)
     }

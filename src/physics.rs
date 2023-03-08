@@ -108,6 +108,11 @@ impl Physics {
         direction
     }
 
+    fn get_moment_of_inertia(&self) -> f64 {
+        let moment_of_inertia:f64 = (2.0/5.0) * self.mass * self.scale.powi(2);
+        moment_of_inertia
+    }
+
     pub fn set_position(&mut self, x: f64, y: f64, z: f64) {
         self.position = Vector3D::new(x, y, z);
     }
@@ -156,7 +161,7 @@ impl Physics {
         target.position = target_shifted;
     }
 
-    pub fn calculate_collision_velocities(&mut self, target: &mut Physics, direction: Vector3D) {
+    pub fn calculate_collision_velocities(&mut self, target: &mut Physics, direction: Vector3D, timestep: f64) {
         let v1i: f64 = self.velocity.dot_product(direction);
         let v2i: f64 = target.velocity.dot_product(direction);
         let v1i_vec: Vector3D = direction.multiply(v1i);
@@ -170,8 +175,8 @@ impl Physics {
         let v1f: f64 = ((v1i * (m1 - m2)) + 2.0 * (m2 * v2i)) / (m1 + m2);
         let v2f: f64 = ((v2i * (m2 - m1)) + 2.0 * (m1 * v1i)) / (m1 + m2);
 
-        let v1f_vec = direction.multiply(v1f);
-        let v2f_vec = direction.multiply(v2f);
+        let v1f_vec: Vector3D = direction.multiply(v1f);
+        let v2f_vec: Vector3D = direction.multiply(v2f);
 
         let v1: Vector3D = v1p.add_vector(v1f_vec);
         let v2: Vector3D = v2p.add_vector(v2f_vec);
@@ -184,26 +189,35 @@ impl Physics {
         // Target-To-Self Distance
         let tts_distance: Vector3D = target.position.subtract_vector(self.position);
 
-        self.apply_attraction(target, tts_distance);
         self.apply_collision(target, tts_distance, timestep);
+        // self.apply_attraction(target, tts_distance, timestep);
+
     }
 
-    pub fn apply_attraction(&mut self, target: &mut Physics, tts_distance: Vector3D) {
+    pub fn apply_attraction(&mut self, target: &mut Physics, tts_distance: Vector3D, timestep: f64) {
         let distance: f64 = tts_distance.get_length();
 
         if distance > 0.0 {
-            let mut force: Vector3D = target.position.subtract_vector(self.position);
-            let strength: f64 = self.g_const * ((self.mass * target.mass) / distance);
-            force = tts_distance.set_magnitude(strength);
-            force = force.divide(self.mass);
+            let strength: f64 = self.g_const * self.mass * target.mass / distance;
+            let force: Vector3D = tts_distance.set_magnitude(strength);
+            let force: Vector3D = force.divide(self.mass);
+            // let force: Vector3D = force.multiply(timestep);
             self.acceleration = self.acceleration.add_vector(force);
-            self.spin_acceleration = self.spin_acceleration.add_vector(force);
+
+            // let moment_of_inertia: f64 = self.get_moment_of_inertia();
+            // let torque: Vector3D = tts_distance.cross_product(force);
+            // let torque: Vector3D = torque.divide(moment_of_inertia);
+            // self.spin_acceleration = self.spin_acceleration.add_vector(torque);
+            // self.spin_acceleration = self.spin_acceleration.add_vector(force);
         }
     }
 
     pub fn apply_collision(&mut self, target: &mut Physics, tts_distance: Vector3D, timestep: f64) {
-        let self_radius: f64 = self.scale + self.position.get_length() * timestep;
-        let target_radius: f64 = target.scale + target.position.get_length() * timestep;
+        let self_length = self.position.get_length();
+        let target_length = target.position.get_length();
+
+        let self_radius: f64 = self.scale + (self_length * timestep);
+        let target_radius: f64 = target.scale  + (target_length * timestep);
 
         let total_radius: f64 = self_radius + target_radius;
         let edge_distance: f64 = tts_distance.get_length() - total_radius;
@@ -213,8 +227,10 @@ impl Physics {
             let stt_distance: Vector3D = tts_distance.multiply(-1.0);
             let stt_direction: Vector3D = stt_distance.normalize();
 
-            self.calculate_collision_velocities(target, stt_direction);
+
             self.correct_shift_collision(target, timestep, stt_direction, edge_distance);
+            self.calculate_collision_velocities(target, stt_direction, timestep);
+
         }
     }
 
