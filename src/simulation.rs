@@ -128,9 +128,9 @@ impl Simulation {
     pub fn add_particle_t1(&mut self, z: f64) {
         let px = -1000.0 + self.center_point.0;
         let py = 40.0 + self.center_point.1;
-        let pz = z ;
+        let pz = z - 5.0;
 
-        let mass = 500_000_000.0;
+        let mass = 5_000_000_000_000.0;
         let shape = vec![[0.0, 0.0, 0.0]];
         let scale = 80.0;
 
@@ -192,7 +192,7 @@ impl Simulation {
     }
 
     pub fn add_particle_t4(&mut self, z: f64) {
-        let particles = ParticleCircle::new(100).generate(0.0, 0.0);
+        let particles = ParticleCircle::new(150).generate(0.0, 0.0);
 
         for particle in particles {
             let px: f64 = particle[0] + self.center_point.0;
@@ -223,13 +223,13 @@ impl Simulation {
 
         let mass: f64 = rng.gen_range(10.0..50.0);
         let shape: Vec<[f64; 3]> = vec![[0.0, 0.0, 0.0]];
-        let scale: f64 = 10.0;
+        let scale: f64 = 1.0;
 
         let mut particle: Particle = Particle::new(shape);
         let physics: &mut Physics = particle.physics();
 
         physics.set_position(x, y, z);
-        physics.set_velocity(10.0, 30.0, 1.0);
+        physics.set_velocity(100.0, 300.0, 1.0);
         physics.set_mass(mass);
         physics.set_scale(scale);
 
@@ -240,7 +240,7 @@ impl Simulation {
         self.timestep = (1.0 / 10.0);
         self.add_center_particle();
 
-        for _ in 0..100 {
+        for _ in 0..1000 {
             self.add_orbiting_object();
         }
     }
@@ -250,7 +250,7 @@ impl Simulation {
         let z = 0.0;
 
         self.add_particle_t1(z);
-        self.add_particle_t2(z);
+        // self.add_particle_t2(z);
         self.add_particle_t4(z);
 
         // for _ in 0..1500 {

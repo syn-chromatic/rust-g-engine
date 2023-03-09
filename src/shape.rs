@@ -1,5 +1,3 @@
-use std::u128::MAX;
-
 use speedy2d::color::Color;
 use speedy2d::dimen::Vector2;
 use speedy2d::Graphics2D;
@@ -49,15 +47,24 @@ impl Shape {
         return [xp, yp, zp];
     }
 
-    fn draw_edge(&self, a: [f64; 3], b: [f64; 3], rgb: (f32, f32, f32), graphics: &mut Graphics2D) {
-        let z: f64 = self.get_relative_z();
+    fn draw_edge(
+        &self,
+        a: [f64; 3],
+        b: [f64; 3],
+        rgb: (f32, f32, f32),
+        graphics: &mut Graphics2D,
+        camera: &Camera,
+    ) {
+        let position = self.physics.position;
+        let projected_position = camera.perspective_projection(position);
+        let radius: f64 = camera.interpolate_radius(projected_position, self.physics.scale);
 
-        let x1: f64 = a[0] * z + self.physics.position.x;
-        let y1: f64 = a[1] * z + self.physics.position.y;
-        let x2: f64 = b[0] * z + self.physics.position.x;
-        let y2: f64 = b[1] * z + self.physics.position.y;
+        let x1: f64 = a[0] * radius + projected_position.x;
+        let y1: f64 = a[1] * radius + projected_position.y;
+        let x2: f64 = b[0] * radius + projected_position.x;
+        let y2: f64 = b[1] * radius + projected_position.y;
 
-        let alpha: f32 = self.get_scale_alpha(z);
+        let alpha: f32 = self.get_scale_alpha(radius);
         let color: Color = Color::from_rgba(rgb.0, rgb.1, rgb.2, alpha);
 
         let p1: Vector2<f32> = Vector2::new(x1, y1).into_f32();
@@ -72,10 +79,11 @@ impl Shape {
         b: [f64; 3],
         color: (f32, f32, f32),
         graphics: &mut Graphics2D,
+        camera: &Camera,
     ) {
         let a: [f64; 3] = self.perspective_projection(a);
         let b: [f64; 3] = self.perspective_projection(b);
-        self.draw_edge(a, b, color, graphics)
+        self.draw_edge(a, b, color, graphics, camera);
     }
 
     fn draw_shape(&self, graphics: &mut Graphics2D, camera: &Camera) {
@@ -92,13 +100,13 @@ impl Shape {
                 let p1: [f64; 3] = shape[idx];
                 let p2: [f64; 3] = shape[nxt_idx];
 
-                self.draw_edge(p1, p2, color, graphics);
+                self.draw_edge(p1, p2, color, graphics, camera);
                 continue;
             }
 
             let p1: [f64; 3] = shape[idx];
             let p2: [f64; 3] = shape[0];
-            self.draw_edge(p1, p2, color, graphics);
+            self.draw_edge(p1, p2, color, graphics, camera);
         }
     }
 
@@ -128,14 +136,6 @@ impl Shape {
         let g: f32 = self.color.g();
         let b: f32 = self.color.b();
         (r, g, b)
-    }
-
-    fn get_relative_z(&self) -> f64 {
-        let z: f64 = self.physics.position.z;
-        let scale: f64 = self.physics.scale;
-        let mut relative_z: f64 = scale + z;
-        relative_z = f64::max(0.1, relative_z).min(f64::INFINITY);
-        relative_z
     }
 
     fn get_shaded_rgb(&self, rgb: (f32, f32, f32), shade_value: f32) -> (f32, f32, f32) {
