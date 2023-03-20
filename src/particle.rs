@@ -5,20 +5,20 @@ use speedy2d::Graphics2D;
 use crate::body::Body;
 use crate::camera::Camera;
 use crate::physics::Physics;
-use crate::vector_3d::Vector3D;
+use crate::vectors::Vector3D;
 
 #[derive(Clone, Debug)]
 pub struct Particle {
-    pub physics: Physics,
+    physics: Physics,
     color: Color,
 }
 
 impl Body for Particle {
-    fn set_color(&mut self, r: f32, g: f32, b: f32) {
-        self.color = Color::from_rgb(r, g, b);
+    fn set_color(&mut self, color: Color) {
+        self.color = color;
     }
 
-    fn draw(&self, graphics: &mut Graphics2D, camera: &Camera) {
+    fn draw(&self, graphics: &mut Graphics2D, camera: &mut Camera) {
         self.draw_circle(graphics, camera);
     }
 
@@ -32,6 +32,35 @@ impl Particle {
         let physics: Physics = Physics::new(shape.clone());
         let color: Color = Color::from_rgb(1.0, 1.0, 1.0);
         Particle { physics, color }
+    }
+
+    fn draw_circle(&self, graphics: &mut Graphics2D, camera: &mut Camera) {
+        let position = self.get_particle_position();
+        let scale = self.get_particle_scale();
+
+        let point1 = Vector3D::new(position.x - scale, position.y, position.z);
+        let point2 = Vector3D::new(position.x + scale, position.y, position.z);
+
+        let proj1 = camera.get_screen_coordinates(point1);
+        let proj2 = camera.get_screen_coordinates(point2);
+
+        if proj1.is_none() || proj2.is_none() {
+            return;
+        }
+
+        let proj1 = proj1.unwrap();
+        let proj2 = proj2.unwrap();
+
+        let p_scale = proj1.subtract_vector(proj2).get_length() / 2.0;
+        let mid_point = proj1.get_midpoint(proj2);
+        let point = (mid_point.x as f32, mid_point.y as f32);
+
+        let alpha = self.get_scale_alpha(p_scale);
+        let rgb = self.get_rgb_values();
+        let color = Color::from_rgba(rgb.0, rgb.1, rgb.2, alpha);
+        let p_scale = p_scale as f32;
+
+        graphics.draw_circle(point, p_scale, self.color)
     }
 
     fn get_scale_alpha(&self, scale: f64) -> f32 {
@@ -53,28 +82,20 @@ impl Particle {
         (r, g, b)
     }
 
+    fn get_shaded_rgb(&self, rgb: (f32, f32, f32), shade_value: f32) -> (f32, f32, f32) {
+        let rgb: (f32, f32, f32) = (
+            rgb.0 * shade_value,
+            rgb.1 * shade_value,
+            rgb.2 * shade_value,
+        );
+        rgb
+    }
+
     fn get_particle_position(&self) -> Vector3D {
         self.physics.position
     }
 
     fn get_particle_scale(&self) -> f64 {
         self.physics.scale
-    }
-
-    fn draw_circle(&self, graphics: &mut Graphics2D, camera: &Camera) {
-        let position: Vector3D = self.get_particle_position();
-        let scale: f64 = self.get_particle_scale();
-
-        let projected: Vector3D = camera.perspective_projection(position);
-        let radius: f64 = camera.interpolate_radius(projected, scale);
-
-        let rgb: (f32, f32, f32) = self.get_rgb_values();
-        let alpha: f32 = self.get_scale_alpha(radius);
-        let color: Color = Color::from_rgba(rgb.0, rgb.1, rgb.2, alpha);
-
-        let x: f64 = projected.x;
-        let y: f64 = projected.y;
-        let p: Vector2<f32> = Vector2::new(x, y).into_f32();
-        graphics.draw_circle(p, radius as f32, color);
     }
 }

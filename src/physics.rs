@@ -1,7 +1,7 @@
 use rand::rngs::ThreadRng;
 use rand::Rng;
 
-use crate::vector_3d::Vector3D;
+use crate::vectors::Vector3D;
 
 #[derive(Clone, Debug)]
 pub struct Physics {
@@ -25,7 +25,7 @@ impl Physics {
         let spin_acceleration: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
         let mass: f64 = 1.0;
         let scale: f64 = 1.0;
-        let g_const: f64 = 0.0001;
+        let g_const: f64 = 0.001;
 
         Physics {
             shape,

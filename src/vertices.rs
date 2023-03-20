@@ -1,3 +1,4 @@
+use rand::{thread_rng, Rng};
 use std::f64::consts::PI;
 
 pub struct SphereShape {
@@ -62,11 +63,15 @@ impl SphereShape {
     }
 }
 
-pub struct CubeShape {}
+pub struct CubeShape {
+    scale: [f64; 3],
+}
 
 impl CubeShape {
-    pub fn new() -> CubeShape {
-        CubeShape {}
+    pub fn new(scale_x: f64, scale_y: f64, scale_z: f64) -> CubeShape {
+        CubeShape {
+            scale: [scale_x, scale_y, scale_z],
+        }
     }
 
     pub fn get_shape(&self) -> Vec<[f64; 3]> {
@@ -97,6 +102,15 @@ impl CubeShape {
             [-1.0, -1.0, 1.0],
         ];
         shape
+            .into_iter()
+            .map(|vertex| {
+                [
+                    vertex[0] * self.scale[0],
+                    vertex[1] * self.scale[1],
+                    vertex[2] * self.scale[2],
+                ]
+            })
+            .collect()
     }
 }
 
@@ -133,6 +147,81 @@ impl ParticleCircle {
             circle_radius -= (max_particle_size * PI) as i32;
             max_particle_size = 0.0;
         }
+        particles
+    }
+}
+
+// pub struct ParticleGalaxy {
+//     num_particles: i32,
+//     radius: f32,
+//     center_x: f32,
+//     center_y: f32,
+//     particle_size: f32,
+//     k: f32,
+// }
+
+// impl ParticleGalaxy {
+//     pub fn new(num_particles: i32, radius: f32, center_x: f32, center_y: f32, particle_size: f32, k: f32) -> ParticleGalaxy {
+//         ParticleGalaxy {num_particles, radius, center_x, center_y, particle_size, k}
+//     }
+
+//     pub fn generate(&self) {
+
+//     }
+
+// }
+
+pub struct ParticleGalaxy {
+    galaxy_radius: i32,
+    arms: i32,
+    particles_per_arm: i32,
+    arm_rotation_speed: f64,
+    arm_length_decay: f64,
+}
+
+impl ParticleGalaxy {
+    pub fn new(
+        galaxy_radius: i32,
+        arms: i32,
+        particles_per_arm: i32,
+        arm_rotation_speed: f64,
+        arm_length_decay: f64,
+    ) -> ParticleGalaxy {
+        ParticleGalaxy {
+            galaxy_radius,
+            arms,
+            particles_per_arm,
+            arm_rotation_speed,
+            arm_length_decay,
+        }
+    }
+
+    pub fn generate(&self, px: f64, py: f64) -> Vec<[f64; 5]> {
+        let mut particles: Vec<[f64; 5]> = vec![];
+        let mut max_particle_size: f64 = 0.0;
+
+        for arm_index in 0..self.arms {
+            let mut arm_angle: f64 = (arm_index as f64 / self.arms as f64) * 2.0 * PI;
+            let mut arm_length: f64 = self.galaxy_radius as f64;
+
+            for _ in 0..self.particles_per_arm {
+                let size: f64 = 2.0;
+                let arm_angle_cos = arm_angle.cos();
+                let arm_angle_sin = arm_angle.sin();
+                let x: f64 = px + arm_length * arm_angle_cos;
+                let y: f64 = py + arm_length * arm_angle_sin;
+
+                if size > max_particle_size {
+                    max_particle_size = size;
+                }
+                let particle: [f64; 5] = [x, y, size, arm_angle_cos, arm_angle_sin];
+                particles.push(particle);
+
+                arm_angle += self.arm_rotation_speed;
+                arm_length *= self.arm_length_decay;
+            }
+        }
+
         particles
     }
 }

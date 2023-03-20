@@ -6,24 +6,24 @@ mod particle;
 mod physics;
 mod shape;
 mod simulation;
-mod vector_3d;
+mod vectors;
 mod vertices;
+mod grid;
 
-use speedy2d::dimen::Vector2;
+use speedy2d::dimen::Vec2;
+use speedy2d::window::KeyScancode;
+use speedy2d::window::MouseScrollDistance;
 use speedy2d::window::VirtualKeyCode;
 use speedy2d::window::{WindowHandler, WindowHelper};
 use speedy2d::Graphics2D;
 use speedy2d::Window;
-use speedy2d::window::MouseScrollDistance;
-use speedy2d::window::MouseScrollDistance::Lines;
-use vector_3d::Vector3D;
 
 use crate::camera::Camera;
 use crate::simulation::Simulation;
 
 fn main() {
-    let width: u32 = 1200;
-    let height: u32 = 800;
+    let width: u32 = 1920;
+    let height: u32 = 1080;
     let canvas_resolution: (u32, u32) = (width, height);
     let center_x: f64 = canvas_resolution.0 as f64 / 2.0;
     let center_y: f64 = canvas_resolution.1 as f64 / 2.0;
@@ -43,18 +43,13 @@ struct MyWindowHandler {
 }
 
 impl WindowHandler for MyWindowHandler {
-    fn on_mouse_wheel_scroll(
-        &mut self,
-        helper: &mut WindowHelper<()>,
-        distance: MouseScrollDistance,
-    ) {
-
-        if let MouseScrollDistance::Lines { x, y, z } = distance {
+    fn on_mouse_wheel_scroll(&mut self, _: &mut WindowHelper, distance: MouseScrollDistance) {
+        if let MouseScrollDistance::Lines { y, .. } = distance {
             self.simulation.camera.increment_distance(y);
         }
     }
 
-    fn on_mouse_move(&mut self, helper: &mut WindowHelper<()>, position: speedy2d::dimen::Vec2) {
+    fn on_mouse_move(&mut self, helper: &mut WindowHelper, position: Vec2) {
         let dx = position.x as f64;
         let dy = position.y as f64;
         self.simulation.camera.handle_mouse_movement(dx, dy);
@@ -63,46 +58,31 @@ impl WindowHandler for MyWindowHandler {
     fn on_key_down(
         &mut self,
         _helper: &mut WindowHelper,
-        virtual_key_code: Option<speedy2d::window::VirtualKeyCode>,
-        _scancode: speedy2d::window::KeyScancode,
+        virtual_key_code: Option<VirtualKeyCode>,
+        _scancode: KeyScancode,
     ) {
-        // let position = Vector2::new(100.0, 100.0);
-        // _helper.set_position_pixels(position);
-        // _helper.set_size_scaled_pixels(position);s
-
-        // let size = Vector2::new(100, 100);
-        // _helper.set_size_pixels(size);
-
-        // if let Some(VirtualKeyCode::Up) = virtual_key_code {
-        //     self.simulation.camera.increase_near_plane(0.1);
-        // }
-
-        // if let Some(VirtualKeyCode::Down) = virtual_key_code {
-        //     self.simulation.camera.decrease_near_plane(0.1);
-        // }
+        let step_val = 80.0;
+        let mut camera = &mut self.simulation.camera;
 
         if let Some(VirtualKeyCode::W) = virtual_key_code {
-            let direction = Vector3D::new(0.0, 0.0, 1.0);
-            self.simulation.camera.move_camera(direction);
+            camera.increment_position_z(step_val);
         }
 
         if let Some(VirtualKeyCode::S) = virtual_key_code {
-            let direction = Vector3D::new(0.0, 0.0, -1.0);
-            self.simulation.camera.move_camera(direction);
+            camera.increment_position_z(-step_val);
         }
 
         if let Some(VirtualKeyCode::D) = virtual_key_code {
-            let direction = Vector3D::new(1.0, 0.0, 0.0);
-            self.simulation.camera.move_camera(direction);
+            camera.increment_position_x(step_val);
         }
 
         if let Some(VirtualKeyCode::A) = virtual_key_code {
-            let direction = Vector3D::new(-1.0, 0.0, 0.0);
-            self.simulation.camera.move_camera(direction);
+            camera.increment_position_x(-step_val);
         }
     }
 
     fn on_draw(&mut self, helper: &mut WindowHelper, graphics: &mut Graphics2D) {
-        self.simulation.simulate(helper, graphics);
+        self.simulation.simulate(graphics);
+        helper.request_redraw();
     }
 }

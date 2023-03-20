@@ -1,122 +1,264 @@
-use crate::vector_3d::Vector3D;
+use crate::vectors::Vector3D;
 
 pub struct Camera {
     width: u32,
     height: u32,
-    camera_position: Vector3D,
+    fov: u32,
     near_plane: f64,
     far_plane: f64,
     yaw: f64,
     pitch: f64,
-    prev_mouse_pos: (f64, f64),
+    camera_position: Vector3D,
+    camera_target: Vector3D,
+    side_direction: Vector3D,
+    up_direction: Vector3D,
+    look_direction: Vector3D,
+    previous_pointer: (f64, f64),
 }
 
 impl Camera {
     pub fn new(width: u32, height: u32) -> Camera {
-        let camera_position = Vector3D::new(0.0, 0.0, 0.0);
-        let near_plane = 60.0;
-        let far_plane = 160.0;
-        let yaw = 0.0;
-        let pitch = 0.0;
-        let prev_mouse_pos = (width as f64 / 2.0, height as f64 / 2.0);
+        let camera_position: Vector3D = Vector3D::new(0.0, 0.0, 1000.0);
+        let camera_target: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
+        let side_direction: Vector3D = Vector3D::new(1.0, 0.0, 0.0);
+        let up_direction: Vector3D = Vector3D::new(0.0, 1.0, 0.0);
+        let look_direction: Vector3D = Vector3D::new(0.0, 0.0, 1.0);
+
+        let fov: u32 = 100;
+        let near_plane: f64 = 0.1;
+        let far_plane: f64 = 50_000.0;
+        let yaw: f64 = 0.0;
+        let pitch: f64 = 0.0;
+        let previous_pointer: (f64, f64) = (width as f64 / 2.0, height as f64 / 2.0);
 
         Camera {
             width,
             height,
-            camera_position,
+            fov,
             near_plane,
             far_plane,
             yaw,
             pitch,
-            prev_mouse_pos,
+            camera_position,
+            camera_target,
+            side_direction,
+            up_direction,
+            look_direction,
+            previous_pointer,
         }
+    }
+
+    fn apply_view_transformation(&mut self, position: Vector3D) -> Vector3D {
+        self.apply_direction_adjustment();
+
+        let look_dir: Vector3D = self.look_direction;
+        let side_dir: Vector3D = self.side_direction;
+        let up_dir: Vector3D = self.up_direction;
+
+        let point: Vector3D = position.subtract_vector(self.camera_position);
+        let x: f64 = point.dot_product(side_dir);
+        let y: f64 = point.dot_product(up_dir);
+        let z: f64 = point.dot_product(look_dir);
+
+        let translated_point: Vector3D = Vector3D::new(x, y, z);
+        translated_point
+    }
+
+    fn ndc_to_screen_coordinates(&self, position: Vector3D) -> Vector3D {
+        let width: f64 = self.width as f64;
+        let height: f64 = self.height as f64;
+
+        let x: f64 = (position.x + 1.0) * width / 2.0;
+        let y: f64 = (1.0 - position.y) * height / 2.0;
+        let z: f64 = position.z;
+
+        let screen_coordinates = Vector3D::new(x, y, z);
+        screen_coordinates
+    }
+
+    fn calculate_perspective_projection(&self, position: Vector3D) -> Vector3D {
+        let width: f64 = self.width as f64;
+        let height: f64 = self.height as f64;
+        let fov_degrees: f64 = self.fov as f64;
+        let zn: f64 = self.near_plane;
+        let zf: f64 = self.far_plane;
+
+        let xi: f64 = position.x;
+        let yi: f64 = position.y;
+        let zi: f64 = position.z;
+
+        let aspect_ratio: f64 = width / height;
+        let fov_rad: f64 = (fov_degrees / 2.0).to_radians().tan();
+
+        let mut xo: f64 = xi * (1.0 / (fov_rad * aspect_ratio));
+        let mut yo: f64 = yi * (1.0 / (fov_rad));
+        let mut zo: f64 = zi * -((zf - zn) / (zn - zf)) + ((2.0 * zf * zn) / (zn - zf));
+
+        if zi != 0.0 {
+            xo /= -zi;
+            yo /= -zi;
+            zo /= -zi;
+        }
+
+        let vo: Vector3D = Vector3D::new(xo, yo, zo);
+        vo
     }
 
     pub fn handle_mouse_movement(&mut self, x: f64, y: f64) {
-        let px = self.prev_mouse_pos.0;
-        let py = self.prev_mouse_pos.1;
+        let sens_x: f64 = 0.3;
+        let sens_y: f64 = 0.1;
 
-        let dx = x - px;
-        let dy = y - py;
-        println!("{:?} {:?}", dx, dy);
+        let dx = x - self.previous_pointer.0;
+        let dy = y - self.previous_pointer.1;
+        self.previous_pointer = (x, y);
 
-        let sensitivity = 0.5;
-        self.yaw += dx * sensitivity;
-        self.pitch += dy * sensitivity;
-        self.prev_mouse_pos = (x, y);
+        self.yaw += dx * sens_x;
+        self.pitch += dy * -sens_y;
+
+        if self.pitch > 89.0 {
+            self.pitch = 89.0
+        }
+        if self.pitch < -89.0 {
+            self.pitch = -89.0
+        }
+
+        self.apply_mouse_movement();
     }
 
-    pub fn interpolate_radius(&self, position: Vector3D, radius: f64) -> f64 {
-        let z: f64 = position.z;
-        let interpolation_value: f64 = (z + self.near_plane) / (self.far_plane - self.near_plane);
-        let radius_scaled: f64 = radius * interpolation_value;
-        radius_scaled
+    fn apply_direction_adjustment(&mut self) {
+        self.look_direction = self.camera_target.subtract_vector(self.camera_position);
+        self.look_direction = self.look_direction.normalize();
+        self.side_direction = self.look_direction.cross_product(self.up_direction);
+        self.side_direction = self.side_direction.normalize();
+
+        let yaw_rad: f64 = self.yaw.to_radians();
+        let pitch_rad: f64 = (self.pitch - 90.0).to_radians();
+        let up_x: f64 = yaw_rad.cos() * pitch_rad.cos();
+        let up_y: f64 = pitch_rad.sin();
+        let up_z: f64 = yaw_rad.sin() * pitch_rad.cos();
+        self.up_direction = Vector3D::new(up_x, up_y, up_z).normalize();
     }
 
-    pub fn yaw_projection(&self, position: Vector3D) -> Vector3D {
-        let yaw_radians: f64 = self.yaw.to_radians();
-        let yaw_cos: f64 = yaw_radians.cos();
-        let yaw_sin: f64 = yaw_radians.sin();
+    fn apply_mouse_movement(&mut self) {
+        let yaw_rad = self.yaw.to_radians();
+        let pitch_rad = self.pitch.to_radians();
 
-        let yaw_x: f64 = position.x * yaw_cos - position.z * yaw_sin;
-        let yaw_y: f64 = position.y;
-        let yaw_z: f64 = position.x * yaw_sin + position.z * yaw_cos;
+        let direction_x = yaw_rad.cos() * pitch_rad.cos();
+        let direction_y = pitch_rad.sin();
+        let direction_z = yaw_rad.sin() * pitch_rad.cos();
 
-        return Vector3D::new(yaw_x, yaw_y, yaw_z);
+        let direction = Vector3D::new(direction_x, direction_y, direction_z);
+        self.camera_target = self.camera_position.add_vector(direction);
+        self.apply_direction_adjustment();
     }
 
-    pub fn pitch_projection(&self, position: Vector3D) -> Vector3D {
-        let pitch_radians: f64 = self.pitch.to_radians();
-        let pitch_cos: f64 = pitch_radians.cos();
-        let pitch_sin: f64 = pitch_radians.sin();
-
-        let pitch_x: f64 = position.x;
-        let pitch_y: f64 = (position.y * pitch_cos) - (position.z * pitch_sin);
-        let pitch_z: f64 = (position.y * pitch_sin) + (position.z * pitch_cos);
-
-        return Vector3D::new(pitch_x, pitch_y, pitch_z);
+    pub fn increment_position_x(&mut self, increment: f64) {
+        let mut side_vector: Vector3D = self.side_direction.multiply(-increment);
+        side_vector.y = 0.0;
+        self.camera_position = self.camera_position.add_vector(side_vector);
+        self.camera_target = self.camera_position.add_vector(self.look_direction);
     }
 
-    pub fn perspective_projection(&self, position: Vector3D) -> Vector3D {
-        // let direction = self.camera_position.subtract_vector(position).normalize();
-        // let position = position.add_vector(self.camera_position);
+    pub fn increment_position_y(&mut self, increment: f64) {
+        let up_vector = self.up_direction.multiply(increment);
+        self.camera_position = self.camera_position.add_vector(up_vector);
+        self.camera_target = self.camera_position.add_vector(self.look_direction);
+    }
 
-        let position: Vector3D = self.yaw_projection(position);
-        let position: Vector3D = self.pitch_projection(position);
+    pub fn increment_position_z(&mut self, increment: f64) {
+        let mut look_vector: Vector3D = self.look_direction.multiply(increment);
+        look_vector.y = 0.0;
+        self.camera_position = self.camera_position.add_vector(look_vector);
+        self.camera_target = self.camera_position.add_vector(self.look_direction);
+    }
 
-        let x: f64 = (position.x * self.near_plane) / position.z;
-        let y: f64 = (position.y * self.near_plane) / position.z;
+    pub fn get_screen_coordinates(&mut self, position: Vector3D) -> Option<Vector3D> {
+        if !self.is_point_in_frustum(position) {
+            return None;
+        }
 
-        let z: f64 = (self.far_plane + self.near_plane) / (self.near_plane - self.far_plane);
-        let w: f64 = -position.z / (self.far_plane - self.near_plane);
+        let view: Vector3D = self.apply_view_transformation(position);
+        let projection: Vector3D = self.calculate_perspective_projection(view);
+        let screen: Vector3D = self.ndc_to_screen_coordinates(projection);
+        Some(screen)
+    }
 
-        let half_w: f64 = self.width as f64 / 2.0;
-        let half_h: f64 = self.height as f64 / 2.0;
-        let xp: f64 = (x * w) + half_w;
-        let yp: f64 = (y * w) + half_h;
-        let zp: f64 = z * w;
+    fn is_point_in_frustum(&self, position: Vector3D) -> bool {
+        let look_dir: Vector3D = self
+            .camera_target
+            .subtract_vector(self.camera_position)
+            .normalize();
+        let side_dir: Vector3D = look_dir.cross_product(self.up_direction).normalize();
+        let up_dir: Vector3D = side_dir.cross_product(look_dir).normalize();
 
-        let position = Vector3D::new(xp, yp, zp);
-        position
+        let near_dir: Vector3D = look_dir.multiply(self.near_plane);
+        let near_center: Vector3D = self.camera_position.add_vector(near_dir);
+        let far_center: Vector3D = self
+            .camera_position
+            .add_vector(look_dir.multiply(self.far_plane));
+
+        let aspect_ratio: f64 = (self.width as f64 / self.height as f64);
+        let fov_rad: f64 = (self.fov as f64).to_radians().tan();
+
+        let near_height: f64 = 2.0 * self.near_plane * fov_rad;
+        let near_width: f64 = near_height * aspect_ratio;
+        let far_height: f64 = 2.0 * self.far_plane * fov_rad;
+        let far_width: f64 = far_height * aspect_ratio;
+
+        let near_up: Vector3D = up_dir.multiply(near_height / 2.0);
+        let near_right: Vector3D = side_dir.multiply(near_width / 2.0);
+        let far_up: Vector3D = up_dir.multiply(far_height / 2.0);
+        let far_right: Vector3D = side_dir.multiply(far_width / 2.0);
+
+        let points: [Vector3D; 8] = [
+            near_center
+                .subtract_vector(near_right)
+                .subtract_vector(near_up),
+            near_center.add_vector(near_right).subtract_vector(near_up),
+            near_center.add_vector(near_right).add_vector(near_up),
+            near_center.subtract_vector(near_right).add_vector(near_up),
+            far_center
+                .subtract_vector(far_right)
+                .subtract_vector(far_up),
+            far_center.add_vector(far_right).subtract_vector(far_up),
+            far_center.add_vector(far_right).add_vector(far_up),
+            far_center.subtract_vector(far_right).add_vector(far_up),
+        ];
+
+        let planes: [(Vector3D, Vector3D, Vector3D); 6] = [
+            (points[0], points[3], points[2]),
+            (points[4], points[5], points[6]),
+            (points[0], points[1], points[5]),
+            (points[2], points[3], points[7]),
+            (points[0], points[4], points[7]),
+            (points[1], points[2], points[6]),
+        ];
+
+        for plane in planes.iter() {
+            let (a, b, c) = *plane;
+            let ab: Vector3D = b.subtract_vector(a);
+            let ac: Vector3D = c.subtract_vector(a);
+            let normal: Vector3D = ab.cross_product(ac).normalize();
+            let ap: Vector3D = position.subtract_vector(a);
+
+            if normal.dot_product(ap) < 0.0 {
+                return false;
+            }
+        }
+        true
     }
 
     pub fn increment_distance(&mut self, increment: f64) {
-        if (self.near_plane + increment) >= 0.0 {
-            self.near_plane += increment;
-            self.far_plane += increment;
-            self.near_plane = self.near_plane.clamp(0.0, f64::INFINITY);
-            self.far_plane = self.far_plane.clamp(0.0, f64::INFINITY);
+        let mut near_plane: f64 = self.near_plane;
+        let mut far_plane: f64 = self.far_plane;
+
+        if (near_plane + increment) >= 0.1 {
+            near_plane += increment;
+            far_plane += increment;
+            self.near_plane = near_plane.clamp(0.0, f64::INFINITY);
+            self.far_plane = far_plane.clamp(0.0, f64::INFINITY);
             println!("{:?}: {:.2?}", "Near Plane", self.near_plane);
             println!("{:?}: {:.2?}", "Far Plane", self.far_plane);
         }
-    }
-
-    pub fn move_camera(&mut self, direction: Vector3D) {
-        let movement_speed = 10.0;
-        let (x, y, z) = self.camera_position.get_tuple();
-        let new_x = x + direction.x * movement_speed;
-        let new_y = y + direction.y * movement_speed;
-        let new_z = z + direction.z * movement_speed;
-        self.camera_position = Vector3D::new(new_x, new_y, new_z);
     }
 }

@@ -30,6 +30,17 @@ impl Vector3D {
         Vector3D::new(self.x - vec.x, self.y - vec.y, self.z - vec.z)
     }
 
+    pub fn multiply_vector(self, vec: Vector3D) -> Vector3D {
+        Vector3D::new(self.x * vec.x, self.y * vec.y, self.z * vec.z)
+    }
+
+    pub fn get_midpoint(self, vec: Vector3D) -> Vector3D {
+        let x_mid = (self.x + vec.x) / 2.0;
+        let y_mid = (self.y + vec.y) / 2.0;
+        let z_mid = (self.z + vec.z) / 2.0;
+        Vector3D::new(x_mid, y_mid, z_mid)
+    }
+
     pub fn get_length_squared(&self) -> f64 {
         self.x.powi(2) + self.y.powi(2) + self.z.powi(2)
     }
