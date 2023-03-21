@@ -1,19 +1,19 @@
 use crate::vectors::Vector3D;
 
 pub struct Camera {
-    width: u32,
-    height: u32,
-    fov: u32,
-    near_plane: f64,
-    far_plane: f64,
-    yaw: f64,
-    pitch: f64,
-    camera_position: Vector3D,
-    camera_target: Vector3D,
-    side_direction: Vector3D,
-    up_direction: Vector3D,
-    look_direction: Vector3D,
-    previous_pointer: (f64, f64),
+    pub width: u32,
+    pub height: u32,
+    pub fov: u32,
+    pub near_plane: f64,
+    pub far_plane: f64,
+    pub yaw: f64,
+    pub pitch: f64,
+    pub camera_position: Vector3D,
+    pub camera_target: Vector3D,
+    pub side_direction: Vector3D,
+    pub up_direction: Vector3D,
+    pub look_direction: Vector3D,
+    pub previous_pointer: (f64, f64),
 }
 
 impl Camera {
@@ -24,7 +24,7 @@ impl Camera {
         let up_direction: Vector3D = Vector3D::new(0.0, 1.0, 0.0);
         let look_direction: Vector3D = Vector3D::new(0.0, 0.0, 1.0);
 
-        let fov: u32 = 100;
+        let fov: u32 = 90;
         let near_plane: f64 = 0.1;
         let far_plane: f64 = 50_000.0;
         let yaw: f64 = 0.0;
@@ -198,11 +198,12 @@ impl Camera {
             .add_vector(look_dir.multiply(self.far_plane));
 
         let aspect_ratio: f64 = (self.width as f64 / self.height as f64);
-        let fov_rad: f64 = (self.fov as f64).to_radians().tan();
+        let fov_rad: f64 = (self.fov as f64 / 2.0).to_radians().tan();
+        let margin: f64 = 2.0;
 
-        let near_height: f64 = 2.0 * self.near_plane * fov_rad;
+        let near_height: f64 = 2.0 * self.near_plane * fov_rad * margin;
         let near_width: f64 = near_height * aspect_ratio;
-        let far_height: f64 = 2.0 * self.far_plane * fov_rad;
+        let far_height: f64 = 2.0 * self.far_plane * fov_rad * margin;
         let far_width: f64 = far_height * aspect_ratio;
 
         let near_up: Vector3D = up_dir.multiply(near_height / 2.0);

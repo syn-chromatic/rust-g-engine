@@ -10,6 +10,14 @@ impl Vector3D {
         Vector3D { x, y, z }
     }
 
+    pub fn get_str(&self) -> String {
+        let x_string = format!("{:.2}", self.x);
+        let y_string = format!("{:.2}", self.y);
+        let z_string = format!("{:.2}", self.z);
+        let vector_string = format!("[{}, {}, {}]", x_string, y_string, z_string);
+        vector_string
+    }
+
     pub fn get_tuple(&self) -> (f64, f64, f64) {
         (self.x, self.y, self.z)
     }

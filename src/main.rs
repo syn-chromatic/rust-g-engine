@@ -9,6 +9,9 @@ mod simulation;
 mod vectors;
 mod vertices;
 mod grid;
+mod text_writer;
+mod color;
+
 
 use speedy2d::dimen::Vec2;
 use speedy2d::window::KeyScancode;
@@ -32,7 +35,7 @@ fn main() {
     let window: Window = Window::new_centered("Physics System", canvas_resolution).unwrap();
     let camera = Camera::new(width, height);
 
-    let mut simulation: Simulation = Simulation::new(camera, center_point);
+    let mut simulation: Simulation = Simulation::new(camera, canvas_resolution);
     simulation.setup_collision_configuration();
     // simulation.setup_gravity_configuration();
     window.run_loop(MyWindowHandler { simulation });
@@ -43,6 +46,11 @@ struct MyWindowHandler {
 }
 
 impl WindowHandler for MyWindowHandler {
+
+    fn on_resize(&mut self, helper: &mut WindowHelper<()>, size_pixels: speedy2d::dimen::UVec2) {
+
+    }
+
     fn on_mouse_wheel_scroll(&mut self, _: &mut WindowHelper, distance: MouseScrollDistance) {
         if let MouseScrollDistance::Lines { y, .. } = distance {
             self.simulation.camera.increment_distance(y);
