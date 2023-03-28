@@ -1,208 +1,138 @@
-use rand::rngs::ThreadRng;
-use rand::Rng;
-
-use std::rc::Rc;
-use std::time::Instant;
-use std::vec;
-
-use speedy2d::color::Color;
-use speedy2d::dimen::Vector2;
-use speedy2d::font::Font;
-use speedy2d::font::FormattedTextBlock;
-use speedy2d::font::TextLayout;
-use speedy2d::font::TextOptions;
-use speedy2d::window::WindowHelper;
 use speedy2d::Graphics2D;
 
 use crate::body::{Body, BodyType};
-use crate::particle::Particle;
+use crate::camera::Camera;
+use crate::color::RGBA;
+
+use crate::configurations::body_configurations;
+use crate::font::ArialFont;
+use crate::font::FontSettings;
+use crate::font::FontType;
 use crate::shape::Shape;
-use crate::vertices::{CubeShape, SphereShape};
+use crate::text_writer::TextWriter;
+use crate::vertices::GridHorizontal;
 
 pub struct Simulation {
-    background_color: Color,
-    center_point: (f64, f64),
+    pub camera: Camera,
     objects: Vec<BodyType>,
-    timestep: f64,
-    font: Font,
-    fps_txp: [f32; 2],
-    fps_txc: Color,
+    timestep_hz: f64,
+    text_writer: TextWriter,
 }
 
 impl Simulation {
-    pub fn new(center_point: (f64, f64)) -> Simulation {
+    pub fn new(camera: Camera, resolution: (u32, u32)) -> Simulation {
         let objects: Vec<BodyType> = vec![];
-        let timestep: f64 = 1.0 / 3_000.0;
-        let bytes: &[u8; 367112] = include_bytes!("../fonts/arial.ttf");
-        let font: Font = Font::new(bytes).unwrap();
-        let background_color = Color::from_rgb(0.15, 0.15, 0.15);
+        let timestep_hz: f64 = 5000.0;
 
-        let fx: f32 = center_point.0 as f32 - 300.0;
-        let fy: f32 = center_point.1 as f32 - 300.0;
-
-        let fps_txp: [f32; 2] = [fx, fy];
-        let fps_txc: Color = Color::from_rgb(1.0, 1.0, 1.0);
+        let arial_font: ArialFont = ArialFont::new();
+        let font_type: FontType = FontType::ArialFont(arial_font);
+        let font_color: RGBA = RGBA::new(1.0, 1.0, 1.0, 1.0);
+        let font: FontSettings = FontSettings::new(font_type, 14, font_color, 1.8, 1);
+        let text_writer: TextWriter = TextWriter::new(resolution, font);
 
         Simulation {
-            background_color,
-            center_point,
+            camera,
             objects,
-            timestep,
-            font,
-            fps_txp,
-            fps_txc,
+            timestep_hz,
+            text_writer,
         }
-    }
-
-    pub fn add_center_cube(&mut self) {
-        let x: f64 = self.center_point.0;
-        let y: f64 = self.center_point.1;
-        let z: f64 = 0.0;
-        let mass: f64 = 10_000_000.0;
-        let shape: Vec<[f64; 3]> = CubeShape::new().get_shape();
-        let color = (0.8, 0.3, 0.3);
-        let scale: f64 = mass / 150_000.0;
-
-        let mut shape: Shape = Shape::new(shape);
-        shape.set_color(color.0, color.1, color.2);
-        shape.physics.set_position(x, y, z);
-        shape.physics.set_mass(mass);
-        shape.physics.set_scale(scale);
-        shape.physics.set_spin_velocity(0.0, 0.0, 0.0);
-
-        self.objects.push(BodyType::Shape(shape));
-    }
-
-    pub fn add_center_sphere(&mut self) {
-        let x: f64 = self.center_point.0;
-        let y: f64 = self.center_point.1;
-        let z: f64 = 0.0;
-        let mass: f64 = 10_000_000.0;
-        let shape: Vec<[f64; 3]> = SphereShape::new(20, 20, 20).get_shape();
-        let color = (0.8, 0.3, 0.3);
-        let scale: f64 = mass / 150_000.0;
-
-        let mut shape: Shape = Shape::new(shape);
-        shape.set_color(color.0, color.1, color.2);
-        shape.physics.set_position(x, y, z);
-        shape.physics.set_mass(mass);
-        shape.physics.set_scale(scale);
-        shape.physics.set_spin_velocity(0.0, 0.0, 0.0);
-
-        self.objects.push(BodyType::Shape(shape));
-    }
-
-    pub fn add_particle_t1(&mut self) {
-        let px = -3500.0 + self.center_point.0;
-        let py = 40.0 + self.center_point.1;
-        let pz = 0.0;
-
-        let mass = 1000.0;
-        let shape = vec![[0.0, 0.0, 0.0]];
-        let scale = 80.0;
-
-        let vx = 20_000.0;
-        let vy = 0.0;
-
-        let mut p = Particle::new(shape);
-        p.physics.set_position(px, py, pz);
-        p.physics.set_velocity(vx, vy, 0.0);
-        p.physics.set_mass(mass);
-        p.physics.set_scale(scale);
-        p.set_color(0.8, 0.2, 0.2);
-
-        self.objects.push(BodyType::Particle(p));
-    }
-
-    pub fn add_particle_t2(&mut self) {
-        let px = 1100.0 + self.center_point.0;
-        let py = 0.0 + self.center_point.1;
-        let pz = 0.0;
-
-        let mass = 20.0;
-        let shape = vec![[0.0, 0.0, 0.0]];
-        let scale = 20.0;
-
-        let vx = -10_000.0;
-        let vy = 0.0;
-
-        let mut p = Particle::new(shape);
-        p.physics.set_position(px, py, pz);
-        p.physics.set_velocity(vx, vy, 0.0);
-        p.physics.set_mass(mass);
-        p.physics.set_scale(scale);
-
-        self.objects.push(BodyType::Particle(p));
-    }
-
-    pub fn add_particle_t3(&mut self) {
-        let mut rng: ThreadRng = rand::thread_rng();
-        let x: f64 = self.center_point.0 - 0.0;
-        let y: f64 = self.center_point.1 - 0.0;
-        let z: f64 = 0.0;
-
-        let mass: f64 = rng.gen_range(1.0..30.0);
-        let shape: Vec<[f64; 3]> = vec![[0.0, 0.0, 0.0]];
-        let scale: f64 = mass / 10.0;
-
-        let mut p: Particle = Particle::new(shape);
-        p.physics.set_position(x, y, z);
-        p.physics.set_velocity(-10.0, -30.0, 0.0);
-        p.physics.set_mass(mass);
-        p.physics.set_scale(scale);
-
-        self.objects.push(BodyType::Particle(p));
     }
 
     pub fn setup_objects(&mut self) {
-        self.add_particle_t1();
-        self.add_particle_t2();
+        self.timestep_hz = 10000.0;
+        let z = 0.0;
 
-        for _ in 0..1500 {
-            self.add_particle_t3();
-        }
+        let grid = body_configurations::get_grid();
+        self.objects.push(grid);
+
+        let obj = body_configurations::get_obj();
+        self.objects.push(obj);
+
+        let sphere = body_configurations::get_sphere();
+        self.objects.push(sphere);
     }
 
     pub fn compute_objects(&mut self, graphics: &mut Graphics2D) {
-        let mut objects_cl: Vec<BodyType> = self.objects.clone();
+        let timestep: f64 = 1.0 / self.timestep_hz;
+        // let mut objects_cl: Vec<BodyType> = self.objects.clone();
         for (i, pl1) in self.objects.iter_mut().enumerate() {
-            let pl1_physics = pl1.physics();
-            for (j, pl2) in objects_cl.iter_mut().enumerate() {
-                if i == j {
-                    continue;
-                }
+            // let pl1_physics = pl1.physics();
+            // for (j, pl2) in objects_cl.iter_mut().enumerate() {
+            //     if i == j {
+            //         continue;
+            //     }
 
-                let pl2_physics = pl2.physics();
-                pl1_physics.apply_forces(pl2_physics, self.timestep);
-            }
-            pl1_physics.update(self.timestep);
-            pl1.draw(graphics);
+            //     let pl2_physics = pl2.physics();
+            //     pl1_physics.apply_forces(pl2_physics, timestep);
+            // }
+            // // pl1_physics.update(timestep);
+            pl1.draw(graphics, &mut self.camera);
         }
     }
 
-    fn get_text_block(&self, string: String) -> Rc<FormattedTextBlock> {
-        let text_options: TextOptions = TextOptions::new();
-        let text_scale: f32 = 32.0;
-        let text_block: Rc<FormattedTextBlock> =
-            self.font.layout_text(&string, text_scale, text_options);
-        text_block
+    fn write_fps_text(&mut self, fps: f64) {
+        let header_text = format!("Simulation information");
+        let text = format!("{:.2} FPS", fps);
+        self.text_writer.add_text_top_left(header_text, None);
+        self.text_writer.add_text_top_left(text, None);
     }
 
-    pub fn write_fps(&self, frame_time: f32, graphics: &mut Graphics2D) {
-        let fps_str: String = format!("{:.2} FPS", 1.0 / frame_time);
-        let fps_block: Rc<FormattedTextBlock> = self.get_text_block(fps_str);
-        let x: f32 = self.fps_txp[0];
-        let y: f32 = self.fps_txp[1];
-        let position: Vector2<f32> = Vector2::new(x, y);
-        graphics.draw_text(position, self.fps_txc, &fps_block);
+    fn write_timestep_text(&mut self) {
+        let khz = self.timestep_hz / 1000.0;
+        let text = format!("Timestep:  {:.1} khz", khz);
+        self.text_writer.add_text_top_left(text, None);
     }
 
-    pub fn simulate(&mut self, helper: &mut WindowHelper, graphics: &mut Graphics2D) {
-        graphics.clear_screen(self.background_color);
-        let frame_st: Instant = Instant::now();
+    fn write_object_count(&mut self) {
+        let object_count = self.objects.len();
+        let text = format!("Objects:  {}", object_count);
+        self.text_writer.add_text_top_left(text, None);
+    }
+
+    fn write_camera_information(&mut self) {
+        let camera = &self.camera;
+        let cp = camera.camera_position;
+        let clt = camera.camera_target;
+        let cld = camera.look_direction;
+        let clu = camera.up_direction;
+        let cls = camera.side_direction;
+
+        let info_header = format!("Camera Information");
+        let fov = format!("FOV:  {}", camera.frustum.fov);
+        let near_plane = format!("Near Plane:  {}", camera.frustum.near_plane);
+        let far_plane = format!("Far Plane:  {}", camera.frustum.far_plane);
+        let yaw = format!("Yaw:  {:.2}", camera.yaw);
+        let pitch = format!("Pitch:  {:.2}", camera.pitch);
+        let position = format!("Position:  {}", cp.to_string());
+        let target = format!("Target:  {}", clt.to_string());
+        let look_dir = format!("Look (d):  {}", cld.to_string());
+        let up_dir = format!("Up (d):  {}", clu.to_string());
+        let side_dir = format!("Side (d):  {}", cls.to_string());
+
+        self.text_writer.add_text_top_left("".to_string(), None);
+        self.text_writer.add_text_top_left(info_header, None);
+        self.text_writer.add_text_top_left(fov, None);
+        self.text_writer.add_text_top_left(near_plane, None);
+        self.text_writer.add_text_top_left(far_plane, None);
+        self.text_writer.add_text_top_left(yaw, None);
+        self.text_writer.add_text_top_left(pitch, None);
+        self.text_writer.add_text_top_left(position, None);
+        self.text_writer.add_text_top_left(target, None);
+        self.text_writer.add_text_top_left(look_dir, None);
+        self.text_writer.add_text_top_left(up_dir, None);
+        self.text_writer.add_text_top_left(side_dir, None);
+    }
+
+    fn draw_text(&mut self, graphics: &mut Graphics2D) {
+        self.text_writer.draw(graphics);
+    }
+
+    pub fn simulate(&mut self, graphics: &mut Graphics2D, fps: f64) {
         self.compute_objects(graphics);
-        let frame_time: f32 = Instant::now().duration_since(frame_st).as_secs_f32();
-        self.write_fps(frame_time, graphics);
-        helper.request_redraw();
+        self.write_fps_text(fps);
+        self.write_timestep_text();
+        self.write_object_count();
+        self.write_camera_information();
+        self.draw_text(graphics);
     }
 }

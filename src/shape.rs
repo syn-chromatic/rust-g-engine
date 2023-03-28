@@ -1,24 +1,25 @@
 use speedy2d::color::Color;
-use speedy2d::dimen::Vector2;
+use speedy2d::dimen::Vec2;
 use speedy2d::Graphics2D;
 
 use crate::body::Body;
+use crate::camera::Camera;
 use crate::physics::Physics;
+use crate::polygons::Mesh;
+use crate::polygons::Polygon;
+
+use crate::shaders::Light;
+use crate::shaders::Shaders;
 
 #[derive(Clone, Debug)]
 pub struct Shape {
-    pub physics: Physics,
-    color: Color,
-    thickness: f64,
+    physics: Physics,
+    light: Light,
 }
 
 impl Body for Shape {
-    fn set_color(&mut self, r: f32, g: f32, b: f32) {
-        self.color = Color::from_rgb(r, g, b);
-    }
-
-    fn draw(&self, graphics: &mut Graphics2D) {
-        self.draw_shape(graphics);
+    fn draw(&self, graphics: &mut Graphics2D, camera: &mut Camera) {
+        self.draw_shape(graphics, camera);
     }
 
     fn physics(&mut self) -> &mut Physics {
@@ -27,95 +28,55 @@ impl Body for Shape {
 }
 
 impl Shape {
-    pub fn new(shape: Vec<[f64; 3]>) -> Shape {
-        let physics: Physics = Physics::new(shape);
-        let color: Color = Color::from_rgb(1.0, 1.0, 1.0);
-        let thickness: f64 = 3.0;
-        Shape {
-            physics,
-            color,
-            thickness,
-        }
+    pub fn new(mesh: Mesh) -> Shape {
+        let physics: Physics = Physics::new(mesh);
+        let light = Light::get_light();
+        Shape { physics, light }
     }
 
-    fn perspective_projection(&self, xyz_point: [f64; 3]) -> [f64; 3] {
-        let distance: f64 = 5.0;
-        let zp: f64 = 1.0 / (distance - xyz_point[2]);
-        let xp: f64 = xyz_point[0] * zp;
-        let yp: f64 = xyz_point[1] * zp;
-        return [xp, yp, zp];
-    }
+    fn draw_shape(&self, graphics: &mut Graphics2D, camera: &mut Camera) {
+        let mut mesh = self.physics.mesh.clone();
 
-    fn draw_edge(&self, a: [f64; 3], b: [f64; 3], color: [f32; 3], graphics: &mut Graphics2D) {
-        let scale = self.physics.scale;
-        let z = self.physics.position.z;
-        let mut relative_z: f64 = scale + z;
-        relative_z = f64::max(0.1, relative_z).min(f64::INFINITY);
+        let camera_position = camera.camera_position;
+        let light = &self.light;
+        let mut shaders = Shaders::new();
+        let mesh = shaders.apply_pbr_lighting(mesh, light, camera_position);
 
-        let x1: f64 = a[0] * relative_z + self.physics.position.x;
-        let y1: f64 = a[1] * relative_z + self.physics.position.y;
-        let x2: f64 = b[0] * relative_z + self.physics.position.x;
-        let y2: f64 = b[1] * relative_z + self.physics.position.y;
+        let mesh = camera.apply_projection_polygons(&mesh);
+        if mesh.is_some() {
+            let mesh = mesh.unwrap();
+            for polygon in mesh.polygons {
+                match polygon {
+                    Polygon::Triangle(triangle) => {
+                        let vertices = triangle.vertices;
+                        let shader = triangle.shader;
+                        let color = triangle.color;
+                        let color = color.multiply(&shader);
 
-        let color: Color = Color::from_rgb(color[0], color[1], color[2]);
+                        let v1 = vertices[0];
+                        let v2 = vertices[1];
+                        let v3 = vertices[2];
 
-        let p1: Vector2<f32> = Vector2::new(x1, y1).into_f32();
-        let p2: Vector2<f32> = Vector2::new(x2, y2).into_f32();
-        let thickness: f32 = self.thickness as f32;
-        graphics.draw_line(p1, p2, thickness, color);
-    }
+                        let p1 = Vec2::new(v1.x as f32, v1.y as f32);
+                        let p2 = Vec2::new(v2.x as f32, v2.y as f32);
+                        let p3 = Vec2::new(v3.x as f32, v3.y as f32);
 
-    fn draw_edge_perspective(
-        &self,
-        a: [f64; 3],
-        b: [f64; 3],
-        color: [f32; 3],
-        graphics: &mut Graphics2D,
-    ) {
-        let a: [f64; 3] = self.perspective_projection(a);
-        let b: [f64; 3] = self.perspective_projection(b);
-        self.draw_edge(a, b, color, graphics)
-    }
+                        let points = [p1, p2, p3];
+                        let color_sp2d = color.to_sp2d_color();
+                        graphics.draw_triangle(points, color_sp2d);
 
-    fn draw_shape(&self, graphics: &mut Graphics2D) {
-        let shape: &Vec<[f64; 3]> = &self.physics.shape;
-        let shape_length: usize = shape.len();
-        let shading: Vec<f32> = self.get_static_shading_sequence(shape_length);
-
-        let color: [f32; 3] = [self.color.r(), self.color.g(), self.color.b()];
-
-        for idx in 0..shape_length {
-            let nxt_idx: usize = idx + 1;
-            let color: [f32; 3] = self.get_shaded_rgb(color, shading[idx]);
-            if nxt_idx < shape_length {
-                let p1: [f64; 3] = shape[idx];
-                let p2: [f64; 3] = shape[nxt_idx];
-
-                self.draw_edge(p1, p2, color, graphics);
-                continue;
+                        let black = Color::from_rgb(0.2, 0.2, 0.2);
+                        graphics.draw_line(p1, p2, 0.2, black);
+                        graphics.draw_line(p2, p3, 0.2, black);
+                        graphics.draw_line(p3, p1, 0.2, black);
+                    }
+                    Polygon::Quad(quad) => {
+                        for idx in 0..quad.vertices.len() {
+                            let vertex = quad.vertices[idx];
+                        }
+                    }
+                }
             }
-
-            let p1: [f64; 3] = shape[idx];
-            let p2: [f64; 3] = shape[0];
-            self.draw_edge(p1, p2, color, graphics);
         }
-    }
-
-    fn get_static_shading_sequence(&self, shape_length: usize) -> Vec<f32> {
-        let mut shading: Vec<f32> = Vec::new();
-        for i in (0..shape_length.pow(2)).step_by(shape_length as usize) {
-            let value = i as f32 / shape_length.pow(2) as f32;
-            shading.push(value);
-        }
-        shading
-    }
-
-    fn get_shaded_rgb(&self, color: [f32; 3], shade_value: f32) -> [f32; 3] {
-        let color: [f32; 3] = [
-            color[0] * shade_value,
-            color[1] * shade_value,
-            color[2] * shade_value,
-        ];
-        color
     }
 }
