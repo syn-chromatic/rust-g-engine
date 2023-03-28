@@ -3,19 +3,19 @@
 mod body;
 mod camera;
 mod color;
+mod configurations;
 mod debug;
 mod font;
 mod frustum;
+mod model;
 mod physics;
 mod polygons;
+mod shaders;
 mod shape;
 mod simulation;
 mod text_writer;
 mod vectors;
 mod vertices;
-mod shaders;
-mod configurations;
-mod model;
 
 use speedy2d::color::Color;
 use speedy2d::dimen::Vec2;
@@ -26,6 +26,7 @@ use speedy2d::window::{WindowHandler, WindowHelper};
 use speedy2d::Graphics2D;
 use speedy2d::Window;
 
+use std::collections::VecDeque;
 use std::time::Duration;
 use std::time::Instant;
 
@@ -42,50 +43,73 @@ fn main() {
 
     let mut simulation: Simulation = Simulation::new(camera, resolution);
     let background_color = Color::from_rgb(0.15, 0.15, 0.15);
-    let frame_timer = FrameTimeHandler::new();
+    let frame_timing = FrameTimeHandler::new(30);
     simulation.setup_objects();
 
     window.run_loop(MyWindowHandler {
         simulation,
         background_color,
-        frame_timer,
+        frame_timing,
     });
 }
 
-struct FrameTimeHandler {
-    frame_st: Instant,
-    frame_time: Duration,
+pub struct FrameTimeHandler {
+    frame_times: VecDeque<Duration>,
+    frame_start: Instant,
+    frame_count: usize,
 }
 
 impl FrameTimeHandler {
-    pub fn new() -> FrameTimeHandler {
-        let frame_st: Instant = Instant::now();
-        let frame_time: Duration = Instant::now().duration_since(frame_st);
-
+    pub fn new(frame_count: usize) -> FrameTimeHandler {
         FrameTimeHandler {
-            frame_st,
-            frame_time,
+            frame_times: VecDeque::with_capacity(frame_count),
+            frame_start: Instant::now(),
+            frame_count,
         }
     }
 
-    pub fn set_frame_timing(&mut self) {
-        self.frame_time = Instant::now().duration_since(self.frame_st);
-        self.frame_st = Instant::now();
+    pub fn tick(&mut self) {
+        let frame_time = Instant::now().duration_since(self.frame_start);
+        self.frame_start = Instant::now();
+
+        self.frame_times.push_back(frame_time);
+        if self.frame_times.len() > self.frame_count {
+            self.frame_times.pop_front();
+        }
     }
 
-    pub fn get_frame_time(&self) -> f32 {
-        let frame_time: f32 = self.frame_time.as_secs_f32();
-        frame_time
+    pub fn get_average_frame_time(&self) -> Option<Duration> {
+        if self.frame_times.is_empty() {
+            None
+        } else {
+            let total_time = self.frame_times.iter().sum::<Duration>();
+            Some(total_time / self.frame_times.len() as u32)
+        }
+    }
+
+    pub fn get_frames_per_second(&self) -> f64 {
+        if let Some(average_frame_time) = self.get_average_frame_time() {
+            1.0 / average_frame_time.as_secs_f64()
+        } else {
+            0.0
+        }
     }
 }
-
 struct MyWindowHandler {
     simulation: Simulation,
     background_color: Color,
-    frame_timer: FrameTimeHandler,
+    frame_timing: FrameTimeHandler,
 }
 
 impl WindowHandler for MyWindowHandler {
+    fn on_draw(&mut self, helper: &mut WindowHelper, graphics: &mut Graphics2D) {
+        let fps = self.frame_timing.get_frames_per_second();
+        graphics.clear_screen(self.background_color);
+        self.simulation.simulate(graphics, fps);
+        self.frame_timing.tick();
+        helper.request_redraw();
+    }
+
     fn on_resize(&mut self, helper: &mut WindowHelper<()>, size_pixels: speedy2d::dimen::UVec2) {}
 
     fn on_mouse_wheel_scroll(&mut self, _: &mut WindowHelper, distance: MouseScrollDistance) {
@@ -124,14 +148,5 @@ impl WindowHandler for MyWindowHandler {
         if let Some(VirtualKeyCode::A) = virtual_key_code {
             camera.increment_position_x(-step_val);
         }
-    }
-
-    fn on_draw(&mut self, helper: &mut WindowHelper, graphics: &mut Graphics2D) {
-        self.frame_timer.set_frame_timing();
-        let frame_time: f32 = self.frame_timer.get_frame_time();
-
-        graphics.clear_screen(self.background_color);
-        self.simulation.simulate(graphics, frame_time);
-        helper.request_redraw();
     }
 }

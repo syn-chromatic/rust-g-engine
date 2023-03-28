@@ -9,41 +9,132 @@ use crate::polygons::Triangle;
 use crate::vectors::Vector3D;
 use std::f64::consts::PI;
 
-// pub struct Sphere {
-//     radius: f64,
-//     num_latitude: u32,
-//     num_longitude: u32,
-//     x_offset: f64,
-//     y_offset: f64,
-//     z_offset: f64,
-// }
+pub struct Sphere {
+    radius: f64,
+    num_latitude: usize,
+    num_longitude: usize,
+    x_offset: f64,
+    y_offset: f64,
+    z_offset: f64,
+}
 
-// impl Sphere {
-//     pub fn new(radius: f64, num_latitude: u32, num_longitude: u32) -> Sphere {
-//         let x_offset = 0.0;
-//         let y_offset = 0.0;
-//         let z_offset = 0.0;
+impl Sphere {
+    pub fn new(radius: f64, num_latitude: usize, num_longitude: usize) -> Sphere {
+        let x_offset = 0.0;
+        let y_offset = 0.0;
+        let z_offset = 0.0;
 
-//         Sphere {
-//             radius,
-//             num_latitude,
-//             num_longitude,
-//             x_offset,
-//             y_offset,
-//             z_offset,
-//         }
-//     }
+        Sphere {
+            radius,
+            num_latitude,
+            num_longitude,
+            x_offset,
+            y_offset,
+            z_offset,
+        }
+    }
 
-//     pub fn set_offset(&mut self, x: f64, y: f64, z: f64) {
-//         self.x_offset = x;
-//         self.y_offset = y;
-//         self.z_offset = z;
-//     }
+    pub fn set_offset(&mut self, x: f64, y: f64, z: f64) {
+        self.x_offset = x;
+        self.y_offset = y;
+        self.z_offset = z;
+    }
 
-//     pub fn get_vertices(&self) {
+    fn get_vertices(&self) -> Vec<Vector3D> {
+        let mut vertices: Vec<Vector3D> = vec![];
 
-//     }
-// }
+        for i in 0..(self.num_latitude + 1) {
+            let theta = i as f64 * PI / self.num_latitude as f64;
+            let sin_theta = theta.sin();
+            let cos_theta = theta.cos();
+
+            for j in 0..(self.num_longitude + 1) {
+                let phi = j as f64 * 2.0 * PI / self.num_longitude as f64;
+                let sin_phi = phi.sin();
+                let cos_phi = phi.cos();
+
+                let x = (self.radius * sin_theta * cos_phi) + self.x_offset;
+                let y = (self.radius * sin_theta * sin_phi) + self.y_offset;
+                let z = (self.radius * cos_theta) + self.z_offset;
+
+                let vertex = Vector3D::new(x, y, z);
+                vertices.push(vertex);
+            }
+        }
+        vertices
+    }
+
+    fn get_triangle_faces(&self) -> Vec<(usize, usize, usize)> {
+        let mut faces: Vec<(usize, usize, usize)> = vec![];
+
+        for i in 0..self.num_latitude {
+            for j in 0..self.num_longitude {
+                let first: usize = i * (self.num_longitude + 1) + j;
+                let second: usize = first + self.num_longitude + 1;
+
+                let face1: (usize, usize, usize) = (first, second, first + 1);
+                let face2: (usize, usize, usize) = (second, second + 1, first + 1);
+                faces.extend([face1, face2]);
+            }
+        }
+        faces
+    }
+
+    fn get_quad_faces(&self) -> Vec<(usize, usize, usize, usize)> {
+        let mut faces: Vec<(usize, usize, usize, usize)> = vec![];
+
+        for i in 0..self.num_latitude {
+            for j in 0..self.num_longitude {
+                let first: usize = i * (self.num_longitude + 1) + j;
+                let second: usize = first + self.num_longitude + 1;
+
+                let face: (usize, usize, usize, usize) = (first, second, second + 1, first + 1);
+                faces.push(face);
+            }
+        }
+        faces
+    }
+
+    pub fn get_triangle_mesh(&self) -> Mesh {
+        let vertices: Vec<Vector3D> = self.get_vertices();
+        let faces: Vec<(usize, usize, usize)> = self.get_triangle_faces();
+        let mut triangle_polygons: Vec<Polygon> = vec![];
+
+        for face in faces {
+            let triangle_vertices: [Vector3D; 3] =
+                [vertices[face.0], vertices[face.1], vertices[face.2]];
+            let shader: RGBA = RGBA::from_rgb(1.0, 1.0, 1.0);
+            let color: RGBA = RGBA::from_rgb(1.0, 1.0, 1.0);
+            let triangle: Triangle = Triangle::new(triangle_vertices, face, shader, color);
+            let polygon: Polygon = Polygon::Triangle(triangle);
+            triangle_polygons.push(polygon);
+        }
+        let mesh = Mesh::new(triangle_polygons);
+        mesh
+    }
+
+    pub fn get_quad_mesh(&self) -> Mesh {
+        let vertices: Vec<Vector3D> = self.get_vertices();
+        let faces: Vec<(usize, usize, usize, usize)> = self.get_quad_faces();
+        let mut quad_polygons: Vec<Polygon> = vec![];
+
+        for face in faces {
+            let quad_vertices: [Vector3D; 4] = [
+                vertices[face.0],
+                vertices[face.1],
+                vertices[face.2],
+                vertices[face.3],
+            ];
+            let shader: RGBA = RGBA::from_rgb(1.0, 1.0, 1.0);
+            let color: RGBA = RGBA::from_rgb(1.0, 1.0, 1.0);
+            let triangle: Quad = Quad::new(quad_vertices, face, shader, color);
+            let polygon: Polygon = Polygon::Quad(triangle);
+            quad_polygons.push(polygon);
+        }
+        let mesh = Mesh::new(quad_polygons);
+        mesh
+    }
+}
 
 pub struct MeshConverter {
     mesh: Mesh,

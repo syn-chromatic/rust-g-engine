@@ -12,6 +12,7 @@ use crate::shape::Shape;
 use crate::text_writer::TextWriter;
 use crate::vertices::GridHorizontal;
 
+
 pub struct Simulation {
     pub camera: Camera,
     center_point: (f64, f64),
@@ -55,6 +56,9 @@ impl Simulation {
 
         let obj = body_configurations::get_obj();
         self.objects.push(obj);
+
+        let sphere = body_configurations::get_sphere();
+        self.objects.push(sphere);
     }
 
     pub fn compute_objects(&mut self, graphics: &mut Graphics2D) {
@@ -75,9 +79,9 @@ impl Simulation {
         }
     }
 
-    fn write_fps_text(&mut self, frame_time: f32) {
+    fn write_fps_text(&mut self, fps: f64) {
         let header_text = format!("Simulation information");
-        let text = format!("{:.2} FPS", 1.0 / frame_time);
+        let text = format!("{:.2} FPS", fps);
         self.text_writer.add_text_top_left(header_text, None);
         self.text_writer.add_text_top_left(text, None);
     }
@@ -132,9 +136,9 @@ impl Simulation {
         self.text_writer.draw(graphics);
     }
 
-    pub fn simulate(&mut self, graphics: &mut Graphics2D, frame_time: f32) {
+    pub fn simulate(&mut self, graphics: &mut Graphics2D, fps: f64) {
         self.compute_objects(graphics);
-        self.write_fps_text(frame_time);
+        self.write_fps_text(fps);
         self.write_timestep_text();
         self.write_object_count();
         self.write_camera_information();

@@ -55,7 +55,8 @@ impl Shape {
         let mesh = camera.apply_projection_polygons(mesh);
         if mesh.is_some() {
             let mesh = mesh.unwrap();
-            let mesh = Shaders::new(mesh).apply_lighting(self.light.clone(), camera.camera_position);
+            let mesh =
+                Shaders::new(mesh).apply_lighting(self.light.clone(), camera.camera_position);
 
             for polygon in mesh.polygons {
                 match polygon {
