@@ -1,227 +1,197 @@
-use rand::{thread_rng, Rng};
+use rand::thread_rng;
+use rand::Rng;
+
+use crate::color::RGBA;
+use crate::polygons::Mesh;
+use crate::polygons::Polygon;
+use crate::polygons::Quad;
+use crate::polygons::Triangle;
+use crate::vectors::Vector3D;
 use std::f64::consts::PI;
 
-pub struct SphereShape {
-    long_num: i32,
-    lat_num: i32,
-    points: i32,
+// pub struct Sphere {
+//     radius: f64,
+//     num_latitude: u32,
+//     num_longitude: u32,
+//     x_offset: f64,
+//     y_offset: f64,
+//     z_offset: f64,
+// }
+
+// impl Sphere {
+//     pub fn new(radius: f64, num_latitude: u32, num_longitude: u32) -> Sphere {
+//         let x_offset = 0.0;
+//         let y_offset = 0.0;
+//         let z_offset = 0.0;
+
+//         Sphere {
+//             radius,
+//             num_latitude,
+//             num_longitude,
+//             x_offset,
+//             y_offset,
+//             z_offset,
+//         }
+//     }
+
+//     pub fn set_offset(&mut self, x: f64, y: f64, z: f64) {
+//         self.x_offset = x;
+//         self.y_offset = y;
+//         self.z_offset = z;
+//     }
+
+//     pub fn get_vertices(&self) {
+
+//     }
+// }
+
+pub struct MeshConverter {
+    mesh: Mesh,
 }
 
-impl SphereShape {
-    pub fn new(long_num: i32, lat_num: i32, points: i32) -> SphereShape {
-        SphereShape {
-            long_num,
-            lat_num,
-            points,
-        }
+impl MeshConverter {
+    pub fn new(mesh: Mesh) -> Self {
+        MeshConverter { mesh }
     }
 
-    fn create_long_ponts(&self, vertices: &mut Vec<[f64; 3]>) {
-        for i in 0..self.long_num {
-            for j in 0..self.lat_num {
-                let fi: f64 = i as f64;
-                let fj: f64 = j as f64;
-                let long_fnum: f64 = self.long_num as f64;
-                let lat_fnum: f64 = self.lat_num as f64;
-                let theta: f64 = 2.0 * PI * fi / long_fnum;
-                let phi: f64 = PI * fj / (lat_fnum - 1.0);
+    pub fn quads_to_triangles(&self) -> Mesh {
+        let mut new_polygons: Vec<Polygon> = vec![];
 
-                let x: f64 = 1.0 * phi.sin() * theta.cos();
-                let y: f64 = 1.0 * phi.sin() * theta.sin();
-                let z: f64 = 1.0 * phi.cos();
+        for polygon in &self.mesh.polygons {
+            match polygon {
+                Polygon::Triangle(triangle) => {
+                    new_polygons.push(Polygon::Triangle(triangle.clone()));
+                }
+                Polygon::Quad(quad) => {
+                    let vertices = quad.vertices;
+                    let face = quad.face;
+                    let shader = &quad.shader;
+                    let color = &quad.color;
 
-                let point: [f64; 3] = [x, y, z];
+                    let triangle1_vertices = [vertices[0], vertices[1], vertices[2]];
+                    let triangle1_face = (face.0, face.1, face.2);
+                    let triangle1 = Triangle::new(
+                        triangle1_vertices,
+                        triangle1_face,
+                        shader.clone(),
+                        color.clone(),
+                    );
 
-                vertices.push(point);
+                    let triangle2_vertices = [vertices[0], vertices[2], vertices[3]];
+                    let triangle2_face = (face.0, face.2, face.3);
+                    let triangle2 = Triangle::new(
+                        triangle2_vertices,
+                        triangle2_face,
+                        shader.clone(),
+                        color.clone(),
+                    );
+
+                    new_polygons.push(Polygon::Triangle(triangle1));
+                    new_polygons.push(Polygon::Triangle(triangle2));
+                }
             }
         }
+        Mesh::new(new_polygons)
     }
+}
 
-    fn create_lat_points(&self, vertices: &mut Vec<[f64; 3]>) {
-        for i in 0..self.points {
-            let fi: f64 = i as f64;
-            let pointsf: f64 = self.points as f64;
-            let theta = PI * fi / pointsf;
-            for j in 0..self.points + 1 {
-                let fj: f64 = j as f64;
-                let phi = 2.0 * PI * fj / pointsf;
-                let x = 1.0 * theta.sin() * phi.cos();
-                let y = 1.0 * theta.sin() * phi.sin();
-                let z = 1.0 * theta.cos();
+pub struct GridHorizontal {
+    rows: usize,
+    cols: usize,
+    size: f64,
+    x_offset: f64,
+    y_offset: f64,
+    z_offset: f64,
+}
 
-                let point: [f64; 3] = [x, y, z];
-                vertices.push(point);
-            }
+impl GridHorizontal {
+    pub fn new(rows: usize, cols: usize, size: f64) -> Self {
+        Self {
+            rows,
+            cols,
+            size,
+            x_offset: 0.0,
+            y_offset: 0.0,
+            z_offset: 0.0,
         }
     }
 
-    pub fn get_shape(&self) -> Vec<[f64; 3]> {
-        let mut vertices: Vec<[f64; 3]> = vec![];
-        self.create_long_ponts(&mut vertices);
-        self.create_lat_points(&mut vertices);
+    pub fn set_offset(&mut self, x: f64, y: f64, z: f64) {
+        self.x_offset = x;
+        self.y_offset = y;
+        self.z_offset = z;
+    }
+
+    pub fn get_vertices(&self) -> Vec<Vector3D> {
+        let mut vertices = Vec::new();
+
+        for row in 0..self.rows {
+            for col in 0..self.cols {
+                let xv = (row as f64 * self.size) + self.x_offset;
+                let yv = self.y_offset;
+                let zv = (col as f64 * self.size) + self.z_offset;
+                let vertex = Vector3D::new(xv, yv, zv);
+                vertices.push(vertex);
+            }
+        }
         vertices
     }
-}
 
-pub struct CubeShape {
-    scale: [f64; 3],
-}
+    pub fn get_triangle_faces(&self) -> Vec<(usize, usize, usize)> {
+        let mut faces = Vec::new();
 
-impl CubeShape {
-    pub fn new(scale_x: f64, scale_y: f64, scale_z: f64) -> CubeShape {
-        CubeShape {
-            scale: [scale_x, scale_y, scale_z],
-        }
-    }
+        for row in 0..(self.rows - 1) {
+            for col in 0..(self.cols - 1) {
+                let face1 = (
+                    row * self.cols + col,
+                    row * self.cols + col + 1,
+                    (row + 1) * self.cols + col,
+                );
 
-    pub fn get_shape(&self) -> Vec<[f64; 3]> {
-        let shape: Vec<[f64; 3]> = vec![
-            [-1.0, -1.0, -1.0],
-            [1.0, -1.0, -1.0],
-            [-1.0, -1.0, -1.0],
-            [-1.0, -1.0, 1.0],
-            [-1.0, -1.0, 1.0],
-            [1.0, -1.0, 1.0],
-            [1.0, -1.0, -1.0],
-            [1.0, 1.0, -1.0],
-            [1.0, -1.0, -1.0],
-            [1.0, -1.0, 1.0],
-            [1.0, -1.0, 1.0],
-            [1.0, 1.0, 1.0],
-            [1.0, 1.0, -1.0],
-            [-1.0, 1.0, -1.0],
-            [1.0, 1.0, -1.0],
-            [1.0, 1.0, 1.0],
-            [1.0, 1.0, 1.0],
-            [-1.0, 1.0, 1.0],
-            [-1.0, 1.0, -1.0],
-            [-1.0, -1.0, -1.0],
-            [-1.0, 1.0, -1.0],
-            [-1.0, 1.0, 1.0],
-            [-1.0, 1.0, 1.0],
-            [-1.0, -1.0, 1.0],
-        ];
-        shape
-            .into_iter()
-            .map(|vertex| {
-                [
-                    vertex[0] * self.scale[0],
-                    vertex[1] * self.scale[1],
-                    vertex[2] * self.scale[2],
-                ]
-            })
-            .collect()
-    }
-}
+                let face2 = (
+                    row * self.cols + col + 1,
+                    (row + 1) * self.cols + col + 1,
+                    (row + 1) * self.cols + col,
+                );
 
-pub struct ParticleCircle {
-    circle_radius: i32,
-}
-
-impl ParticleCircle {
-    pub fn new(circle_radius: i32) -> ParticleCircle {
-        ParticleCircle { circle_radius }
-    }
-
-    pub fn generate(&self, px: f64, py: f64) -> Vec<[f64; 3]> {
-        let mut particles: Vec<[f64; 3]> = vec![];
-        let mut max_particle_size: f64 = 0.0;
-
-        let mut circle_radius = self.circle_radius;
-
-        while circle_radius > 1 {
-            let size: f64 = 2.0;
-            let angle_increment: f64 = (2.0 * PI / circle_radius as f64);
-
-            for i in 0..circle_radius {
-                let angle: f64 = i as f64 * angle_increment;
-                let x: f64 = px + circle_radius as f64 * angle.cos();
-                let y: f64 = py + circle_radius as f64 * angle.sin();
-
-                if size > max_particle_size {
-                    max_particle_size = size;
-                }
-                let particle: [f64; 3] = [x, y, size];
-                particles.push(particle);
-            }
-            circle_radius -= (max_particle_size * PI) as i32;
-            max_particle_size = 0.0;
-        }
-        particles
-    }
-}
-
-// pub struct ParticleGalaxy {
-//     num_particles: i32,
-//     radius: f32,
-//     center_x: f32,
-//     center_y: f32,
-//     particle_size: f32,
-//     k: f32,
-// }
-
-// impl ParticleGalaxy {
-//     pub fn new(num_particles: i32, radius: f32, center_x: f32, center_y: f32, particle_size: f32, k: f32) -> ParticleGalaxy {
-//         ParticleGalaxy {num_particles, radius, center_x, center_y, particle_size, k}
-//     }
-
-//     pub fn generate(&self) {
-
-//     }
-
-// }
-
-pub struct ParticleGalaxy {
-    galaxy_radius: i32,
-    arms: i32,
-    particles_per_arm: i32,
-    arm_rotation_speed: f64,
-    arm_length_decay: f64,
-}
-
-impl ParticleGalaxy {
-    pub fn new(
-        galaxy_radius: i32,
-        arms: i32,
-        particles_per_arm: i32,
-        arm_rotation_speed: f64,
-        arm_length_decay: f64,
-    ) -> ParticleGalaxy {
-        ParticleGalaxy {
-            galaxy_radius,
-            arms,
-            particles_per_arm,
-            arm_rotation_speed,
-            arm_length_decay,
-        }
-    }
-
-    pub fn generate(&self, px: f64, py: f64) -> Vec<[f64; 5]> {
-        let mut particles: Vec<[f64; 5]> = vec![];
-        let mut max_particle_size: f64 = 0.0;
-
-        for arm_index in 0..self.arms {
-            let mut arm_angle: f64 = (arm_index as f64 / self.arms as f64) * 2.0 * PI;
-            let mut arm_length: f64 = self.galaxy_radius as f64;
-
-            for _ in 0..self.particles_per_arm {
-                let size: f64 = 2.0;
-                let arm_angle_cos = arm_angle.cos();
-                let arm_angle_sin = arm_angle.sin();
-                let x: f64 = px + arm_length * arm_angle_cos;
-                let y: f64 = py + arm_length * arm_angle_sin;
-
-                if size > max_particle_size {
-                    max_particle_size = size;
-                }
-                let particle: [f64; 5] = [x, y, size, arm_angle_cos, arm_angle_sin];
-                particles.push(particle);
-
-                arm_angle += self.arm_rotation_speed;
-                arm_length *= self.arm_length_decay;
+                faces.push(face1);
+                faces.push(face2);
             }
         }
+        faces
+    }
 
-        particles
+    pub fn get_quad_faces(&self) -> Vec<(usize, usize, usize, usize)> {
+        let mut faces = Vec::new();
+
+        for row in 0..(self.rows - 1) {
+            for col in 0..(self.cols - 1) {
+                let face = (
+                    row * self.cols + col,
+                    row * self.cols + col + 1,
+                    (row + 1) * self.cols + col + 1,
+                    (row + 1) * self.cols + col,
+                );
+                faces.push(face);
+            }
+        }
+        faces
+    }
+
+    pub fn get_triangle_polygons(&self) -> Mesh {
+        let vertices = self.get_vertices();
+        let faces = self.get_triangle_faces();
+        let mut triangle_polygons = Vec::new();
+
+        for face in faces {
+            let triangle = Triangle::new(
+                [vertices[face.0], vertices[face.1], vertices[face.2]],
+                face,
+                RGBA::from_rgb(1.0, 1.0, 1.0),
+                RGBA::from_rgb(1.0, 1.0, 1.0),
+            );
+            triangle_polygons.push(Polygon::Triangle(triangle));
+        }
+        Mesh::new(triangle_polygons)
     }
 }

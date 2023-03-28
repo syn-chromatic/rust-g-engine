@@ -1,18 +1,23 @@
 // #![windows_subsystem = "windows"]
+
 mod body;
 mod camera;
+mod color;
 mod debug;
-mod particle;
+mod font;
+mod frustum;
 mod physics;
+mod polygons;
 mod shape;
 mod simulation;
+mod text_writer;
 mod vectors;
 mod vertices;
-mod grid;
-mod text_writer;
-mod color;
+mod shaders;
+mod configurations;
+mod model;
 
-
+use speedy2d::color::Color;
 use speedy2d::dimen::Vec2;
 use speedy2d::window::KeyScancode;
 use speedy2d::window::MouseScrollDistance;
@@ -21,39 +26,71 @@ use speedy2d::window::{WindowHandler, WindowHelper};
 use speedy2d::Graphics2D;
 use speedy2d::Window;
 
+use std::time::Duration;
+use std::time::Instant;
+
 use crate::camera::Camera;
 use crate::simulation::Simulation;
 
 fn main() {
     let width: u32 = 1920;
     let height: u32 = 1080;
-    let canvas_resolution: (u32, u32) = (width, height);
-    let center_x: f64 = canvas_resolution.0 as f64 / 2.0;
-    let center_y: f64 = canvas_resolution.1 as f64 / 2.0;
-    let center_point: (f64, f64) = (center_x, center_y);
+    let resolution: (u32, u32) = (width, height);
 
-    let window: Window = Window::new_centered("Physics System", canvas_resolution).unwrap();
+    let window: Window = Window::new_centered("Physics System", resolution).unwrap();
     let camera = Camera::new(width, height);
 
-    let mut simulation: Simulation = Simulation::new(camera, canvas_resolution);
-    simulation.setup_collision_configuration();
-    // simulation.setup_gravity_configuration();
-    window.run_loop(MyWindowHandler { simulation });
+    let mut simulation: Simulation = Simulation::new(camera, resolution);
+    let background_color = Color::from_rgb(0.15, 0.15, 0.15);
+    let frame_timer = FrameTimeHandler::new();
+    simulation.setup_objects();
+
+    window.run_loop(MyWindowHandler {
+        simulation,
+        background_color,
+        frame_timer,
+    });
+}
+
+struct FrameTimeHandler {
+    frame_st: Instant,
+    frame_time: Duration,
+}
+
+impl FrameTimeHandler {
+    pub fn new() -> FrameTimeHandler {
+        let frame_st: Instant = Instant::now();
+        let frame_time: Duration = Instant::now().duration_since(frame_st);
+
+        FrameTimeHandler {
+            frame_st,
+            frame_time,
+        }
+    }
+
+    pub fn set_frame_timing(&mut self) {
+        self.frame_time = Instant::now().duration_since(self.frame_st);
+        self.frame_st = Instant::now();
+    }
+
+    pub fn get_frame_time(&self) -> f32 {
+        let frame_time: f32 = self.frame_time.as_secs_f32();
+        frame_time
+    }
 }
 
 struct MyWindowHandler {
     simulation: Simulation,
+    background_color: Color,
+    frame_timer: FrameTimeHandler,
 }
 
 impl WindowHandler for MyWindowHandler {
-
-    fn on_resize(&mut self, helper: &mut WindowHelper<()>, size_pixels: speedy2d::dimen::UVec2) {
-
-    }
+    fn on_resize(&mut self, helper: &mut WindowHelper<()>, size_pixels: speedy2d::dimen::UVec2) {}
 
     fn on_mouse_wheel_scroll(&mut self, _: &mut WindowHelper, distance: MouseScrollDistance) {
         if let MouseScrollDistance::Lines { y, .. } = distance {
-            self.simulation.camera.increment_distance(y);
+            self.simulation.camera.increment_planes(y);
         }
     }
 
@@ -90,7 +127,11 @@ impl WindowHandler for MyWindowHandler {
     }
 
     fn on_draw(&mut self, helper: &mut WindowHelper, graphics: &mut Graphics2D) {
-        self.simulation.simulate(graphics);
+        self.frame_timer.set_frame_timing();
+        let frame_time: f32 = self.frame_timer.get_frame_time();
+
+        graphics.clear_screen(self.background_color);
+        self.simulation.simulate(graphics, frame_time);
         helper.request_redraw();
     }
 }
