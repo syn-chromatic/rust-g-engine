@@ -12,10 +12,8 @@ use crate::shape::Shape;
 use crate::text_writer::TextWriter;
 use crate::vertices::GridHorizontal;
 
-
 pub struct Simulation {
     pub camera: Camera,
-    center_point: (f64, f64),
     objects: Vec<BodyType>,
     timestep_hz: f64,
     text_writer: TextWriter,
@@ -26,12 +24,6 @@ impl Simulation {
         let objects: Vec<BodyType> = vec![];
         let timestep_hz: f64 = 5000.0;
 
-        let center_x: f64 = resolution.0 as f64 / 2.0;
-        let center_y: f64 = resolution.1 as f64 / 2.0;
-        let center_point: (f64, f64) = (center_x, center_y);
-
-        let center_point = (0.0, 0.0);
-
         let arial_font: ArialFont = ArialFont::new();
         let font_type: FontType = FontType::ArialFont(arial_font);
         let font_color: RGBA = RGBA::new(1.0, 1.0, 1.0, 1.0);
@@ -40,7 +32,6 @@ impl Simulation {
 
         Simulation {
             camera,
-            center_point,
             objects,
             timestep_hz,
             text_writer,
@@ -63,7 +54,7 @@ impl Simulation {
 
     pub fn compute_objects(&mut self, graphics: &mut Graphics2D) {
         let timestep: f64 = 1.0 / self.timestep_hz;
-        let mut objects_cl: Vec<BodyType> = self.objects.clone();
+        // let mut objects_cl: Vec<BodyType> = self.objects.clone();
         for (i, pl1) in self.objects.iter_mut().enumerate() {
             // let pl1_physics = pl1.physics();
             // for (j, pl2) in objects_cl.iter_mut().enumerate() {

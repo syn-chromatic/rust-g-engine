@@ -185,7 +185,6 @@ impl Frustum {
                             output_vertices.push(b);
                             output_faces.push(vertex_length);
                             vertex_length += 1
-
                         } else if !ap_inside {
                             output_vertices.push(c);
                             output_faces.push(vertex_length);

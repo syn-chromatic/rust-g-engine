@@ -15,7 +15,7 @@ pub fn get_grid() -> BodyType {
 }
 
 pub fn get_obj() -> BodyType {
-    let mut obj = OBJModelFormat::new("./cottage.obj", 0.2);
+    let mut obj = OBJModelFormat::new("./tank_2.obj", 20.0);
     obj.set_offset(0.0, -100.0, 0.0);
 
     let mesh = obj.get_polygons();
@@ -25,10 +25,9 @@ pub fn get_obj() -> BodyType {
     body_type
 }
 
-
 pub fn get_sphere() -> BodyType {
     let mut sphere = Sphere::new(50.0, 10, 10);
-    sphere.set_offset(300.0, 500.0, 400.0);
+    sphere.set_offset(50.0, 1200.0, 2000.0);
 
     let mesh = sphere.get_triangle_mesh();
     let body = Shape::new(mesh);

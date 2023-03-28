@@ -1,5 +1,5 @@
 use speedy2d::color::Color;
-use speedy2d::dimen::Vector2;
+use speedy2d::dimen::Vec2;
 use speedy2d::Graphics2D;
 
 use crate::body::Body;
@@ -7,26 +7,17 @@ use crate::camera::Camera;
 use crate::physics::Physics;
 use crate::polygons::Mesh;
 use crate::polygons::Polygon;
-use crate::shaders;
+
 use crate::shaders::Light;
 use crate::shaders::Shaders;
-use crate::vectors::Vector3D;
-use crate::vertices;
-use speedy2d::dimen::Vec2;
 
 #[derive(Clone, Debug)]
 pub struct Shape {
     physics: Physics,
-    color: Color,
     light: Light,
-    thickness: f64,
 }
 
 impl Body for Shape {
-    fn set_color(&mut self, color: Color) {
-        self.color = color;
-    }
-
     fn draw(&self, graphics: &mut Graphics2D, camera: &mut Camera) {
         self.draw_shape(graphics, camera);
     }
@@ -39,25 +30,21 @@ impl Body for Shape {
 impl Shape {
     pub fn new(mesh: Mesh) -> Shape {
         let physics: Physics = Physics::new(mesh);
-        let color: Color = Color::from_rgb(1.0, 1.0, 1.0);
         let light = Light::get_light();
-        let thickness: f64 = 3.0;
-        Shape {
-            physics,
-            color,
-            light,
-            thickness,
-        }
+        Shape { physics, light }
     }
 
     fn draw_shape(&self, graphics: &mut Graphics2D, camera: &mut Camera) {
-        let mut mesh = &self.physics.mesh;
-        let mesh = camera.apply_projection_polygons(mesh);
+        let mut mesh = self.physics.mesh.clone();
+
+        let camera_position = camera.camera_position;
+        let light = &self.light;
+        let mut shaders = Shaders::new();
+        let mesh = shaders.apply_pbr_lighting(mesh, light, camera_position);
+
+        let mesh = camera.apply_projection_polygons(&mesh);
         if mesh.is_some() {
             let mesh = mesh.unwrap();
-            let mesh =
-                Shaders::new(mesh).apply_lighting(self.light.clone(), camera.camera_position);
-
             for polygon in mesh.polygons {
                 match polygon {
                     Polygon::Triangle(triangle) => {
