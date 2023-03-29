@@ -8,6 +8,7 @@ ___
 * Issue: Performance optimization is needed for draw calls
 * Issue: Text Writer flickering and disappearance for the Turtle graphical backend
 * Change: Implement a Draw Call system
+* Change: Implement a Z-Buffer
 * Change: Implement Backface Culling
 * Change: Separate physics from the Body abstraction 
 
