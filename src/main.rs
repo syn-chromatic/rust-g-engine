@@ -6,6 +6,7 @@ mod debug;
 use speedy2d::dimen::Vec2;
 use speedy2d::window::KeyScancode;
 
+use speedy2d::dimen::UVec2;
 use speedy2d::window::VirtualKeyCode;
 use speedy2d::window::WindowHandler;
 use speedy2d::window::WindowHelper;
@@ -32,6 +33,12 @@ fn main() {
 }
 
 impl WindowHandler for DrawCall {
+    fn on_resize(&mut self, _helper: &mut WindowHelper, size: UVec2) {
+        let width = size.x;
+        let height = size.y;
+        self.graphics.set_screensize(width, height);
+    }
+
     fn on_draw(&mut self, helper: &mut WindowHelper, graphics_2d: &mut Graphics2D) {
         let fps = self.frame_timing.get_frames_per_second();
         let graphics = &mut self.graphics;
@@ -42,7 +49,7 @@ impl WindowHandler for DrawCall {
         helper.request_redraw();
     }
 
-    fn on_mouse_move(&mut self, helper: &mut WindowHelper, position: Vec2) {
+    fn on_mouse_move(&mut self, _helper: &mut WindowHelper, position: Vec2) {
         let dx = position.x as f64;
         let dy = position.y as f64;
         self.simulation.camera.handle_mouse_movement(dx, dy);

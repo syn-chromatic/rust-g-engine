@@ -1,7 +1,5 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::path::Path;
-use std::path::PathBuf;
 
 use crate::components::color::RGBA;
 use crate::components::polygons::Mesh;

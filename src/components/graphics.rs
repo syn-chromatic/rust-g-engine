@@ -177,7 +177,7 @@ impl Graphics {
         for buffer_type in &self.buffer {
             buffer_type.draw(graphics);
         }
-        self.buffer = vec![];
+        self.buffer.clear();
         self.buffer_execute = false;
     }
 
@@ -189,9 +189,12 @@ impl Graphics {
         self.buffer_execute = true;
     }
 
-    fn set_screensize(&self, width: u32, height: u32) {}
+    pub fn set_screensize(&mut self, width: u32, height: u32) {
+        self.width = width;
+        self.height = height;
+    }
 
-    fn set_background_color(&mut self, color: RGBA) {
+    pub fn set_background_color(&mut self, color: RGBA) {
         self.bg_color = color;
     }
 

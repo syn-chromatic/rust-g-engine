@@ -1,11 +1,9 @@
 use crate::abstracts::body::Body;
+use crate::components::backface_culling::BackfaceCulling;
 use crate::components::camera::Camera;
+use crate::components::graphics::Graphics;
 use crate::components::physics::Physics;
 use crate::components::polygons::Mesh;
-use crate::components::polygons::Polygon;
-
-use crate::components::backface_culling::BackfaceCulling;
-use crate::components::graphics::Graphics;
 use crate::components::shaders::Light;
 use crate::components::shaders::Shaders;
 use crate::components::z_buffer::ZBufferSort;
@@ -87,6 +85,7 @@ impl Shape {
         if mesh.is_some() {
             let mesh = mesh.unwrap();
             graphics.draw_polygons(mesh);
+            graphics.update();
         }
     }
 }

@@ -1,6 +1,3 @@
-use rand::thread_rng;
-use rand::Rng;
-
 use crate::components::color::RGBA;
 use crate::components::polygons::Mesh;
 use crate::components::polygons::Polygon;

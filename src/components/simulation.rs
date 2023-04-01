@@ -2,14 +2,12 @@ use crate::abstracts::body::{Body, BodyType};
 use crate::components::camera::Camera;
 use crate::components::color::RGBA;
 
-use crate::configurations::body_configurations;
 use crate::components::font::ArialFont;
 use crate::components::font::FontSettings;
 use crate::components::font::FontType;
-use crate::components::shape::Shape;
-use crate::components::text_writer::TextWriter;
-use crate::components::vertices::GridHorizontal;
 use crate::components::graphics::Graphics;
+use crate::components::text_writer::TextWriter;
+use crate::configurations::body_configurations;
 
 pub struct Simulation {
     pub camera: Camera,
@@ -56,8 +54,8 @@ impl Simulation {
         // let obj = body_configurations::get_obj("./Town_Square.obj");
         // self.objects.push(obj);
 
-        // let obj = body_configurations::get_obj("./cottage.obj");
-        // self.objects.push(obj);
+        let obj = body_configurations::get_obj("./cottage.obj");
+        self.objects.push(obj);
 
         // let obj = body_configurations::get_obj("./plane.obj");
         // self.objects.push(obj);
@@ -106,7 +104,6 @@ impl Simulation {
             );
         }
     }
-
 
     fn write_fps_text(&mut self, fps: f64) {
         let header_text = format!("Simulation information");
