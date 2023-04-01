@@ -1,120 +1,45 @@
-
-mod body;
-mod camera;
-mod color;
+mod abstracts;
+mod components;
 mod configurations;
 mod debug;
-mod font;
-mod frustum;
-mod model;
-mod physics;
-mod polygons;
-mod shaders;
-mod shape;
-mod simulation;
-mod text_writer;
-mod vectors;
-mod vertices;
 
-use speedy2d::color::Color;
 use speedy2d::dimen::Vec2;
 use speedy2d::window::KeyScancode;
-use speedy2d::window::MouseScrollDistance;
+
 use speedy2d::window::VirtualKeyCode;
-use speedy2d::window::{WindowHandler, WindowHelper};
+use speedy2d::window::WindowHandler;
+use speedy2d::window::WindowHelper;
 use speedy2d::Graphics2D;
 use speedy2d::Window;
 
-use std::collections::VecDeque;
-use std::time::Duration;
-use std::time::Instant;
-
-use crate::camera::Camera;
-use crate::simulation::Simulation;
+use crate::components::camera::Camera;
+use crate::components::draw_call::DrawCall;
+use crate::components::graphics::Graphics;
+use crate::components::simulation::Simulation;
 
 fn main() {
-    let width: u32 = 1920;
-    let height: u32 = 1080;
+    let width: u32 = 1760;
+    let height: u32 = 960;
     let resolution: (u32, u32) = (width, height);
 
-    let window: Window = Window::new_centered("Physics System", resolution).unwrap();
-    let camera = Camera::new(width, height);
-
+    let window: Window = Window::new_centered("G-Engine", resolution).unwrap();
+    let camera: Camera = Camera::new(width, height);
     let mut simulation: Simulation = Simulation::new(camera, resolution);
-    let background_color = Color::from_rgb(0.15, 0.15, 0.15);
-    let frame_timing = FrameTimeHandler::new(30);
     simulation.setup_objects();
-
-    window.run_loop(MyWindowHandler {
-        simulation,
-        background_color,
-        frame_timing,
-    });
+    let graphics: Graphics = Graphics::new(width, height);
+    let draw_call = DrawCall::new(graphics, simulation);
+    window.run_loop(draw_call);
 }
 
-pub struct FrameTimeHandler {
-    frame_times: VecDeque<Duration>,
-    frame_start: Instant,
-    frame_count: usize,
-}
-
-impl FrameTimeHandler {
-    pub fn new(frame_count: usize) -> FrameTimeHandler {
-        FrameTimeHandler {
-            frame_times: VecDeque::with_capacity(frame_count),
-            frame_start: Instant::now(),
-            frame_count,
-        }
-    }
-
-    pub fn tick(&mut self) {
-        let frame_time = Instant::now().duration_since(self.frame_start);
-        self.frame_start = Instant::now();
-
-        self.frame_times.push_back(frame_time);
-        if self.frame_times.len() > self.frame_count {
-            self.frame_times.pop_front();
-        }
-    }
-
-    pub fn get_average_frame_time(&self) -> Option<Duration> {
-        if self.frame_times.is_empty() {
-            None
-        } else {
-            let total_time = self.frame_times.iter().sum::<Duration>();
-            Some(total_time / self.frame_times.len() as u32)
-        }
-    }
-
-    pub fn get_frames_per_second(&self) -> f64 {
-        if let Some(average_frame_time) = self.get_average_frame_time() {
-            1.0 / average_frame_time.as_secs_f64()
-        } else {
-            0.0
-        }
-    }
-}
-struct MyWindowHandler {
-    simulation: Simulation,
-    background_color: Color,
-    frame_timing: FrameTimeHandler,
-}
-
-impl WindowHandler for MyWindowHandler {
-    fn on_draw(&mut self, helper: &mut WindowHelper, graphics: &mut Graphics2D) {
+impl WindowHandler for DrawCall {
+    fn on_draw(&mut self, helper: &mut WindowHelper, graphics_2d: &mut Graphics2D) {
         let fps = self.frame_timing.get_frames_per_second();
-        graphics.clear_screen(self.background_color);
+        let graphics = &mut self.graphics;
+        graphics.clear_screen();
         self.simulation.simulate(graphics, fps);
+        graphics.execute_buffer(graphics_2d);
         self.frame_timing.tick();
         helper.request_redraw();
-    }
-
-    fn on_resize(&mut self, helper: &mut WindowHelper<()>, size_pixels: speedy2d::dimen::UVec2) {}
-
-    fn on_mouse_wheel_scroll(&mut self, _: &mut WindowHelper, distance: MouseScrollDistance) {
-        if let MouseScrollDistance::Lines { y, .. } = distance {
-            self.simulation.camera.increment_planes(y);
-        }
     }
 
     fn on_mouse_move(&mut self, helper: &mut WindowHelper, position: Vec2) {
@@ -129,7 +54,7 @@ impl WindowHandler for MyWindowHandler {
         virtual_key_code: Option<VirtualKeyCode>,
         _scancode: KeyScancode,
     ) {
-        let step_val = 80.0;
+        let step_val = 150.0;
         let mut camera = &mut self.simulation.camera;
 
         if let Some(VirtualKeyCode::W) = virtual_key_code {
@@ -146,6 +71,26 @@ impl WindowHandler for MyWindowHandler {
 
         if let Some(VirtualKeyCode::A) = virtual_key_code {
             camera.increment_position_x(-step_val);
+        }
+
+        if let Some(VirtualKeyCode::Up) = virtual_key_code {
+            camera.increment_position_y(-step_val);
+        }
+
+        if let Some(VirtualKeyCode::Down) = virtual_key_code {
+            camera.increment_position_y(step_val);
+        }
+
+        if let Some(VirtualKeyCode::P) = virtual_key_code {
+            self.simulation.toggle_path_trace();
+        }
+
+        if let Some(VirtualKeyCode::Period) = virtual_key_code {
+            self.simulation.increment_bounces(5);
+        }
+
+        if let Some(VirtualKeyCode::Comma) = virtual_key_code {
+            self.simulation.increment_bounces(-5);
         }
     }
 }

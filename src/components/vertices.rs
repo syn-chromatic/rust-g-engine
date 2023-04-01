@@ -1,12 +1,12 @@
 use rand::thread_rng;
 use rand::Rng;
 
-use crate::color::RGBA;
-use crate::polygons::Mesh;
-use crate::polygons::Polygon;
-use crate::polygons::Quad;
-use crate::polygons::Triangle;
-use crate::vectors::Vector3D;
+use crate::components::color::RGBA;
+use crate::components::polygons::Mesh;
+use crate::components::polygons::Polygon;
+use crate::components::polygons::Quad;
+use crate::components::polygons::Triangle;
+use crate::components::vectors::Vector3D;
 use std::f64::consts::PI;
 
 pub struct Sphere {
@@ -99,16 +99,20 @@ impl Sphere {
         let vertices: Vec<Vector3D> = self.get_vertices();
         let faces: Vec<(usize, usize, usize)> = self.get_triangle_faces();
         let mut triangle_polygons: Vec<Polygon> = vec![];
+        let mut vertices_count: usize = 0;
+        let mut faces_count: usize = faces.len();
 
         for face in faces {
             let triangle_vertices: [Vector3D; 3] =
                 [vertices[face.0], vertices[face.1], vertices[face.2]];
-            let shader: RGBA = RGBA::from_rgb(1.0, 1.0, 1.0);
+            let shader: RGBA = RGBA::from_rgb(0.0, 0.0, 0.0);
             let color: RGBA = RGBA::from_rgb(1.0, 1.0, 1.0);
             let triangle: Triangle = Triangle::new(triangle_vertices, face, shader, color);
             let polygon: Polygon = Polygon::Triangle(triangle);
             triangle_polygons.push(polygon);
+            vertices_count += 3;
         }
+        println!("{} {:?}, {}{:?}", "Sphere Vertices:", vertices_count, "Faces:", faces_count);
         let mesh = Mesh::new(triangle_polygons);
         mesh
     }
@@ -125,7 +129,7 @@ impl Sphere {
                 vertices[face.2],
                 vertices[face.3],
             ];
-            let shader: RGBA = RGBA::from_rgb(1.0, 1.0, 1.0);
+            let shader: RGBA = RGBA::from_rgb(0.0, 0.0, 0.0);
             let color: RGBA = RGBA::from_rgb(1.0, 1.0, 1.0);
             let triangle: Quad = Quad::new(quad_vertices, face, shader, color);
             let polygon: Polygon = Polygon::Quad(triangle);
@@ -278,7 +282,7 @@ impl GridHorizontal {
             let triangle = Triangle::new(
                 [vertices[face.0], vertices[face.1], vertices[face.2]],
                 face,
-                RGBA::from_rgb(1.0, 1.0, 1.0),
+                RGBA::from_rgb(0.0, 0.0, 0.0),
                 RGBA::from_rgb(1.0, 1.0, 1.0),
             );
             triangle_polygons.push(Polygon::Triangle(triangle));

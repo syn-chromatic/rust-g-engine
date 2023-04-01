@@ -4,7 +4,7 @@ use speedy2d::font::TextLayout;
 use speedy2d::font::TextOptions;
 use std::rc::Rc;
 
-use crate::color::RGBA;
+use crate::components::color::RGBA;
 
 pub trait FontTrait {
     fn get_sp2d_font(&self) -> &Font;
@@ -36,14 +36,14 @@ impl FontTrait for ArialFont {
 
 impl ArialFont {
     pub fn new() -> ArialFont {
-        let bytes: &[u8; 367112] = include_bytes!("../fonts/arial.ttf");
+        let bytes: &[u8; 367112] = include_bytes!("../../fonts/arial.ttf");
         let font: Font = Font::new(bytes).unwrap();
 
         ArialFont { font }
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct FontSettings {
     pub font_type: FontType,
     pub font_size: u32,

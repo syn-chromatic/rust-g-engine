@@ -1,4 +1,4 @@
-use crate::vectors::Vector3D;
+use crate::components::vectors::Vector3D;
 use speedy2d::color::Color;
 
 #[derive(Clone, Debug)]
@@ -56,6 +56,22 @@ impl RGBA {
         let blue: f64 = self.blue * color.blue;
         let alpha: f64 = self.alpha * color.alpha;
         RGBA::new(red, green, blue, alpha)
+    }
+
+    pub fn average(&self, color: &RGBA) -> RGBA {
+        let red: f64 = (self.red + color.red) / 2.0;
+        let green: f64 = (self.green + color.green) / 2.0;
+        let blue: f64 = (self.blue + color.blue) / 2.0;
+        let alpha: f64 = (self.alpha + color.alpha) / 2.0;
+        RGBA::new(red, green, blue, alpha)
+    }
+
+    pub fn to_vector_rgb(&self) -> Vector3D {
+        let red: f64 = self.red;
+        let green: f64 = self.green;
+        let blue: f64 = self.blue;
+        let vector_rgb: Vector3D = Vector3D::new(red, green, blue);
+        vector_rgb
     }
 
     pub fn to_sp2d_color(&self) -> Color {

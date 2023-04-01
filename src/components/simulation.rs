@@ -1,28 +1,33 @@
-use speedy2d::Graphics2D;
-
-use crate::body::{Body, BodyType};
-use crate::camera::Camera;
-use crate::color::RGBA;
+use crate::abstracts::body::{Body, BodyType};
+use crate::components::camera::Camera;
+use crate::components::color::RGBA;
 
 use crate::configurations::body_configurations;
-use crate::font::ArialFont;
-use crate::font::FontSettings;
-use crate::font::FontType;
-use crate::shape::Shape;
-use crate::text_writer::TextWriter;
-use crate::vertices::GridHorizontal;
+use crate::components::font::ArialFont;
+use crate::components::font::FontSettings;
+use crate::components::font::FontType;
+use crate::components::shape::Shape;
+use crate::components::text_writer::TextWriter;
+use crate::components::vertices::GridHorizontal;
+use crate::components::graphics::Graphics;
 
 pub struct Simulation {
     pub camera: Camera,
-    objects: Vec<BodyType>,
+    pub objects: Vec<BodyType>,
+    polygon_count: usize,
     timestep_hz: f64,
     text_writer: TextWriter,
+    path_trace: bool,
+    bounce_count: usize,
 }
 
 impl Simulation {
     pub fn new(camera: Camera, resolution: (u32, u32)) -> Simulation {
         let objects: Vec<BodyType> = vec![];
         let timestep_hz: f64 = 5000.0;
+        let polygon_count: usize = 0;
+        let path_trace = false;
+        let bounce_count = 1;
 
         let arial_font: ArialFont = ArialFont::new();
         let font_type: FontType = FontType::ArialFont(arial_font);
@@ -33,8 +38,11 @@ impl Simulation {
         Simulation {
             camera,
             objects,
+            polygon_count,
             timestep_hz,
             text_writer,
+            path_trace,
+            bounce_count,
         }
     }
 
@@ -45,14 +53,38 @@ impl Simulation {
         let grid = body_configurations::get_grid();
         self.objects.push(grid);
 
-        let obj = body_configurations::get_obj();
-        self.objects.push(obj);
+        // let obj = body_configurations::get_obj("./Town_Square.obj");
+        // self.objects.push(obj);
 
-        let sphere = body_configurations::get_sphere();
-        self.objects.push(sphere);
+        // let obj = body_configurations::get_obj("./cottage.obj");
+        // self.objects.push(obj);
+
+        // let obj = body_configurations::get_obj("./plane.obj");
+        // self.objects.push(obj);
+
+        // let sphere = body_configurations::get_sphere();
+        // self.objects.push(sphere);
+
+        for object in self.objects.iter_mut() {
+            let physics = object.physics();
+            let mesh = &physics.mesh;
+            let polygon_len = mesh.polygons.len();
+            self.polygon_count += polygon_len;
+        }
     }
 
-    pub fn compute_objects(&mut self, graphics: &mut Graphics2D) {
+    pub fn toggle_path_trace(&mut self) {
+        self.path_trace = !self.path_trace;
+    }
+
+    pub fn increment_bounces(&mut self, increment: i32) {
+        let bounce_count = (self.bounce_count as i32 + increment);
+        if bounce_count >= 0 {
+            self.bounce_count = bounce_count as usize;
+        }
+    }
+
+    pub fn compute_objects(&mut self, graphics: &mut Graphics) {
         let timestep: f64 = 1.0 / self.timestep_hz;
         // let mut objects_cl: Vec<BodyType> = self.objects.clone();
         for (i, pl1) in self.objects.iter_mut().enumerate() {
@@ -66,9 +98,15 @@ impl Simulation {
             //     pl1_physics.apply_forces(pl2_physics, timestep);
             // }
             // // pl1_physics.update(timestep);
-            pl1.draw(graphics, &mut self.camera);
+            pl1.draw(
+                graphics,
+                &mut self.camera,
+                self.path_trace,
+                self.bounce_count,
+            );
         }
     }
+
 
     fn write_fps_text(&mut self, fps: f64) {
         let header_text = format!("Simulation information");
@@ -85,8 +123,15 @@ impl Simulation {
 
     fn write_object_count(&mut self) {
         let object_count = self.objects.len();
-        let text = format!("Objects:  {}", object_count);
-        self.text_writer.add_text_top_left(text, None);
+        let text_object_count = format!("Objects:  {}", object_count);
+        let text_polygon_count = format!("Polygon Count: {}", self.polygon_count);
+        let text_path_trace = format!("Path Tracing: {}", self.path_trace);
+        let text_bounce_count = format!("Bounce Count: {}", self.bounce_count);
+        self.text_writer.add_text_top_left(text_object_count, None);
+        self.text_writer.add_text_top_left(text_polygon_count, None);
+
+        self.text_writer.add_text_top_left(text_path_trace, None);
+        self.text_writer.add_text_top_left(text_bounce_count, None);
     }
 
     fn write_camera_information(&mut self) {
@@ -123,11 +168,11 @@ impl Simulation {
         self.text_writer.add_text_top_left(side_dir, None);
     }
 
-    fn draw_text(&mut self, graphics: &mut Graphics2D) {
+    fn draw_text(&mut self, graphics: &mut Graphics) {
         self.text_writer.draw(graphics);
     }
 
-    pub fn simulate(&mut self, graphics: &mut Graphics2D, fps: f64) {
+    pub fn simulate(&mut self, graphics: &mut Graphics, fps: f64) {
         self.compute_objects(graphics);
         self.write_fps_text(fps);
         self.write_timestep_text();

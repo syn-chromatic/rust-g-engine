@@ -3,13 +3,13 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::path::PathBuf;
 
-use crate::color::RGBA;
-use crate::polygons::Mesh;
-use crate::polygons::Polygon;
-use crate::polygons::Quad;
-use crate::polygons::Triangle;
-use crate::vectors::Vector3D;
-use crate::vertices::MeshConverter;
+use crate::components::color::RGBA;
+use crate::components::polygons::Mesh;
+use crate::components::polygons::Polygon;
+use crate::components::polygons::Quad;
+use crate::components::polygons::Triangle;
+use crate::components::vectors::Vector3D;
+use crate::components::vertices::MeshConverter;
 
 pub struct OBJModelFormat {
     file_path: String,
@@ -17,6 +17,9 @@ pub struct OBJModelFormat {
     x_offset: f64,
     y_offset: f64,
     z_offset: f64,
+    x_rotation: f64,
+    y_rotation: f64,
+    z_rotation: f64,
 }
 
 impl OBJModelFormat {
@@ -28,6 +31,9 @@ impl OBJModelFormat {
             x_offset: 0.0,
             y_offset: 0.0,
             z_offset: 0.0,
+            x_rotation: 0.0,
+            y_rotation: 0.0,
+            z_rotation: 0.0,
         }
     }
 
@@ -35,6 +41,12 @@ impl OBJModelFormat {
         self.x_offset = x;
         self.y_offset = y;
         self.z_offset = z;
+    }
+
+    pub fn set_rotation(&mut self, x: f64, y: f64, z: f64) {
+        self.x_rotation = x;
+        self.y_rotation = y;
+        self.z_rotation = z;
     }
 
     pub fn get_model_triangles(&self) -> Mesh {
@@ -52,6 +64,43 @@ impl OBJModelFormat {
 
         mesh1.polygons.extend(mesh2.polygons);
         mesh1
+    }
+
+    fn rotate_x(&self, vertex: &Vector3D) -> Vector3D {
+        let cos_theta = self.x_rotation.to_radians().cos();
+        let sin_theta = self.x_rotation.to_radians().sin();
+        let x = vertex.x;
+        let y = vertex.y * cos_theta - vertex.z * sin_theta;
+        let z = vertex.y * sin_theta + vertex.z * cos_theta;
+
+        Vector3D::new(x, y, z)
+    }
+
+    fn rotate_y(&self, vertex: &Vector3D) -> Vector3D {
+        let cos_theta = self.y_rotation.to_radians().cos();
+        let sin_theta = self.y_rotation.to_radians().sin();
+        let x = vertex.x * cos_theta + vertex.z * sin_theta;
+        let y = vertex.y;
+        let z = -vertex.x * sin_theta + vertex.z * cos_theta;
+
+        Vector3D::new(x, y, z)
+    }
+
+    fn rotate_z(&self, vertex: &Vector3D) -> Vector3D {
+        let cos_theta = self.z_rotation.to_radians().cos();
+        let sin_theta = self.z_rotation.to_radians().sin();
+        let x = vertex.x * cos_theta - vertex.y * sin_theta;
+        let y = vertex.x * sin_theta + vertex.y * cos_theta;
+        let z = vertex.z;
+
+        Vector3D::new(x, y, z)
+    }
+
+    fn apply_rotation(&self, vertex: Vector3D) -> Vector3D {
+        let vertex = self.rotate_x(&vertex);
+        let vertex = self.rotate_y(&vertex);
+        let vertex = self.rotate_z(&vertex);
+        vertex
     }
 
     fn get_model_polygons(&self, num_vertices: usize) -> Mesh {
@@ -78,6 +127,7 @@ impl OBJModelFormat {
                     );
                     let mut vertex = Vector3D::new(vertex_tuple.0, vertex_tuple.1, vertex_tuple.2);
                     vertex = vertex.multiply(self.scale);
+                    vertex = self.apply_rotation(vertex);
 
                     let xv = vertex.x + self.x_offset;
                     let yv = vertex.y + self.y_offset;
@@ -106,7 +156,7 @@ impl OBJModelFormat {
                 3 => Polygon::Triangle(Triangle::new(
                     [vertices[face[0]], vertices[face[1]], vertices[face[2]]],
                     (face[0], face[1], face[2]),
-                    RGBA::from_rgb(1.0, 1.0, 1.0),
+                    RGBA::from_rgb(0.0, 0.0, 0.0),
                     RGBA::from_rgb(1.0, 1.0, 1.0),
                 )),
                 4 => Polygon::Quad(Quad::new(
@@ -117,7 +167,7 @@ impl OBJModelFormat {
                         vertices[face[3]],
                     ],
                     (face[0], face[1], face[2], face[3]),
-                    RGBA::from_rgb(1.0, 1.0, 1.0),
+                    RGBA::from_rgb(0.0, 0.0, 0.0),
                     RGBA::from_rgb(1.0, 1.0, 1.0),
                 )),
                 _ => unreachable!(),

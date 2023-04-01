@@ -1,7 +1,7 @@
-use crate::frustum::Frustum;
-use crate::polygons::Mesh;
-use crate::polygons::Polygon;
-use crate::vectors::Vector3D;
+use crate::components::frustum::Frustum;
+use crate::components::polygons::Mesh;
+use crate::components::polygons::Polygon;
+use crate::components::vectors::Vector3D;
 
 pub struct Camera {
     pub frustum: Frustum,
@@ -21,7 +21,7 @@ impl Camera {
         let yaw: f64 = 0.0;
         let pitch: f64 = 0.0;
 
-        let camera_position: Vector3D = Vector3D::new(-100.0, 25.0, 500.0);
+        let camera_position: Vector3D = Vector3D::new(-100.0, 200.0, 500.0);
         let camera_target: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
         let side_direction: Vector3D = Vector3D::new(1.0, 0.0, 0.0);
         let up_direction: Vector3D = Vector3D::new(0.0, 1.0, 0.0);
@@ -148,7 +148,7 @@ impl Camera {
 
     pub fn handle_mouse_movement(&mut self, x: f64, y: f64) {
         let sens_x: f64 = 0.3;
-        let sens_y: f64 = 0.1;
+        let sens_y: f64 = 0.3;
 
         let dx = x - self.previous_pointer.0;
         let dy = y - self.previous_pointer.1;

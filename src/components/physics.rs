@@ -1,9 +1,9 @@
 use rand::rngs::ThreadRng;
 use rand::Rng;
 
-use crate::polygons::Mesh;
-use crate::polygons::Polygon;
-use crate::vectors::Vector3D;
+use crate::components::polygons::Mesh;
+use crate::components::polygons::Polygon;
+use crate::components::vectors::Vector3D;
 
 #[derive(Clone, Debug)]
 pub struct Physics {

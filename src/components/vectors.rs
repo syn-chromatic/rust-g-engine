@@ -167,4 +167,13 @@ impl Vector3D {
         }
         length_squared.sqrt()
     }
+
+    pub fn get_distance(&self, vec: &Self) -> f64 {
+        let x = (self.x - vec.x).powi(2);
+        let y = (self.y - vec.y).powi(2);
+        let z = (self.z - vec.z).powi(2);
+
+        let distance = (x + y + z).sqrt();
+        distance
+    }
 }

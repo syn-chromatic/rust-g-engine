@@ -1,9 +1,9 @@
 use std::f64::consts::PI;
 
-use crate::polygons::Mesh;
-use crate::polygons::Polygon;
-use crate::polygons::Triangle;
-use crate::vectors::Vector3D;
+use crate::components::polygons::Mesh;
+use crate::components::polygons::Polygon;
+use crate::components::polygons::Triangle;
+use crate::components::vectors::Vector3D;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Plane {
@@ -30,7 +30,7 @@ impl Frustum {
             height,
             fov: 100.0,
             near_plane: 0.1,
-            far_plane: 5000.0,
+            far_plane: 20_000.0,
             planes,
         };
         let planes = frustum.make_frustum();
