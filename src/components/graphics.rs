@@ -1,6 +1,4 @@
 use crate::components::color::RGBA;
-use crate::components::draw_call::DrawCall;
-use crate::components::font;
 use crate::components::font::FontSettings;
 use crate::components::font::FontTrait;
 use crate::components::font::FontType;
@@ -8,7 +6,6 @@ use crate::components::polygons::Mesh;
 use crate::components::polygons::Polygon;
 use crate::components::polygons::Quad;
 use crate::components::polygons::Triangle;
-use crate::components::simulation::Simulation;
 use crate::components::vectors::Vector3D;
 use speedy2d::color::Color;
 use speedy2d::dimen::Vector2;
@@ -16,9 +13,8 @@ use speedy2d::font::Font;
 use speedy2d::font::FormattedTextBlock;
 use speedy2d::font::TextLayout;
 use speedy2d::font::TextOptions;
-use speedy2d::window::{WindowHandler, WindowHelper};
+
 use speedy2d::Graphics2D;
-use speedy2d::Window;
 use std::rc::Rc;
 
 struct TriangleDraw {
@@ -160,7 +156,6 @@ pub struct Graphics {
 
 impl Graphics {
     pub fn new(width: u32, height: u32) -> Self {
-        let resolution = (width, height);
         let bg_color = RGBA::from_rgb(0.15, 0.15, 0.15);
         let buffer: Vec<DrawType> = vec![];
         let buffer_execute: bool = false;
