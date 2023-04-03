@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Vector3D {
     pub x: f64,
     pub y: f64,
@@ -19,6 +19,12 @@ impl Vector3D {
         let y = self.y;
         let z = self.z;
         (x, y, z)
+    }
+    pub fn to_vec(&self) -> [f64; 3] {
+        let x = self.x;
+        let y = self.y;
+        let z = self.z;
+        [x, y, z]
     }
 
     pub fn clamp(&self, min_value: f64, max_value: f64) -> Self {

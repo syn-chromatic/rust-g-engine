@@ -17,7 +17,7 @@ pub fn get_grid() -> BodyType {
 pub fn get_obj(file_path: &str) -> BodyType {
     let mut obj = OBJModelFormat::new(file_path, 1.0);
     obj.set_offset(2000.0, -100.0, 4000.0);
-    // obj.set_rotation(-90.0, 0.0, 0.0);
+    obj.set_rotation(-90.0, 0.0, 0.0);
 
     let mesh = obj.get_polygons();
 

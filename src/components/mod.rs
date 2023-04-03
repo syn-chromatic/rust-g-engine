@@ -16,3 +16,4 @@ pub mod text_writer;
 pub mod vectors;
 pub mod vertices;
 pub mod z_buffer;
+pub mod bvh;

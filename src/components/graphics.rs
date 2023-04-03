@@ -15,53 +15,67 @@ use speedy2d::font::TextLayout;
 use speedy2d::font::TextOptions;
 
 use speedy2d::Graphics2D;
+use std::cmp::Ordering;
 use std::rc::Rc;
 
+#[derive(Debug)]
 struct TriangleDraw {
     points: [(f64, f64); 3],
     color: RGBA,
+    id: u32,
 }
 
 impl TriangleDraw {
     pub fn new(points: [(f64, f64); 3], color: RGBA) -> TriangleDraw {
-        TriangleDraw { points, color }
+        let id = 2;
+        TriangleDraw { points, color, id }
     }
 }
 
+#[derive(Debug)]
 struct QuadDraw {
     points: [(f64, f64); 4],
     color: RGBA,
+    id: u32,
 }
 
 impl QuadDraw {
     pub fn new(points: [(f64, f64); 4], color: RGBA) -> QuadDraw {
-        QuadDraw { points, color }
+        let id = 2;
+        QuadDraw { points, color, id }
     }
 }
 
+#[derive(Debug)]
 struct TextDraw {
     position: (f64, f64),
     text: String,
     font_settings: FontSettings,
+    id: u32,
 }
 
 impl TextDraw {
     pub fn new(position: (f64, f64), text: String, font_settings: FontSettings) -> TextDraw {
+        let id = 3;
         TextDraw {
             position,
             text,
             font_settings,
+            id,
         }
     }
 }
 
+#[derive(Debug)]
 struct FillDraw {
     color: RGBA,
+    id: u32,
 }
 
 impl FillDraw {
     pub fn new(color: RGBA) -> FillDraw {
-        FillDraw { color }
+        let id = 1;
+        FillDraw { color, id }
     }
 }
 
@@ -78,6 +92,9 @@ impl Draw for TriangleDraw {
         let vertex_positions: [Vector2<f32>; 3] = [v1, v2, v3];
         let color: Color = self.color.to_sp2d_color();
         graphics.draw_triangle(vertex_positions, color);
+    }
+    fn id(&self) -> u32 {
+        self.id
     }
 }
 
@@ -97,6 +114,9 @@ impl Draw for QuadDraw {
         let color: Color = self.color.to_sp2d_color();
         graphics.draw_quad(vertex_positions, color);
     }
+    fn id(&self) -> u32 {
+        self.id
+    }
 }
 
 impl Draw for TextDraw {
@@ -115,6 +135,9 @@ impl Draw for TextDraw {
         let text_block: Rc<FormattedTextBlock> = font.layout_text(text, size, text_options);
         graphics.draw_text(position_f32, color, &text_block);
     }
+    fn id(&self) -> u32 {
+        self.id
+    }
 }
 
 impl Draw for FillDraw {
@@ -122,12 +145,17 @@ impl Draw for FillDraw {
         let color: Color = self.color.to_sp2d_color();
         graphics.clear_screen(color);
     }
+    fn id(&self) -> u32 {
+        self.id
+    }
 }
 
 trait Draw {
     fn draw(&self, graphics: &mut Graphics2D);
+    fn id(&self) -> u32;
 }
 
+#[derive(Debug)]
 enum DrawType {
     TriangleDraw(TriangleDraw),
     QuadDraw(QuadDraw),
@@ -142,6 +170,15 @@ impl Draw for DrawType {
             DrawType::QuadDraw(s) => s.draw(graphics),
             DrawType::TextDraw(s) => s.draw(graphics),
             DrawType::FillDraw(s) => s.draw(graphics),
+        }
+    }
+
+    fn id(&self) -> u32 {
+        match self {
+            DrawType::TriangleDraw(s) => s.id(),
+            DrawType::QuadDraw(s) => s.id(),
+            DrawType::TextDraw(s) => s.id(),
+            DrawType::FillDraw(s) => s.id(),
         }
     }
 }
@@ -177,12 +214,9 @@ impl Graphics {
         for buffer_type in &self.buffer {
             buffer_type.draw(graphics);
         }
+
         self.buffer.clear();
         self.buffer_execute = false;
-    }
-
-    fn push_to_buffer(&mut self, draw_type: DrawType) {
-        self.buffer.push(draw_type);
     }
 
     pub fn update(&mut self) {
@@ -196,6 +230,14 @@ impl Graphics {
 
     pub fn set_background_color(&mut self, color: RGBA) {
         self.bg_color = color;
+    }
+
+    fn sort_buffer(&mut self) {
+        self.buffer
+            .sort_unstable_by(|a, b| a.id().partial_cmp(&b.id()).unwrap_or(Ordering::Equal));
+    }
+    fn push_to_buffer(&mut self, draw_type: DrawType) {
+        self.buffer.push(draw_type);
     }
 
     fn set_title(&self, title: String) {}

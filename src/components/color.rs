@@ -1,7 +1,7 @@
 use crate::components::vectors::Vector3D;
 use speedy2d::color::Color;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct RGBA {
     red: f64,
     green: f64,
@@ -62,7 +62,15 @@ impl RGBA {
         let red: f64 = (self.red + color.red) / 2.0;
         let green: f64 = (self.green + color.green) / 2.0;
         let blue: f64 = (self.blue + color.blue) / 2.0;
-        let alpha: f64 = (self.alpha + color.alpha) / 2.0;
+        let alpha: f64 = 1.0;
+        RGBA::new(red, green, blue, alpha)
+    }
+
+    pub fn interpolate(&self, color: &RGBA, weight: (f64, f64)) -> RGBA {
+        let red = self.red * weight.0 + color.red * weight.1;
+        let green = self.green * weight.0 + color.green * weight.1;
+        let blue = self.blue * weight.0 + color.blue * weight.1;
+        let alpha = 1.0;
         RGBA::new(red, green, blue, alpha)
     }
 

@@ -48,14 +48,14 @@ impl Simulation {
         self.timestep_hz = 10000.0;
         let z = 0.0;
 
-        let grid = body_configurations::get_grid();
-        self.objects.push(grid);
+        // let grid = body_configurations::get_grid();
+        // self.objects.push(grid);
 
-        // let obj = body_configurations::get_obj("./Town_Square.obj");
-        // self.objects.push(obj);
-
-        let obj = body_configurations::get_obj("./cottage.obj");
+        let obj = body_configurations::get_obj("./Town_Square.obj");
         self.objects.push(obj);
+
+        // let obj = body_configurations::get_obj("./cottage.obj");
+        // self.objects.push(obj);
 
         // let obj = body_configurations::get_obj("./plane.obj");
         // self.objects.push(obj);
@@ -83,26 +83,26 @@ impl Simulation {
     }
 
     pub fn compute_objects(&mut self, graphics: &mut Graphics) {
-        let timestep: f64 = 1.0 / self.timestep_hz;
-        // let mut objects_cl: Vec<BodyType> = self.objects.clone();
-        for (i, pl1) in self.objects.iter_mut().enumerate() {
-            // let pl1_physics = pl1.physics();
-            // for (j, pl2) in objects_cl.iter_mut().enumerate() {
-            //     if i == j {
-            //         continue;
-            //     }
+        // let timestep: f64 = 1.0 / self.timestep_hz;
+        // // let mut objects_cl: Vec<BodyType> = self.objects.clone();
+        // for (i, pl1) in self.objects.iter_mut().enumerate() {
+        //     // let pl1_physics = pl1.physics();
+        //     // for (j, pl2) in objects_cl.iter_mut().enumerate() {
+        //     //     if i == j {
+        //     //         continue;
+        //     //     }
 
-            //     let pl2_physics = pl2.physics();
-            //     pl1_physics.apply_forces(pl2_physics, timestep);
-            // }
-            // // pl1_physics.update(timestep);
-            pl1.draw(
-                graphics,
-                &mut self.camera,
-                self.path_trace,
-                self.bounce_count,
-            );
-        }
+        //     //     let pl2_physics = pl2.physics();
+        //     //     pl1_physics.apply_forces(pl2_physics, timestep);
+        //     // }
+        //     // // pl1_physics.update(timestep);
+        //     // pl1.draw(
+        //     //     graphics,
+        //     //     &mut self.camera,
+        //     //     self.path_trace,
+        //     //     self.bounce_count,
+        //     // );
+        // }
     }
 
     fn write_fps_text(&mut self, fps: f64) {
@@ -170,7 +170,7 @@ impl Simulation {
     }
 
     pub fn simulate(&mut self, graphics: &mut Graphics, fps: f64) {
-        self.compute_objects(graphics);
+        // self.compute_objects(graphics);
         self.write_fps_text(fps);
         self.write_timestep_text();
         self.write_object_count();

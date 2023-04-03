@@ -42,9 +42,11 @@ impl WindowHandler for DrawCall {
     fn on_draw(&mut self, helper: &mut WindowHelper, graphics_2d: &mut Graphics2D) {
         let fps = self.frame_timing.get_frames_per_second();
         let graphics = &mut self.graphics;
+        graphics.execute_buffer(graphics_2d);
         graphics.clear_screen();
         self.simulation.simulate(graphics, fps);
-        graphics.execute_buffer(graphics_2d);
+        let objects = self.simulation.objects.clone();
+        self.draw(objects);
         self.frame_timing.tick();
         helper.request_redraw();
     }

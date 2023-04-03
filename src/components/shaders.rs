@@ -3,6 +3,9 @@ use crate::components::polygons::Mesh;
 use crate::components::polygons::Polygon;
 use crate::components::polygons::Triangle;
 use crate::components::vectors::Vector3D;
+use std::f64::consts::PI;
+
+use super::bvh::BVHNode;
 
 pub struct Ray {
     pub orig: Vector3D,
@@ -39,7 +42,7 @@ pub fn ray_color(r: &Ray) -> Vector3D {
         .add_vector(&Vector3D::new(0.5, 0.7, 1.0).multiply(t))
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Light {
     pub position: Vector3D,
     pub target: Vector3D,
@@ -70,167 +73,157 @@ impl Light {
     pub fn get_light() -> Self {
         let position: Vector3D = Vector3D::new(50.0, 5_000.0, 10000.0);
         let target: Vector3D = Vector3D::new(5000.0, 0.0, 0.0);
-        let ambient: Vector3D = Vector3D::new(1.0, 1.0, 1.0);
-        let diffuse: Vector3D = Vector3D::new(0.2, 0.2, 0.2);
-        let specular: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
-        let lumens: f64 = 20_000.0;
+        let ambient: Vector3D = Vector3D::new(0.8, 0.8, 0.8);
+        let diffuse: Vector3D = Vector3D::new(0.8, 0.8, 0.8);
+        let specular: Vector3D = Vector3D::new(0.6, 0.6, 0.6);
+        let lumens: f64 = 10_000.0;
 
         let light: Light = Light::new(position, target, ambient, diffuse, specular, lumens);
         light
     }
 
     pub fn get_light_from_position(position: Vector3D, target: Vector3D) -> Light {
-        let ambient: Vector3D = Vector3D::new(0.8, 0.8, 0.8);
-        let diffuse: Vector3D = Vector3D::new(0.5, 0.5, 0.5);
-        let specular: Vector3D = Vector3D::new(0.2, 0.2, 0.2);
-        let lumens: f64 = 1000.0;
+        let ambient: Vector3D = Vector3D::new(0.2, 0.2, 0.2);
+        let diffuse: Vector3D = Vector3D::new(0.8, 0.8, 0.8);
+        let specular: Vector3D = Vector3D::new(0.4, 0.4, 0.4);
+        let lumens: f64 = 5_000.0;
 
         let light: Light = Light::new(position, target, ambient, diffuse, specular, lumens);
         light
     }
 }
 #[derive(Clone, Debug)]
-pub struct Shaders;
+pub struct Shaders {
+    roughness: f64,
+    metallic: f64,
+    albedo: f64,
+    f0: f64,
+    constant_attenuation: f64,
+    linear_attenuation: f64,
+    quadratic_attenuation: f64,
+}
 
 impl Shaders {
-    fn trace_light_ray(
+    pub fn new() -> Shaders {
+        let roughness = 0.5;
+        let metallic = 0.5;
+        let albedo = 1.0 - metallic;
+        let f0 = 0.04;
+        let constant_attenuation = 1.0;
+        let linear_attenuation = 0.09;
+        let quadratic_attenuation = 0.032;
+
+        Shaders {
+            roughness,
+            metallic,
+            albedo,
+            f0,
+            constant_attenuation,
+            linear_attenuation,
+            quadratic_attenuation,
+        }
+    }
+
+    fn get_attenuation(&self, distance: f64) -> f64 {
+        let attenuation = self.constant_attenuation
+            + (self.linear_attenuation * distance)
+            + (self.quadratic_attenuation * distance.powi(2));
+        let attenuation = 1.0 / attenuation;
+        attenuation
+    }
+
+    fn get_reference_attenuation(&self, distance: f64) -> f64 {
+        let ref_attenuation = 0.5;
+        let ref_distance = distance.sqrt();
+
+        let linear_attenuation = 2.0 * (1.0 - ref_attenuation) / ref_distance;
+        let quadratic_attenuation = (1.0 - ref_attenuation) / (ref_distance.powi(2));
+
+        let attenuation = self.constant_attenuation
+            + (linear_attenuation * distance)
+            + (quadratic_attenuation * distance.powi(2));
+
+        let attenuation = 1.0 / attenuation;
+        attenuation
+    }
+
+    fn get_schlick_approximation(&self, n_dot_v: f64) -> f64 {
+        self.f0 + (1.0 - self.f0) * (1.0 - n_dot_v).powi(5)
+    }
+
+    fn get_ggx_distribution(&self, n_dot_h: f64) -> f64 {
+        let alpha_sq = self.roughness.powi(2);
+        let n_dot_h_sq = n_dot_h.powi(2);
+        let denom = n_dot_h_sq * (alpha_sq - 1.0) + 1.0;
+        (alpha_sq) / (PI * denom.powi(2))
+    }
+
+    fn get_ggx_smith_geometry(&self, n_dot_v: f64, n_dot_l: f64) -> f64 {
+        let alpha_sq = self.roughness.powi(2);
+
+        let g1_v = n_dot_v + ((1.0 - alpha_sq) * n_dot_v.powi(2) + alpha_sq).sqrt();
+        let g1_l = n_dot_l + ((1.0 - alpha_sq) * n_dot_l.powi(2) + alpha_sq).sqrt();
+
+        let g_v = 2.0 * n_dot_v / g1_v;
+        let g_l = 2.0 * n_dot_l / g1_l;
+
+        g_v * g_l
+    }
+
+    fn get_specular_term(&self, f: f64, g: f64, d: f64, n_dot_l: f64, n_dot_v: f64) -> f64 {
+        let numerator: f64 = f * g * d - f64::MIN_POSITIVE;
+        let denominator: f64 = 4.0 * n_dot_l * n_dot_v + f64::MIN_POSITIVE;
+        numerator / denominator
+    }
+
+    pub fn is_occluded(
         &self,
-        mesh: &Mesh,
-        light: &Light,
-        viewer_position: Vector3D,
-        ray_origin: Vector3D,
+        bvh_node: &BVHNode,
+        polygon: &Polygon,
+        centroid: Vector3D,
         ray_direction: Vector3D,
-        max_bounces: u32,
-        current_bounce: u32,
-    ) -> Vector3D {
-        if current_bounce > max_bounces {
-            return Vector3D::new(0.0, 0.0, 0.0);
-        }
-        let mut closest_intersection: Option<(f64, &Triangle)> = None;
+    ) -> bool {
+        let intersecting_polygons = bvh_node.traverse(&centroid, &ray_direction);
 
-        for (idx, polygon) in mesh.polygons.iter().enumerate() {
-            if let Polygon::Triangle(triangle) = polygon {
-                if let Some(distance) = self.ray_intersection(triangle, ray_origin, ray_direction) {
-                    if closest_intersection.is_none() || distance < closest_intersection.unwrap().0
-                    {
-                        closest_intersection = Some((distance, triangle));
-                    }
-                }
+        for intersecting_polygon in &intersecting_polygons {
+            if intersecting_polygon.eq(polygon) {
+                continue;
+            }
+            if self.intersect_ray(&intersecting_polygon, &centroid, &ray_direction) {
+                return true;
             }
         }
-
-        if let Some((_, triangle)) = closest_intersection {
-            let direct_illumination = self.get_pbr_shader(light, triangle, viewer_position);
-
-            let normal = self.normal(triangle);
-            let reflection = ray_direction
-                .subtract_vector(&normal.multiply(2.0 * normal.dot_product(&ray_direction)));
-
-            let indirect_illumination = self.trace_light_ray(
-                mesh,
-                light,
-                viewer_position,
-                self.centroid(triangle),
-                reflection,
-                max_bounces,
-                current_bounce + 1,
-            );
-
-            direct_illumination.add_vector(&indirect_illumination)
-        } else {
-            Vector3D::new(0.0, 0.0, 0.0)
-        }
+        false
     }
-    pub fn apply_ray_traced_lighting(
+
+    fn intersect_ray_distance(
         &self,
-        mut mesh: Mesh,
-        light: &Light,
-        viewer_position: Vector3D,
-        max_bounces: u32,
-    ) -> Mesh {
-        let light_dir = light.target.subtract_vector(&light.position);
-        let light_dir = light_dir.normalize();
-
-        let mesh_clone = mesh.clone();
-
-        for (index, polygon) in mesh.polygons.iter_mut().enumerate() {
-            if let Polygon::Triangle(triangle) = polygon {
-                let normal = self.normal(triangle);
-                let facing_light = normal.dot_product(&light_dir) < 0.0;
-
-                if facing_light {
-                    let shader_vec = self.trace_light_ray(
-                        &mesh_clone,
-                        light,
-                        viewer_position,
-                        light.position.clone(),
-                        light_dir.clone(),
-                        max_bounces,
-                        0,
-                    );
-                    let shader = RGBA::from_vector(shader_vec);
-                    // println!("{:?}", shader);
-                    triangle.shader = triangle.shader.average(&shader);
-                }
-            }
-        }
-
-        mesh
-    }
-
-    fn random_in_hemisphere(&self, normal: &Vector3D) -> Vector3D {
-        let up = if normal.y.abs() < 0.99 {
-            Vector3D::new(0.0, 1.0, 0.0)
-        } else {
-            Vector3D::new(1.0, 0.0, 0.0)
+        polygon: &Polygon,
+        origin: &Vector3D,
+        direction: &Vector3D,
+    ) -> Option<f64> {
+        let vertices: &[Vector3D] = match polygon {
+            Polygon::Triangle(triangle) => &triangle.vertices,
+            Polygon::Quad(quad) => &quad.vertices,
         };
 
-        let tangent = up.cross_product(normal).normalize();
-        let bitangent = normal.cross_product(&tangent);
+        let v1 = &vertices[0];
+        let v2 = &vertices[1];
+        let v3 = &vertices[2];
 
-        let r1 = rand::random::<f64>();
-        let r2 = rand::random::<f64>();
-        let r3 = rand::random::<f64>();
+        let edge1 = v2.subtract_vector(v1);
+        let edge2 = v3.subtract_vector(v1);
 
-        let sin_theta = (1.0 - r1 * r1).sqrt();
-        let phi = 2.0 * std::f64::consts::PI * r2;
-
-        let x = phi.cos() * sin_theta;
-        let y = phi.sin() * sin_theta;
-        let z = r1;
-
-        let new_dir = tangent
-            .multiply(x)
-            .add_vector(&bitangent.multiply(y))
-            .add_vector(&normal.multiply(z));
-
-        new_dir.normalize()
-    }
-
-    fn ray_intersection(
-        &self,
-        triangle: &Triangle,
-        ray_origin: Vector3D,
-        ray_direction: Vector3D,
-    ) -> Option<f64> {
-        let epsilon = 1e-6;
-        let vertices = triangle.vertices;
-        let v0 = vertices[0];
-        let v1 = vertices[1];
-        let v2 = vertices[2];
-
-        let edge1 = v1.subtract_vector(&v0);
-        let edge2 = v2.subtract_vector(&v0);
-
-        let h = ray_direction.cross_product(&edge2);
+        let h = direction.cross_product(&edge2);
         let a = edge1.dot_product(&h);
+        let epsilon: f64 = 1e-5;
 
-        if a > -epsilon && a < epsilon {
+        if -epsilon < a && a < epsilon {
             return None;
         }
 
         let f = 1.0 / a;
-        let s = ray_origin.subtract_vector(&v0);
+        let s = origin.subtract_vector(v1);
         let u = f * s.dot_product(&h);
 
         if u < 0.0 || u > 1.0 {
@@ -238,7 +231,7 @@ impl Shaders {
         }
 
         let q = s.cross_product(&edge1);
-        let v = f * ray_direction.dot_product(&q);
+        let v = f * direction.dot_product(&q);
 
         if v < 0.0 || u + v > 1.0 {
             return None;
@@ -247,72 +240,83 @@ impl Shaders {
         let t = f * edge2.dot_product(&q);
 
         if t > epsilon {
-            Some(t)
-        } else {
-            None
+            return Some(t);
         }
+        None
     }
 
-    fn centroid(&self, triangle: &Triangle) -> Vector3D {
-        let vertices = triangle.vertices;
-        let v0 = vertices[0];
-        let v1 = vertices[1];
-        let v2 = vertices[2];
+    pub fn intersect_ray(
+        &self,
+        polygon: &Polygon,
+        origin: &Vector3D,
+        direction: &Vector3D,
+    ) -> bool {
+        let vertices: &[Vector3D] = match polygon {
+            Polygon::Triangle(triangle) => &triangle.vertices,
+            Polygon::Quad(quad) => &quad.vertices,
+        };
 
-        v0.add_vector(&v1).add_vector(&v2).divide(3.0)
-    }
+        let v1 = &vertices[0];
+        let v2 = &vertices[1];
+        let v3 = &vertices[2];
 
-    fn normal(&self, triangle: &Triangle) -> Vector3D {
-        let vertices = triangle.vertices;
-        let v0 = vertices[0];
-        let v1 = vertices[1];
-        let v2 = vertices[2];
+        let edge1 = v2.subtract_vector(v1);
+        let edge2 = v3.subtract_vector(v1);
 
-        let edge1 = v1.subtract_vector(&v0);
-        let edge2 = v2.subtract_vector(&v0);
-        let normal = edge1.cross_product(&edge2);
+        let h = direction.cross_product(&edge2);
+        let a = edge1.dot_product(&h);
+        let epsilon: f64 = 1e-5;
 
-        normal.normalize()
+        if -epsilon < a && a < epsilon {
+            return false;
+        }
+
+        let f = 1.0 / a;
+        let s = origin.subtract_vector(v1);
+        let u = f * s.dot_product(&h);
+
+        if u < 0.0 || u > 1.0 {
+            return false;
+        }
+
+        let q = s.cross_product(&edge1);
+        let v = f * direction.dot_product(&q);
+
+        if v < 0.0 || u + v > 1.0 {
+            return false;
+        }
+
+        let t = f * edge2.dot_product(&q);
+
+        if t > epsilon {
+            return true;
+        }
+
+        false
     }
 
     fn get_pbr_shader(
         &self,
         light: &Light,
-        triangle: &Triangle,
-        viewer_position: Vector3D,
+        polygon: &Polygon,
+        viewer_position: &Vector3D,
+        bvh_node: &BVHNode,
     ) -> Vector3D {
-        let roughness: f64 = 0.2;
-        let metallic: f64 = 0.8;
-        let k_s: f64 = metallic;
-        let k_d: f64 = 1.0 - k_s;
-        let f0: f64 = 0.04;
-        let constant_attenuation: f64 = 1.0;
-        let linear_attenuation: f64 = 0.09;
-        let quadratic_attenuation: f64 = 0.032;
+        let light_dir: Vector3D = light.target.subtract_vector(&light.position);
+        let light_dir: Vector3D = light_dir.normalize();
 
-        let light_dir = light.target.subtract_vector(&light.position);
-        let light_dir = light_dir.normalize();
+        let centroid: Vector3D = polygon.get_centroid();
+        let normal: Vector3D = polygon.get_normal();
 
-        let vertices: [Vector3D; 3] = triangle.vertices;
-        let v0: Vector3D = vertices[0];
-        let v1: Vector3D = vertices[1];
-        let v2: Vector3D = vertices[2];
+        let ray_vector = light.position.subtract_vector(&centroid);
+        let ray_direction = ray_vector.normalize();
+        let distance = ray_vector.get_length();
+        let attenuation = self.get_reference_attenuation(distance);
 
-        let centroid: Vector3D = v0.add_vector(&v1).add_vector(&v2).divide(3.0);
+        let is_occluded = self.is_occluded(bvh_node, polygon, centroid, ray_direction);
 
-        let edge1: Vector3D = v1.subtract_vector(&v0);
-        let edge2: Vector3D = v2.subtract_vector(&v0);
-        let normal: Vector3D = edge1.cross_product(&edge2);
-        let normal: Vector3D = normal.normalize();
-
-        let distance_vector = centroid.subtract_vector(&light.position);
-        let distance = distance_vector.get_length();
-        let distance_vector = distance_vector.normalize();
-
-        let light_intensity = light.lumens / (distance * distance);
-        let light_dir = light_dir.multiply(distance_vector.dot_product(&light_dir));
-        let light_dir = light_dir.multiply(-1.0);
-
+        let light_normal = ray_direction.dot_product(&light_dir);
+        let light_dir: Vector3D = light_dir.multiply(light_normal);
         let viewer_dir: Vector3D = viewer_position.subtract_vector(&centroid);
         let viewer_dir: Vector3D = viewer_dir.normalize();
 
@@ -321,340 +325,49 @@ impl Shaders {
 
         let diffuse_angle: f64 = normal.dot_product(&light_dir);
         let diffuse_angle: f64 = diffuse_angle.max(0.0);
+
         let n_dot_v: f64 = normal.dot_product(&viewer_dir).max(0.0);
         let n_dot_l: f64 = normal.dot_product(&light_dir).max(0.0);
         let n_dot_h: f64 = normal.dot_product(&halfway).max(0.0);
 
-        let roughness_sq = roughness * roughness;
-        let n_dot_vsq = n_dot_v * n_dot_v;
-        let n_dot_lsq = n_dot_l * n_dot_l;
-        let n_dot_hsq = n_dot_h * n_dot_h;
+        let mut light_intensity = diffuse_angle * light.lumens;
+        light_intensity = light_intensity * attenuation;
 
-        let g1_denom = n_dot_v + ((1.0 - roughness_sq) * n_dot_vsq + roughness_sq).sqrt();
-        let g2_denom = n_dot_l + ((1.0 - roughness_sq) * n_dot_lsq + roughness_sq).sqrt();
-
-        let g1: f64 = 2.0 * n_dot_v / g1_denom;
-        let g2: f64 = 2.0 * n_dot_l / g2_denom;
-
-        let attenuation: f64 = 1.0
-            / (constant_attenuation
-                + linear_attenuation * distance
-                + quadratic_attenuation * distance * distance);
-
-        let ambient: Vector3D = light
-            .ambient
-            .multiply(light.lumens)
-            .multiply(light_intensity);
-
-        let diffuse: Vector3D = light
-            .diffuse
-            .multiply(diffuse_angle * light.lumens * attenuation)
-            .multiply(light_intensity);
-
-        let f: f64 = f0 + (1.0 - f0) * (1.0 - n_dot_h).powi(5);
-        let g: f64 = g1 * g2;
-        let d: f64 = roughness_sq
-            / ((n_dot_hsq * (roughness_sq - 1.0) + 1.0) * (n_dot_hsq * (roughness_sq - 1.0) + 1.0));
-
-        let specular: Vector3D = light
-            .specular
-            .multiply(f * g * d / (4.0 * n_dot_l * n_dot_v) * light_intensity * attenuation);
-
-        let mut shader_vec: Vector3D = ambient
-            .multiply(k_d)
-            .add_vector(&diffuse.multiply(k_d))
-            .add_vector(&specular.multiply(k_s));
-
-        if shader_vec.x.is_nan() || shader_vec.y.is_nan() || shader_vec.z.is_nan() {
-            shader_vec = Vector3D::new(0.0, 0.0, 0.0);
+        if is_occluded {
+            let scaling_factor = 0.5;
+            let shadow_term = 1.0 - scaling_factor * (1.0 - diffuse_angle);
+            light_intensity *= shadow_term
         }
-        shader_vec
+
+        let ambient: Vector3D = light.ambient.multiply(light_intensity);
+        let diffuse: Vector3D = light.diffuse.multiply(light_intensity);
+
+        let f: f64 = self.get_schlick_approximation(n_dot_v);
+        let g: f64 = self.get_ggx_smith_geometry(n_dot_v, n_dot_l);
+        let d: f64 = self.get_ggx_distribution(n_dot_h);
+
+        let specular_term = self.get_specular_term(f, g, d, n_dot_l, n_dot_v);
+        let specular_term = specular_term * attenuation;
+        let specular: Vector3D = light.specular.multiply(specular_term);
+
+        let shader_vec: Vector3D = ambient.multiply(self.albedo);
+        let shader_vec: Vector3D = shader_vec.add_vector(&diffuse.multiply(self.albedo));
+        let shader_vec: Vector3D = shader_vec.add_vector(&specular.multiply(self.metallic));
+        return shader_vec;
     }
 
-    pub fn apply_pbr_lighting(&self, mesh: Mesh, light: &Light, viewer_position: Vector3D) -> Mesh {
-        let mut mesh = mesh;
-
-        let light_dir = light.target.subtract_vector(&light.position);
-        let light_dir = light_dir.normalize();
-
-        for polygon in &mut mesh.polygons {
-            match polygon {
-                Polygon::Quad(_) => continue,
-                Polygon::Triangle(triangle) => {
-                    let shader_vec = self.get_pbr_shader(light, triangle, viewer_position);
-                    let shader = RGBA::from_vector(shader_vec);
-                    triangle.shader = triangle.shader.average(&shader);
-                }
-            }
+    pub fn apply_pbr_lighting(
+        &self,
+        mut mesh: Mesh,
+        light: &Light,
+        viewer_position: &Vector3D,
+        bvh_node: &BVHNode,
+    ) -> Mesh {
+        for polygon in mesh.polygons.iter_mut() {
+            let shader_vec = self.get_pbr_shader(light, polygon, &viewer_position, &bvh_node);
+            let shader = RGBA::from_vector(shader_vec);
+            polygon.set_shader(shader);
         }
         mesh
     }
 }
-
-// #[derive(Clone, Debug)]
-// pub struct Shaders;
-
-// impl Shaders {
-//     pub fn apply_path_tracing(
-//         mesh: &mut Mesh,
-//         light: &Light,
-//         viewer_position: Vector3D,
-//         max_bounces: u32,
-//     ) {
-//         let constant_attenuation: f64 = 0.8;
-
-//         for polygon in &mut mesh.polygons {
-//             match polygon {
-//                 Polygon::Quad(_) => continue,
-//                 Polygon::Triangle(triangle) => {
-//                     let mut accumulated_color = Vector3D::new(0.0, 0.0, 0.0);
-//                     let mut current_energy = 1.0;
-
-//                     for bounce in 0..max_bounces {
-//                         let mut ray_origin = if bounce == 0 {
-//                             viewer_position
-//                         } else {
-//                             triangle.vertices[0]
-//                         };
-//                         let mut ray_direction = if bounce == 0 {
-//                             Self::triangle_centroid(triangle)
-//                                 .subtract_vector(&ray_origin)
-//                                 .normalize()
-//                         } else {
-//                             Self::reflect(ray_direction, &normal).normalize()
-//                         };
-
-//                         let t = Self::triangle_intersect(triangle, ray_origin, ray_direction);
-//                         if t.is_none() {
-//                             break;
-//                         }
-
-//                         let intersection =
-//                             ray_origin.add_vector(&ray_direction.multiply(t.unwrap()));
-//                         let normal = Self::triangle_normal(triangle);
-//                         let distance = light.position.get_distance(&intersection);
-//                         let light_intensity = light.lumens / (distance * distance);
-
-//                         let light_to_intersection =
-//                             light.position.subtract_vector(&intersection).normalize();
-//                         let facing_light = normal.dot_product(&light_to_intersection) > 0.0;
-
-//                         if facing_light {
-//                             let color_contribution = light
-//                                 .diffuse
-//                                 .multiply(light.lumens)
-//                                 .multiply(light_intensity)
-//                                 .multiply(current_energy);
-//                             accumulated_color = accumulated_color.add_vector(&color_contribution);
-//                         }
-
-//                         current_energy *= constant_attenuation;
-//                     }
-
-//                     if accumulated_color.x.is_nan()
-//                         || accumulated_color.y.is_nan()
-//                         || accumulated_color.z.is_nan()
-//                     {
-//                         accumulated_color = Vector3D::new(0.0, 0.0, 0.0);
-//                     }
-
-//                     let shader = RGBA::from_vector(accumulated_color);
-//                     triangle.shader = triangle.shader.average(&shader);
-//                 }
-//             }
-//         }
-//     }
-
-//     // pub fn apply_path_tracing(
-//     //     mesh: Mesh,
-//     //     light: &Light,
-//     //     viewer_position: Vector3D,
-//     //     max_bounces: u32,
-//     // ) -> Mesh {
-//     //     let mut mesh = mesh;
-
-//     //     let constant_attenuation: f64 = 0.8;
-
-//     //     for polygon in &mut mesh.polygons {
-//     //         match polygon {
-//     //             Polygon::Quad(_) => continue,
-//     //             Polygon::Triangle(triangle) => {
-//     //                 let mut accumulated_color = Vector3D::new(0.0, 0.0, 0.0);
-//     //                 let mut current_energy = 1.0;
-
-//     //                 for _ in 0..max_bounces {
-//     //                     let mut ray_origin = viewer_position;
-//     //                     let mut ray_direction = Self::triangle_centroid(triangle)
-//     //                         .subtract_vector(&ray_origin)
-//     //                         .normalize();
-
-//     //                     let t = Self::triangle_intersect(triangle, ray_origin, ray_direction);
-//     //                     if t.is_none() {
-//     //                         break;
-//     //                     }
-
-//     //                     let intersection =
-//     //                         ray_origin.add_vector(&ray_direction.multiply(t.unwrap()));
-//     //                     let normal = Self::triangle_normal(triangle);
-//     //                     let distance = light.position.get_distance(&intersection);
-//     //                     let light_intensity = light.lumens / (distance * distance);
-
-//     //                     let color_contribution = light
-//     //                         .diffuse
-//     //                         .multiply(light.lumens)
-//     //                         .multiply(light_intensity)
-//     //                         .multiply(current_energy);
-//     //                     accumulated_color = accumulated_color.add_vector(&color_contribution);
-
-//     //                     let next_ray_direction = Self::reflect(ray_direction, &normal);
-//     //                     if next_ray_direction.dot_product(&normal) <= 0.0 {
-//     //                         break;
-//     //                     }
-
-//     //                     ray_origin = intersection;
-//     //                     ray_direction = next_ray_direction;
-//     //                     current_energy *= constant_attenuation;
-//     //                 }
-
-//     //                 if accumulated_color.x.is_nan()
-//     //                     || accumulated_color.y.is_nan()
-//     //                     || accumulated_color.z.is_nan()
-//     //                 {
-//     //                     accumulated_color = Vector3D::new(0.0, 0.0, 0.0);
-//     //                 }
-
-//     //                 let shader = RGBA::from_vector(accumulated_color);
-//     //                 triangle.shader = triangle.shader.average(&shader);
-//     //             }
-//     //         }
-//     //     }
-//     //     mesh
-//     // }
-
-//     // pub fn apply_path_tracing(
-//     //     mesh: Mesh,
-//     //     light: &Light,
-//     //     viewer_position: Vector3D,
-//     //     max_bounces: u32,
-//     // ) -> Mesh {
-//     //     let mut mesh = mesh;
-//     //     let constant_attenuation: f64 = 0.8;
-
-//     //     for polygon in &mut mesh.polygons {
-//     //         match polygon {
-//     //             Polygon::Quad(_) => continue,
-//     //             Polygon::Triangle(triangle) => {
-//     //                 let mut accumulated_color = Vector3D::new(0.0, 0.0, 0.0);
-//     //                 let mut current_energy = 1.0;
-
-//     //                 for _ in 0..max_bounces {
-//     //                     let mut ray_origin = viewer_position;
-//     //                     let mut ray_direction = Self::triangle_centroid(triangle)
-//     //                         .subtract_vector(&ray_origin)
-//     //                         .normalize();
-
-//     //                     let t = Self::triangle_intersect(triangle, ray_origin, ray_direction);
-//     //                     if t.is_none() {
-//     //                         break;
-//     //                     }
-
-//     //                     let intersection =
-//     //                         ray_origin.add_vector(&ray_direction.multiply(t.unwrap()));
-//     //                     let normal = Self::triangle_normal(triangle);
-//     //                     let light_dir = light.target.subtract_vector(&light.position).normalize();
-
-//     //                     let distance = light.position.get_distance(&intersection);
-//     //                     let light_intensity = light.lumens / (distance * distance);
-
-//     //                     let light_angle: f64 = normal.dot_product(&light_dir.multiply(-1.0));
-//     //                     let light_angle: f64 = light_angle.max(0.0);
-//     //                     let color_contribution = light
-//     //                         .diffuse
-//     //                         .multiply(light.lumens * light_angle)
-//     //                         .multiply(light_intensity)
-//     //                         .multiply(current_energy);
-
-//     //                     accumulated_color = accumulated_color.add_vector(&color_contribution);
-
-//     //                     let next_ray_direction = Self::reflect(ray_direction, &normal);
-//     //                     if next_ray_direction.dot_product(&normal) <= 0.0 {
-//     //                         break;
-//     //                     }
-
-//     //                     ray_origin = intersection;
-//     //                     ray_direction = next_ray_direction;
-//     //                     current_energy *= constant_attenuation;
-//     //                 }
-
-//     //                 if accumulated_color.x.is_nan()
-//     //                     || accumulated_color.y.is_nan()
-//     //                     || accumulated_color.z.is_nan()
-//     //                 {
-//     //                     accumulated_color = Vector3D::new(0.0, 0.0, 0.0);
-//     //                 }
-
-//     //                 let shader = RGBA::from_vector(accumulated_color);
-//     //                 triangle.shader = triangle.shader.average(&shader);
-//     //             }
-//     //         }
-//     //     }
-//     //     mesh
-//     // }
-
-//     fn triangle_centroid(triangle: &Triangle) -> Vector3D {
-//         let (v0, v1, v2) = (
-//             triangle.vertices[0],
-//             triangle.vertices[1],
-//             triangle.vertices[2],
-//         );
-//         v0.add_vector(&v1).add_vector(&v2).divide(3.0)
-//     }
-
-//     fn triangle_intersect(
-//         triangle: &Triangle,
-//         ray_origin: Vector3D,
-//         ray_direction: Vector3D,
-//     ) -> Option<f64> {
-//         let edge1 = triangle.vertices[1].subtract_vector(&triangle.vertices[0]);
-//         let edge2 = triangle.vertices[2].subtract_vector(&triangle.vertices[0]);
-
-//         let pvec = ray_direction.cross_product(&edge2);
-//         let det = edge1.dot_product(&pvec);
-
-//         if det.abs() < std::f64::EPSILON {
-//             return None;
-//         }
-
-//         let inv_det = 1.0 / det;
-//         let tvec = ray_origin.subtract_vector(&triangle.vertices[0]);
-//         let u = tvec.dot_product(&pvec) * inv_det;
-
-//         if u < 0.0 || u > 1.0 {
-//             return None;
-//         }
-
-//         let qvec = tvec.cross_product(&edge1);
-//         let v = ray_direction.dot_product(&qvec) * inv_det;
-
-//         if v < 0.0 || u + v > 1.0 {
-//             return None;
-//         }
-
-//         Some(edge2.dot_product(&qvec) * inv_det)
-//     }
-
-//     fn triangle_normal(triangle: &Triangle) -> Vector3D {
-//         let v0 = triangle.vertices[0];
-//         let v1 = triangle.vertices[1];
-//         let v2 = triangle.vertices[2];
-
-//         let edge1 = v1.subtract_vector(&v0);
-//         let edge2 = v2.subtract_vector(&v0);
-
-//         edge1.cross_product(&edge2).normalize()
-//     }
-
-//     fn reflect(vector: Vector3D, normal: &Vector3D) -> Vector3D {
-//         let dot = vector.dot_product(normal);
-//         vector.subtract_vector(&normal.multiply(2.0 * dot))
-//     }

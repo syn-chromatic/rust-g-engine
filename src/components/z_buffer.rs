@@ -1,39 +1,22 @@
+use crate::components::polygons::Mesh;
 use crate::components::polygons::Polygon;
 use crate::components::vectors::Vector3D;
 use std::cmp::Ordering::Equal;
 
-pub struct ZBufferSort {
-    camera_position: Vector3D,
-}
+pub struct ZBufferSort {}
 
 impl ZBufferSort {
-    pub fn new(camera_position: Vector3D) -> Self {
-        Self { camera_position }
+    pub fn new() -> Self {
+        Self {}
     }
 
-    fn get_centroid(&self, polygon: &Polygon) -> Vector3D {
-        let vertices: &[Vector3D] = match polygon {
-            Polygon::Triangle(triangle) => &triangle.vertices,
-            Polygon::Quad(quad) => &quad.vertices,
-        };
-
-        let mut vertices_sum: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
-        let num_vertices: usize = vertices.len();
-
-        for vertex in vertices {
-            vertices_sum = vertices_sum.add_vector(vertex);
-        }
-
-        vertices_sum.divide(num_vertices as f64)
-    }
-
-    fn get_centroid_distance(&self, polygon: &Polygon) -> f64 {
-        let centroid: Vector3D = self.get_centroid(&polygon);
-        let distance: f64 = self.camera_position.get_distance(&centroid);
+    fn get_centroid_distance(&self, polygon: &Polygon, camera_position: Vector3D) -> f64 {
+        let centroid: Vector3D = polygon.get_centroid();
+        let distance: f64 = camera_position.get_distance(&centroid);
         distance
     }
 
-    fn get_polygon_max_z(&self, polygon: &Polygon) -> f64 {
+    fn get_polygon_max_z(&self, polygon: &Polygon, camera_position: Vector3D) -> f64 {
         let vertices: &[Vector3D] = match polygon {
             Polygon::Triangle(triangle) => &triangle.vertices,
             Polygon::Quad(quad) => &quad.vertices,
@@ -42,7 +25,7 @@ impl ZBufferSort {
         let mut max_z: f64 = f64::MIN;
 
         for vertex in vertices {
-            let distance: f64 = self.camera_position.get_distance(vertex);
+            let distance: f64 = camera_position.get_distance(vertex);
 
             if distance > max_z {
                 max_z = distance;
@@ -95,12 +78,12 @@ impl ZBufferSort {
         }
     }
 
-    pub fn get_sorted_polygons(&self, polygons: &[Polygon]) -> Vec<Polygon> {
+    pub fn get_sorted_polygons(&self, mut mesh: Mesh, camera_position: Vector3D) -> Mesh {
+        let polygons = mesh.polygons;
         let mut distances: Vec<(f64, usize)> = Vec::new();
-        let len = polygons.len();
 
-        for i in 0..len {
-            let distance: f64 = self.get_centroid_distance(&polygons[i]);
+        for i in 0..polygons.len() {
+            let distance: f64 = self.get_centroid_distance(&polygons[i], camera_position);
             distances.push((distance, i));
         }
 
@@ -113,6 +96,7 @@ impl ZBufferSort {
             sorted_polygons.push(polygons[index].clone());
         }
 
-        sorted_polygons
+        mesh.polygons = sorted_polygons;
+        mesh
     }
 }
