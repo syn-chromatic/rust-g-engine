@@ -1,4 +1,4 @@
-# Rust G-Engine and Simulations
+# Rust G-Engine
 *Work in progress.*
 ___
 # Issues and Upcoming changes 
