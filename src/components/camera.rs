@@ -19,8 +19,8 @@ pub struct Camera {
 impl Camera {
     pub fn new(width: u32, height: u32) -> Camera {
         let frustum: Frustum = Frustum::new(width, height);
-        let yaw: f64 = 0.0;
-        let pitch: f64 = 0.0;
+        let yaw: f64 = -90.0;
+        let pitch: f64 = -0.0;
 
         let side_direction: Vector3D = Vector3D::new(1.0, 0.0, 0.0);
         let up_direction: Vector3D = Vector3D::new(0.0, 1.0, 0.0);
@@ -42,6 +42,10 @@ impl Camera {
             look_direction,
             previous_pointer,
         }
+    }
+
+    pub fn calibrate(&mut self) {
+        self.apply_target_adjustment();
     }
 
     fn apply_view_transform(&mut self, position: Vector3D) -> Vector3D {
@@ -159,7 +163,7 @@ impl Camera {
                 continue;
             }
 
-            let clipped_polygons = self.frustum.clip_polygon_against_frustum(polygon);
+            let clipped_polygons = self.frustum.clip_polygon_against_frustum_stack(polygon);
 
             for mut clipped_polygon in clipped_polygons {
                 clipped_polygon = self.apply_polygon_perspective_transform(clipped_polygon);
@@ -190,7 +194,7 @@ impl Camera {
             self.pitch = -89.0
         }
 
-        self.apply_mouse_movement();
+        self.apply_target_adjustment();
     }
 
     fn apply_direction_adjustment(&mut self) {
@@ -213,7 +217,7 @@ impl Camera {
         self.up_direction = Vector3D::new(up_x, up_y, up_z).normalize();
     }
 
-    fn apply_mouse_movement(&mut self) {
+    fn apply_target_adjustment(&mut self) {
         let yaw_rad = self.yaw.to_radians();
         let pitch_rad = self.pitch.to_radians();
 

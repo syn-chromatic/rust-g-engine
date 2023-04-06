@@ -10,6 +10,10 @@ impl Vector3D {
         Vector3D { x, y, z }
     }
 
+    pub fn default() -> Vector3D {
+        Vector3D::new(0.0, 0.0, 0.0)
+    }
+
     pub fn to_string(&self) -> String {
         format!("[{:.2}, {:.2}, {:.2}]", self.x, self.y, self.z)
     }

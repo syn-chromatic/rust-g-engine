@@ -5,8 +5,6 @@ use crate::components::polygons::Polygon;
 use crate::components::polygons::Triangle;
 use crate::components::vectors::Vector3D;
 
-use rayon::prelude::*;
-
 #[derive(Debug, Clone, Copy)]
 pub struct Plane {
     A: f64,
@@ -145,10 +143,6 @@ impl Frustum {
         true
     }
 
-
-
-
-
     pub fn is_polygon_outside_frustum(&self, polygon: &Polygon) -> bool {
         let triangle_vertices: [Vector3D; 3];
         let quad_vertices: [Vector3D; 4];
@@ -156,11 +150,11 @@ impl Frustum {
             Polygon::Triangle(triangle) => {
                 triangle_vertices = triangle.vertices;
                 &triangle_vertices
-            },
+            }
             Polygon::Quad(quad) => {
                 quad_vertices = quad.vertices;
                 &quad_vertices
-            },
+            }
         };
 
         for plane in &self.planes {
@@ -178,13 +172,6 @@ impl Frustum {
 
         false
     }
-
-
-
-
-
-
-
 
     fn get_triangle_faces(&self, output_polygon: &[usize]) -> Vec<(usize, usize, usize)> {
         let mut faces = Vec::new();
@@ -266,7 +253,7 @@ impl Frustum {
         mesh
     }
 
-    pub fn clip_against_plane_polygon(&self, polygon: Polygon, plane: &Plane) -> Vec<Polygon> {
+    pub fn clip_polygon_against_plane(&self, polygon: Polygon, plane: &Plane) -> Vec<Polygon> {
         let mut output_polygons = Vec::new();
 
         match &polygon {
@@ -326,13 +313,84 @@ impl Frustum {
         output_polygons
     }
 
-    pub fn clip_polygon_against_frustum(&self, polygon: Polygon) -> Vec<Polygon> {
-        let mut clipped_polygons = vec![polygon];
+    pub fn clip_polygon_against_plane_stack(
+        &self,
+        polygon: Polygon,
+        plane: &Plane,
+    ) -> [Option<Polygon>; 2] {
+        let mut output_polygons = [None, None];
+        let mut output_polygons_len = 0;
+
+        match &polygon {
+            Polygon::Quad(_) => (),
+            Polygon::Triangle(triangle) => {
+                let input_vertices = triangle.vertices;
+                let mut output_vertices = [Vector3D::default(); 8];
+                let mut output_faces = [0usize; 8];
+                let mut vertex_length = 0;
+
+                for i in 0..3 {
+                    let a = input_vertices[i];
+                    let b = input_vertices[(i + 1) % 3];
+
+                    let t = self.get_plane_intersection(a, b, plane);
+                    let c = a.lerp_interpolation(&b, t);
+
+                    let ap_inside = self.is_point_behind_plane(a, plane);
+                    let bp_inside = self.is_point_behind_plane(b, plane);
+
+                    if !bp_inside {
+                        if ap_inside {
+                            output_vertices[vertex_length] = c;
+                            output_faces[vertex_length] = vertex_length;
+                            vertex_length += 1;
+                        }
+
+                        output_vertices[vertex_length] = b;
+                        output_faces[vertex_length] = vertex_length;
+                        vertex_length += 1;
+                    } else if !ap_inside {
+                        output_vertices[vertex_length] = c;
+                        output_faces[vertex_length] = vertex_length;
+                        vertex_length += 1;
+                    }
+                }
+
+                if vertex_length > 2 {
+                    let faces = self.get_triangle_faces(&output_faces[..vertex_length]);
+                    for face in faces.iter() {
+                        let new_vertices = [
+                            output_vertices[face.0],
+                            output_vertices[face.1],
+                            output_vertices[face.2],
+                        ];
+                        let new_polygon = Polygon::Triangle(Triangle::new(
+                            new_vertices,
+                            *face,
+                            triangle.shader.clone(),
+                            triangle.color.clone(),
+                        ));
+                        output_polygons[output_polygons_len] = Some(new_polygon);
+                        output_polygons_len += 1;
+                    }
+                }
+            }
+        }
+        output_polygons
+    }
+
+    pub fn clip_polygon_against_frustum_stack(&self, polygon: Polygon) -> Vec<Polygon> {
+        let mut clipped_polygons: Vec<Polygon> = vec![polygon];
 
         for plane in &self.planes {
             let mut new_polygons = Vec::new();
             for poly in clipped_polygons {
-                new_polygons.extend(self.clip_against_plane_polygon(poly, plane));
+                let clipped_result = self.clip_polygon_against_plane_stack(poly, plane);
+                for clipped_poly in clipped_result {
+                    if let Some(polygon) = clipped_poly {
+                        new_polygons.push(polygon);
+                    }
+                }
             }
             clipped_polygons = new_polygons;
         }
@@ -340,10 +398,17 @@ impl Frustum {
         clipped_polygons
     }
 
-    // pub fn frustum_clip(&self, mut mesh: Mesh) -> Mesh {
-    //     for plane in &self.planes {
-    //         mesh = self.clip_against_plane(mesh, plane);
-    //     }
-    //     mesh
-    // }
+    pub fn clip_polygon_against_frustum(&self, polygon: Polygon) -> Vec<Polygon> {
+        let mut clipped_polygons = vec![polygon];
+
+        for plane in &self.planes {
+            let mut new_polygons = Vec::new();
+            for poly in clipped_polygons {
+                new_polygons.extend(self.clip_polygon_against_plane(poly, plane));
+            }
+            clipped_polygons = new_polygons;
+        }
+
+        clipped_polygons
+    }
 }

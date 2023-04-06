@@ -1,7 +1,7 @@
 use crate::components::vectors::Vector3D;
 use speedy2d::color::Color;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct RGBA {
     red: f64,
     green: f64,

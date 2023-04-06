@@ -48,6 +48,7 @@ impl Simulation {
         let obj = body_configurations::get_obj("./town_square.obj");
         self.objects.push(obj);
 
+
         // let obj = body_configurations::get_obj("./cottage.obj");
         // self.objects.push(obj);
 

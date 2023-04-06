@@ -15,7 +15,6 @@ use speedy2d::font::TextLayout;
 use speedy2d::font::TextOptions;
 
 use speedy2d::Graphics2D;
-use std::cmp::Ordering;
 use std::rc::Rc;
 
 #[derive(Debug)]
@@ -211,6 +210,7 @@ impl Graphics {
     }
 
     pub fn execute_buffer(&mut self, graphics: &mut Graphics2D) {
+        self.sort_buffer();
         for buffer_type in &self.buffer {
             buffer_type.draw(graphics);
         }
@@ -233,9 +233,9 @@ impl Graphics {
     }
 
     fn sort_buffer(&mut self) {
-        self.buffer
-            .sort_unstable_by(|a, b| a.id().partial_cmp(&b.id()).unwrap_or(Ordering::Equal));
+        self.buffer.sort_by(|a, b| a.id().cmp(&b.id()));
     }
+
     fn push_to_buffer(&mut self, draw_type: DrawType) {
         self.buffer.push(draw_type);
     }

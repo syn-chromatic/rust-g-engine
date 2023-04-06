@@ -2,7 +2,7 @@ use crate::components::color::RGBA;
 use crate::components::shaders::Light;
 use crate::components::vectors::Vector3D;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Triangle {
     pub vertices: [Vector3D; 3],
     pub face: (usize, usize, usize),
@@ -49,7 +49,7 @@ impl Triangle {
         vertices_sum.divide(num_vertices as f64)
     }
 }
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Quad {
     pub vertices: [Vector3D; 4],
     pub face: (usize, usize, usize, usize),
@@ -97,7 +97,7 @@ impl Quad {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Polygon {
     Triangle(Triangle),
     Quad(Quad),

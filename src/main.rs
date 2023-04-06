@@ -25,7 +25,9 @@ fn main() {
     let resolution: (u32, u32) = (width, height);
 
     let window: Window = Window::new_centered("G-Engine", resolution).unwrap();
-    let camera: Camera = Camera::new(width, height);
+    let mut camera: Camera = Camera::new(width, height);
+    camera.calibrate();
+
     let mut simulation: Simulation = Simulation::new(camera, resolution);
     simulation.setup_objects();
 

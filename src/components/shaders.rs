@@ -6,7 +6,7 @@ use std::f64::consts::PI;
 
 use super::bvh::BVHNode;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Light {
     pub position: Vector3D,
     pub target: Vector3D,
