@@ -31,7 +31,7 @@ pub fn get_obj(file_path: &str) -> BodyType {
 pub fn get_sphere() -> BodyType {
     let mut sphere = Sphere::new(500.0, 50, 50);
     let offset = 1000.0;
-    sphere.set_offset(50.0 + offset, 5_000.0 + offset, 10000.0 + offset);
+    sphere.set_offset(50.0 + offset, 5_000.0 + offset, 20000.0 + offset);
 
     let mesh = sphere.get_triangle_mesh();
     let body = Shape::new(mesh);

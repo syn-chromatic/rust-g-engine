@@ -35,7 +35,7 @@ impl Light {
         }
     }
     pub fn get_light() -> Self {
-        let position: Vector3D = Vector3D::new(50.0, 5_000.0, 10000.0);
+        let position: Vector3D = Vector3D::new(50.0, 5_000.0, 20000.0);
         let target: Vector3D = Vector3D::new(5000.0, 0.0, 0.0);
         let ambient: Vector3D = Vector3D::new(0.2, 0.2, 0.2);
         let diffuse: Vector3D = Vector3D::new(0.95, 0.6, 0.6);
@@ -50,7 +50,7 @@ impl Light {
         let ambient: Vector3D = Vector3D::new(0.2, 0.2, 0.2);
         let diffuse: Vector3D = Vector3D::new(0.6, 0.6, 0.6);
         let specular: Vector3D = Vector3D::new(0.6, 0.6, 0.6);
-        let lumens: f64 = 2_000.0;
+        let lumens: f64 = 3_000.0;
 
         let light: Light = Light::new(position, target, ambient, diffuse, specular, lumens);
         light

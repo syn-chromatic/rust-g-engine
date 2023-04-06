@@ -32,7 +32,7 @@ impl Frustum {
             height,
             fov: 100.0,
             near_plane: 0.1,
-            far_plane: 20_000.0,
+            far_plane: 30_000.0,
             planes,
         };
         let planes = frustum.make_frustum();
