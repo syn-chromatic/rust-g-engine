@@ -1,3 +1,4 @@
+#![windows_subsystem = "windows"]
 mod abstracts;
 mod components;
 mod configurations;
@@ -64,7 +65,7 @@ impl WindowHandler for DrawCall {
         virtual_key_code: Option<VirtualKeyCode>,
         _scancode: KeyScancode,
     ) {
-        let step_val = 50.0;
+        let step_val = 70.0;
         let mut camera = &mut self.simulation.camera;
 
         if let Some(VirtualKeyCode::W) = virtual_key_code {
