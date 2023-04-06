@@ -1,46 +1,10 @@
 use crate::components::color::RGBA;
 use crate::components::polygons::Mesh;
 use crate::components::polygons::Polygon;
-use crate::components::polygons::Triangle;
 use crate::components::vectors::Vector3D;
 use std::f64::consts::PI;
 
 use super::bvh::BVHNode;
-
-pub struct Ray {
-    pub orig: Vector3D,
-    pub dir: Vector3D,
-}
-
-impl Ray {
-    pub fn new(origin: Vector3D, direction: Vector3D) -> Ray {
-        Ray {
-            orig: origin,
-            dir: direction,
-        }
-    }
-
-    pub fn origin(&self) -> Vector3D {
-        self.orig.clone()
-    }
-
-    pub fn direction(&self) -> Vector3D {
-        self.dir.clone()
-    }
-
-    pub fn at(&self, t: f64) -> Vector3D {
-        self.orig.add_vector(&&self.dir.multiply(t))
-    }
-}
-
-pub fn ray_color(r: &Ray) -> Vector3D {
-    let unit_direction = &r.direction().normalize();
-
-    let t = 0.5 * (unit_direction.y + 1.0);
-    Vector3D::new(1.0, 1.0, 1.0)
-        .multiply(1.0 - t)
-        .add_vector(&Vector3D::new(0.5, 0.7, 1.0).multiply(t))
-}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Light {
@@ -73,10 +37,10 @@ impl Light {
     pub fn get_light() -> Self {
         let position: Vector3D = Vector3D::new(50.0, 5_000.0, 10000.0);
         let target: Vector3D = Vector3D::new(5000.0, 0.0, 0.0);
-        let ambient: Vector3D = Vector3D::new(0.8, 0.8, 0.8);
-        let diffuse: Vector3D = Vector3D::new(0.8, 0.8, 0.8);
-        let specular: Vector3D = Vector3D::new(0.6, 0.6, 0.6);
-        let lumens: f64 = 10_000.0;
+        let ambient: Vector3D = Vector3D::new(0.2, 0.1, 0.1);
+        let diffuse: Vector3D = Vector3D::new(0.95, 0.4, 0.5);
+        let specular: Vector3D = Vector3D::new(0.95, 0.4, 0.5);
+        let lumens: f64 = 8_000.0;
 
         let light: Light = Light::new(position, target, ambient, diffuse, specular, lumens);
         light
@@ -84,14 +48,15 @@ impl Light {
 
     pub fn get_light_from_position(position: Vector3D, target: Vector3D) -> Light {
         let ambient: Vector3D = Vector3D::new(0.2, 0.2, 0.2);
-        let diffuse: Vector3D = Vector3D::new(0.8, 0.8, 0.8);
-        let specular: Vector3D = Vector3D::new(0.4, 0.4, 0.4);
-        let lumens: f64 = 5_000.0;
+        let diffuse: Vector3D = Vector3D::new(0.6, 0.6, 0.6);
+        let specular: Vector3D = Vector3D::new(0.6, 0.6, 0.6);
+        let lumens: f64 = 1_500.0;
 
         let light: Light = Light::new(position, target, ambient, diffuse, specular, lumens);
         light
     }
 }
+
 #[derive(Clone, Debug)]
 pub struct Shaders {
     roughness: f64,
@@ -106,7 +71,7 @@ pub struct Shaders {
 impl Shaders {
     pub fn new() -> Shaders {
         let roughness = 0.5;
-        let metallic = 0.5;
+        let metallic = 0.1;
         let albedo = 1.0 - metallic;
         let f0 = 0.04;
         let constant_attenuation = 1.0;

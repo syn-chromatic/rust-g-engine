@@ -103,7 +103,7 @@ impl Sphere {
             let triangle_vertices: [Vector3D; 3] =
                 [vertices[face.0], vertices[face.1], vertices[face.2]];
             let shader: RGBA = RGBA::from_rgb(0.0, 0.0, 0.0);
-            let color: RGBA = RGBA::from_rgb(1.0, 1.0, 1.0);
+            let color: RGBA = RGBA::from_rgb(1.0, 0.2, 0.2);
             let triangle: Triangle = Triangle::new(triangle_vertices, face, shader, color);
             let polygon: Polygon = Polygon::Triangle(triangle);
             triangle_polygons.push(polygon);

@@ -2,6 +2,7 @@ use crate::components::frustum::Frustum;
 use crate::components::polygons::Mesh;
 use crate::components::polygons::Polygon;
 use crate::components::vectors::Vector3D;
+use rayon::prelude::*;
 
 pub struct Camera {
     pub frustum: Frustum,
@@ -21,11 +22,12 @@ impl Camera {
         let yaw: f64 = 0.0;
         let pitch: f64 = 0.0;
 
-        let camera_position: Vector3D = Vector3D::new(-100.0, 200.0, 500.0);
-        let camera_target: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
         let side_direction: Vector3D = Vector3D::new(1.0, 0.0, 0.0);
         let up_direction: Vector3D = Vector3D::new(0.0, 1.0, 0.0);
         let look_direction: Vector3D = Vector3D::new(0.0, 0.0, 1.0);
+
+        let camera_position: Vector3D = Vector3D::new(-100.0, 200.0, 500.0);
+        let camera_target: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
 
         let previous_pointer: (f64, f64) = (width as f64 / 2.0, height as f64 / 2.0);
 
@@ -43,13 +45,11 @@ impl Camera {
     }
 
     fn apply_view_transform(&mut self, position: Vector3D) -> Vector3D {
-        self.apply_direction_adjustment();
-
         let look_dir: Vector3D = self.look_direction;
         let side_dir: Vector3D = self.side_direction;
         let up_dir: Vector3D = self.up_direction;
 
-        let point: Vector3D = position.subtract_vector(&self.camera_position);
+        let point: Vector3D = self.camera_position.subtract_vector(&position);
         let x: f64 = point.dot_product(&side_dir);
         let y: f64 = point.dot_product(&up_dir);
         let z: f64 = point.dot_product(&look_dir);
@@ -98,52 +98,78 @@ impl Camera {
         vo
     }
 
-    pub fn apply_projection_polygons(&mut self, mesh: &Mesh) -> Option<Mesh> {
-        let mut mesh = mesh.clone();
+    fn apply_polygon_view_transform(&mut self, polygon: Polygon) -> Polygon {
+        match polygon {
+            Polygon::Triangle(mut triangle) => {
+                for vertex in &mut triangle.vertices {
+                    *vertex = self.apply_view_transform(*vertex);
+                }
+                Polygon::Triangle(triangle)
+            }
+            Polygon::Quad(mut quad) => {
+                for vertex in &mut quad.vertices {
+                    *vertex = self.apply_view_transform(*vertex);
+                }
+                Polygon::Quad(quad)
+            }
+        }
+    }
 
-        for polygon in mesh.polygons.iter_mut() {
-            match polygon {
-                Polygon::Triangle(triangle) => {
-                    for idx in 0..triangle.vertices.len() {
-                        let vertex = triangle.vertices[idx];
-                        let transformed_vertex = self.apply_view_transform(vertex);
-                        triangle.vertices[idx] = transformed_vertex;
-                    }
+    fn apply_polygon_perspective_transform(&mut self, polygon: Polygon) -> Polygon {
+        match polygon {
+            Polygon::Triangle(mut triangle) => {
+                for vertex in &mut triangle.vertices {
+                    *vertex = self.calculate_perspective_projection(*vertex);
                 }
-                Polygon::Quad(quad) => {
-                    for idx in 0..quad.vertices.len() {
-                        let vertex = quad.vertices[idx];
-                        let transformed_vertex = self.apply_view_transform(vertex);
-                        quad.vertices[idx] = transformed_vertex;
-                    }
+                Polygon::Triangle(triangle)
+            }
+            Polygon::Quad(mut quad) => {
+                for vertex in &mut quad.vertices {
+                    *vertex = self.calculate_perspective_projection(*vertex);
                 }
-            };
+                Polygon::Quad(quad)
+            }
+        }
+    }
+
+    fn apply_polygon_screen_transform(&mut self, polygon: Polygon) -> Polygon {
+        match polygon {
+            Polygon::Triangle(mut triangle) => {
+                for vertex in &mut triangle.vertices {
+                    *vertex = self.ndc_to_screen_coordinates(*vertex);
+                }
+                Polygon::Triangle(triangle)
+            }
+            Polygon::Quad(mut quad) => {
+                for vertex in &mut quad.vertices {
+                    *vertex = self.ndc_to_screen_coordinates(*vertex);
+                }
+                Polygon::Quad(quad)
+            }
+        }
+    }
+
+    pub fn apply_projection_polygons(&mut self, mut mesh: Mesh) -> Mesh {
+        let polygon_count = mesh.polygons.len();
+        let mut transformed_polygons = Vec::with_capacity(polygon_count);
+
+        for polygon in mesh.polygons {
+            let polygon = self.apply_polygon_view_transform(polygon);
+            if self.frustum.is_polygon_outside_frustum(&polygon) {
+                continue;
+            }
+
+            let clipped_polygons = self.frustum.clip_polygon_against_frustum(polygon);
+
+            for mut clipped_polygon in clipped_polygons {
+                clipped_polygon = self.apply_polygon_perspective_transform(clipped_polygon);
+                clipped_polygon = self.apply_polygon_screen_transform(clipped_polygon);
+                transformed_polygons.push(clipped_polygon);
+            }
         }
 
-        self.frustum.frustum_clip(&mut mesh);
-
-        for polygon in mesh.polygons.iter_mut() {
-            match polygon {
-                Polygon::Triangle(triangle) => {
-                    for idx in 0..triangle.vertices.len() {
-                        let vertex = triangle.vertices[idx];
-                        let projected_vertex = self.calculate_perspective_projection(vertex);
-                        let screen_vertex = self.ndc_to_screen_coordinates(projected_vertex);
-                        triangle.vertices[idx] = screen_vertex;
-                    }
-                }
-                Polygon::Quad(quad) => {
-                    for idx in 0..quad.vertices.len() {
-                        let vertex = quad.vertices[idx];
-                        let projected_vertex = self.calculate_perspective_projection(vertex);
-                        let screen_vertex = self.ndc_to_screen_coordinates(projected_vertex);
-                        quad.vertices[idx] = screen_vertex;
-                    }
-                }
-            };
-        }
-
-        Some(mesh)
+        mesh.polygons = transformed_polygons;
+        mesh
     }
 
     pub fn handle_mouse_movement(&mut self, x: f64, y: f64) {
@@ -154,8 +180,8 @@ impl Camera {
         let dy = y - self.previous_pointer.1;
         self.previous_pointer = (x, y);
 
-        self.yaw += dx * sens_x;
-        self.pitch += dy * -sens_y;
+        self.yaw += dx * -sens_x;
+        self.pitch += dy * sens_y;
 
         if self.pitch > 89.0 {
             self.pitch = 89.0
@@ -174,10 +200,16 @@ impl Camera {
         self.side_direction = self.side_direction.normalize();
 
         let yaw_rad: f64 = self.yaw.to_radians();
-        let pitch_rad: f64 = (self.pitch - 90.0).to_radians();
-        let up_x: f64 = yaw_rad.cos() * pitch_rad.cos();
-        let up_y: f64 = pitch_rad.sin();
-        let up_z: f64 = yaw_rad.sin() * pitch_rad.cos();
+        let pitch_rad: f64 = (self.pitch + 90.0).to_radians();
+        let pitch_rad_cos = pitch_rad.cos();
+        let pitch_rad_sin = pitch_rad.sin();
+
+        let yaw_rad_cos = yaw_rad.cos();
+        let yaw_rad_sin = yaw_rad.sin();
+
+        let up_x: f64 = yaw_rad_cos * pitch_rad_cos;
+        let up_y: f64 = pitch_rad_sin;
+        let up_z: f64 = yaw_rad_sin * pitch_rad_cos;
         self.up_direction = Vector3D::new(up_x, up_y, up_z).normalize();
     }
 
@@ -185,9 +217,15 @@ impl Camera {
         let yaw_rad = self.yaw.to_radians();
         let pitch_rad = self.pitch.to_radians();
 
-        let direction_x = yaw_rad.cos() * pitch_rad.cos();
-        let direction_y = pitch_rad.sin();
-        let direction_z = yaw_rad.sin() * pitch_rad.cos();
+        let pitch_rad_cos = pitch_rad.cos();
+        let pitch_rad_sin = pitch_rad.sin();
+
+        let yaw_rad_cos = yaw_rad.cos();
+        let yaw_rad_sin = yaw_rad.sin();
+
+        let direction_x: f64 = yaw_rad_cos * pitch_rad_cos;
+        let direction_y: f64 = pitch_rad_sin;
+        let direction_z: f64 = yaw_rad_sin * pitch_rad_cos;
 
         let direction = Vector3D::new(direction_x, direction_y, direction_z);
         self.camera_target = self.camera_position.add_vector(&direction);
@@ -195,7 +233,7 @@ impl Camera {
     }
 
     pub fn increment_position_x(&mut self, increment: f64) {
-        let mut side_vector: Vector3D = self.side_direction.multiply(-increment);
+        let mut side_vector: Vector3D = self.side_direction.multiply(increment);
         side_vector.y = 0.0;
         self.camera_position = self.camera_position.add_vector(&side_vector);
         self.camera_target = self.camera_position.add_vector(&self.look_direction);
@@ -208,7 +246,7 @@ impl Camera {
     }
 
     pub fn increment_position_z(&mut self, increment: f64) {
-        let mut look_vector: Vector3D = self.look_direction.multiply(increment);
+        let mut look_vector: Vector3D = self.look_direction.multiply(-increment);
         look_vector.y = 0.0;
         self.camera_position = self.camera_position.add_vector(&look_vector);
         self.camera_target = self.camera_position.add_vector(&self.look_direction);

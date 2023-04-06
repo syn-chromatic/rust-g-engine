@@ -27,6 +27,7 @@ fn main() {
     let camera: Camera = Camera::new(width, height);
     let mut simulation: Simulation = Simulation::new(camera, resolution);
     simulation.setup_objects();
+
     let graphics: Graphics = Graphics::new(width, height);
     let draw_call = DrawCall::new(graphics, simulation);
     window.run_loop(draw_call);
@@ -63,7 +64,7 @@ impl WindowHandler for DrawCall {
         virtual_key_code: Option<VirtualKeyCode>,
         _scancode: KeyScancode,
     ) {
-        let step_val = 150.0;
+        let step_val = 50.0;
         let mut camera = &mut self.simulation.camera;
 
         if let Some(VirtualKeyCode::W) = virtual_key_code {
@@ -83,11 +84,11 @@ impl WindowHandler for DrawCall {
         }
 
         if let Some(VirtualKeyCode::Up) = virtual_key_code {
-            camera.increment_position_y(-step_val);
+            camera.increment_position_y(step_val);
         }
 
         if let Some(VirtualKeyCode::Down) = virtual_key_code {
-            camera.increment_position_y(step_val);
+            camera.increment_position_y(-step_val);
         }
 
         if let Some(VirtualKeyCode::P) = virtual_key_code {

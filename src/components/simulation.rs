@@ -16,7 +16,7 @@ pub struct Simulation {
     timestep_hz: f64,
     text_writer: TextWriter,
     path_trace: bool,
-    bounce_count: usize,
+    pub bounce_count: usize,
 }
 
 impl Simulation {
@@ -60,8 +60,8 @@ impl Simulation {
         // let obj = body_configurations::get_obj("./plane.obj");
         // self.objects.push(obj);
 
-        // let sphere = body_configurations::get_sphere();
-        // self.objects.push(sphere);
+        let sphere = body_configurations::get_sphere();
+        self.objects.push(sphere);
 
         for object in self.objects.iter_mut() {
             let physics = object.physics();

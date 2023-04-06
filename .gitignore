@@ -1,3 +1,8 @@
+# Ignore
 /.vscode
 /target
 *.obj
+
+
+# Allow
+!Town_Square.obj

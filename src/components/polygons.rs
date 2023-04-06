@@ -1,7 +1,6 @@
 use crate::components::color::RGBA;
+use crate::components::shaders::Light;
 use crate::components::vectors::Vector3D;
-
-use super::shaders::Light;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Triangle {
@@ -120,43 +119,16 @@ impl Polygon {
 
     pub fn get_normal(&self) -> Vector3D {
         match self {
-            Polygon::Triangle(triangle) => {
-                let v0 = triangle.vertices[0];
-                let v1 = triangle.vertices[1];
-                let v2 = triangle.vertices[2];
-
-                let edge1 = v1.subtract_vector(&v0);
-                let edge2 = v2.subtract_vector(&v0);
-
-                edge1.cross_product(&edge2).normalize()
-            }
-            Polygon::Quad(quad) => {
-                let v0 = quad.vertices[0];
-                let v1 = quad.vertices[1];
-                let v2 = quad.vertices[2];
-
-                let edge1 = v1.subtract_vector(&v0);
-                let edge2 = v2.subtract_vector(&v0);
-
-                edge1.cross_product(&edge2).normalize()
-            }
+            Polygon::Triangle(triangle) => triangle.get_normal(),
+            Polygon::Quad(quad) => quad.get_normal(),
         }
     }
 
     pub fn get_centroid(&self) -> Vector3D {
-        let vertices: &[Vector3D] = match self {
-            Polygon::Triangle(triangle) => &triangle.vertices,
-            Polygon::Quad(quad) => &quad.vertices,
-        };
-
-        let mut vertices_sum: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
-        let num_vertices: usize = vertices.len();
-
-        for vertex in vertices {
-            vertices_sum = vertices_sum.add_vector(vertex);
+        match self {
+            Polygon::Triangle(triangle) => triangle.get_centroid(),
+            Polygon::Quad(quad) => quad.get_centroid(),
         }
-
-        vertices_sum.divide(num_vertices as f64)
     }
 }
 

@@ -1,5 +1,5 @@
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::fs::read;
+use std::io::{BufRead, BufReader, Cursor};
 
 use crate::components::color::RGBA;
 use crate::components::polygons::Mesh;
@@ -10,7 +10,7 @@ use crate::components::vectors::Vector3D;
 use crate::components::vertices::MeshConverter;
 
 pub struct OBJModelFormat {
-    file_path: String,
+    file_bytes: Vec<u8>,
     scale: f64,
     x_offset: f64,
     y_offset: f64,
@@ -22,9 +22,15 @@ pub struct OBJModelFormat {
 
 impl OBJModelFormat {
     pub fn new(file_path: &str, scale: f64) -> Self {
-        let file_path: String = file_path.to_string();
+        let file_bytes = read(file_path);
+        if file_bytes.is_err() {
+            println!("Filepath not found: {:?}", file_path);
+            std::process::exit(1);
+        }
+        let file_bytes = file_bytes.unwrap();
+
         Self {
-            file_path,
+            file_bytes,
             scale,
             x_offset: 0.0,
             y_offset: 0.0,
@@ -105,8 +111,8 @@ impl OBJModelFormat {
         let mut vertices = Vec::new();
         let mut faces = Vec::new();
 
-        let file = File::open(&self.file_path).unwrap();
-        let reader = BufReader::new(file);
+        let cursor = Cursor::new(self.file_bytes.clone());
+        let mut reader = BufReader::new(cursor);
 
         for line in reader.lines() {
             let line = line.unwrap();

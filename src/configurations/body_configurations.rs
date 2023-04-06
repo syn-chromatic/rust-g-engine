@@ -18,6 +18,8 @@ pub fn get_obj(file_path: &str) -> BodyType {
     let mut obj = OBJModelFormat::new(file_path, 1.0);
     obj.set_offset(2000.0, -100.0, 4000.0);
     obj.set_rotation(-90.0, 0.0, 0.0);
+    // obj.set_rotation(0.0, -110.0, 0.0);
+    // obj.set_offset(800.0, 800.0, 0.0);
 
     let mesh = obj.get_polygons();
 
@@ -27,8 +29,9 @@ pub fn get_obj(file_path: &str) -> BodyType {
 }
 
 pub fn get_sphere() -> BodyType {
-    let mut sphere = Sphere::new(50.0, 20, 20);
-    sphere.set_offset(4900.0, 20100.0, 7500.0);
+    let mut sphere = Sphere::new(500.0, 50, 50);
+    let offset = 1000.0;
+    sphere.set_offset(50.0 + offset, 5_000.0 + offset, 10000.0 + offset);
 
     let mesh = sphere.get_triangle_mesh();
     let body = Shape::new(mesh);

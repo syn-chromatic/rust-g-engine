@@ -15,86 +15,94 @@ impl Vector3D {
     }
 
     pub fn to_tuple(&self) -> (f64, f64, f64) {
-        let x = self.x;
-        let y = self.y;
-        let z = self.z;
+        let x: f64 = self.x;
+        let y: f64 = self.y;
+        let z: f64 = self.z;
         (x, y, z)
     }
     pub fn to_vec(&self) -> [f64; 3] {
-        let x = self.x;
-        let y = self.y;
-        let z = self.z;
+        let x: f64 = self.x;
+        let y: f64 = self.y;
+        let z: f64 = self.z;
         [x, y, z]
     }
 
     pub fn clamp(&self, min_value: f64, max_value: f64) -> Self {
-        let x = self.x.min(max_value).max(min_value);
-        let y = self.y.min(max_value).max(min_value);
-        let z = self.z.min(max_value).max(min_value);
+        let x: f64 = self.x.min(max_value).max(min_value);
+        let y: f64 = self.y.min(max_value).max(min_value);
+        let z: f64 = self.z.min(max_value).max(min_value);
 
         Vector3D::new(x, y, z)
     }
 
     pub fn add(&self, num: f64) -> Self {
-        let x = self.x + num;
-        let y = self.y + num;
-        let z = self.z + num;
+        let x: f64 = self.x + num;
+        let y: f64 = self.y + num;
+        let z: f64 = self.z + num;
 
         Vector3D::new(x, y, z)
     }
 
     pub fn subtract(&self, num: f64) -> Self {
-        let x = self.x - num;
-        let y = self.y - num;
-        let z = self.z - num;
+        let x: f64 = self.x - num;
+        let y: f64 = self.y - num;
+        let z: f64 = self.z - num;
 
         Vector3D::new(x, y, z)
     }
 
     pub fn multiply(&self, num: f64) -> Self {
-        let x = self.x * num;
-        let y = self.y * num;
-        let z = self.z * num;
+        let x: f64 = self.x * num;
+        let y: f64 = self.y * num;
+        let z: f64 = self.z * num;
 
         Vector3D::new(x, y, z)
     }
 
     pub fn divide(&self, num: f64) -> Self {
-        let x = self.x / num;
-        let y = self.y / num;
-        let z = self.z / num;
+        let x: f64 = self.x / num;
+        let y: f64 = self.y / num;
+        let z: f64 = self.z / num;
+
+        Vector3D::new(x, y, z)
+    }
+
+    pub fn add_elements(&self, x: f64, y: f64, z: f64) -> Self {
+        let x: f64 = self.x + x;
+        let y: f64 = self.y + y;
+        let z: f64 = self.z + z;
 
         Vector3D::new(x, y, z)
     }
 
     pub fn add_vector(&self, vec: &Self) -> Self {
-        let x = self.x + vec.x;
-        let y = self.y + vec.y;
-        let z = self.z + vec.z;
+        let x: f64 = self.x + vec.x;
+        let y: f64 = self.y + vec.y;
+        let z: f64 = self.z + vec.z;
 
         Vector3D::new(x, y, z)
     }
 
     pub fn subtract_vector(&self, vec: &Self) -> Self {
-        let x = self.x - vec.x;
-        let y = self.y - vec.y;
-        let z = self.z - vec.z;
+        let x: f64 = self.x - vec.x;
+        let y: f64 = self.y - vec.y;
+        let z: f64 = self.z - vec.z;
 
         Vector3D::new(x, y, z)
     }
 
     pub fn multiply_vector(&self, vec: &Self) -> Self {
-        let x = self.x * vec.x;
-        let y = self.y * vec.y;
-        let z = self.z * vec.z;
+        let x: f64 = self.x * vec.x;
+        let y: f64 = self.y * vec.y;
+        let z: f64 = self.z * vec.z;
 
         Vector3D::new(x, y, z)
     }
 
     pub fn divide_vector(&self, vec: &Self) -> Self {
-        let x = self.x / vec.x;
-        let y = self.y / vec.y;
-        let z = self.z / vec.z;
+        let x: f64 = self.x / vec.x;
+        let y: f64 = self.y / vec.y;
+        let z: f64 = self.z / vec.z;
 
         Vector3D::new(x, y, z)
     }
@@ -104,64 +112,64 @@ impl Vector3D {
         if length == 0.0 {
             return Vector3D::new(0.0, 0.0, 0.0);
         }
-        let x = self.x / length;
-        let y = self.y / length;
-        let z = self.z / length;
+        let x: f64 = self.x / length;
+        let y: f64 = self.y / length;
+        let z: f64 = self.z / length;
 
         Vector3D::new(x, y, z)
     }
 
     pub fn dot_product(&self, vec: &Self) -> f64 {
-        let x = self.x * vec.x;
-        let y = self.y * vec.y;
-        let z = self.z * vec.z;
+        let x: f64 = self.x * vec.x;
+        let y: f64 = self.y * vec.y;
+        let z: f64 = self.z * vec.z;
 
         x + y + z
     }
 
     pub fn cross_product(&self, vec: &Self) -> Self {
-        let x = self.y * vec.z - self.z * vec.y;
-        let y = self.z * vec.x - self.x * vec.z;
-        let z = self.x * vec.y - self.y * vec.x;
+        let x: f64 = self.y * vec.z - self.z * vec.y;
+        let y: f64 = self.z * vec.x - self.x * vec.z;
+        let z: f64 = self.x * vec.y - self.y * vec.x;
 
         Vector3D::new(x, y, z)
     }
 
     pub fn set_magnitude(&self, magnitude: f64) -> Self {
-        let length = self.get_length();
+        let length: f64 = self.get_length();
 
-        let x = self.x;
-        let y = self.y;
-        let z = self.z;
+        let mut x: f64 = self.x;
+        let mut y: f64 = self.y;
+        let mut z: f64 = self.z;
 
         if length > 0.0 {
-            let x = (self.x / length) * magnitude;
-            let y = (self.y / length) * magnitude;
-            let z = (self.z / length) * magnitude;
+            x = (self.x / length) * magnitude;
+            y = (self.y / length) * magnitude;
+            z = (self.z / length) * magnitude;
         }
         Vector3D::new(x, y, z)
     }
 
     pub fn lerp_interpolation(&self, vec: &Self, t: f64) -> Self {
-        let x = self.x + (vec.x - self.x) * t;
-        let y = self.y + (vec.y - self.y) * t;
-        let z = self.z + (vec.z - self.z) * t;
+        let x: f64 = self.x + (vec.x - self.x) * t;
+        let y: f64 = self.y + (vec.y - self.y) * t;
+        let z: f64 = self.z + (vec.z - self.z) * t;
 
         Vector3D::new(x, y, z)
     }
 
     pub fn get_midpoint(&self, vec: &Self) -> Self {
-        let x = (self.x + vec.x) / 2.0;
-        let y = (self.y + vec.y) / 2.0;
-        let z = (self.z + vec.z) / 2.0;
+        let x: f64 = (self.x + vec.x) / 2.0;
+        let y: f64 = (self.y + vec.y) / 2.0;
+        let z: f64 = (self.z + vec.z) / 2.0;
 
         Vector3D::new(x, y, z)
     }
 
     pub fn get_length_squared(&self) -> f64 {
-        let x = self.x.powi(2);
-        let y = self.y.powi(2);
-        let z = self.z.powi(2);
+        let x: f64 = self.x.powi(2);
+        let y: f64 = self.y.powi(2);
+        let z: f64 = self.z.powi(2);
 
         x + y + z
     }
@@ -175,11 +183,11 @@ impl Vector3D {
     }
 
     pub fn get_distance(&self, vec: &Self) -> f64 {
-        let x = (self.x - vec.x).powi(2);
-        let y = (self.y - vec.y).powi(2);
-        let z = (self.z - vec.z).powi(2);
+        let x: f64 = (self.x - vec.x).powi(2);
+        let y: f64 = (self.y - vec.y).powi(2);
+        let z: f64 = (self.z - vec.z).powi(2);
 
-        let distance = (x + y + z).sqrt();
+        let distance: f64 = (x + y + z).sqrt();
         distance
     }
 }
