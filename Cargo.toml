@@ -1,5 +1,5 @@
 [package]
-name = "physics_sim"
+name = "rust-g-engine"
 version = "0.1.0"
 edition = "2021"
 

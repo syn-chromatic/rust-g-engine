@@ -15,8 +15,6 @@ pub struct Simulation {
     polygon_count: usize,
     timestep_hz: f64,
     text_writer: TextWriter,
-    path_trace: bool,
-    pub bounce_count: usize,
 }
 
 impl Simulation {
@@ -24,8 +22,6 @@ impl Simulation {
         let objects: Vec<BodyType> = vec![];
         let timestep_hz: f64 = 5000.0;
         let polygon_count: usize = 0;
-        let path_trace = false;
-        let bounce_count = 1;
 
         let arial_font: ArialFont = ArialFont::new();
         let font_type: FontType = FontType::ArialFont(arial_font);
@@ -39,8 +35,6 @@ impl Simulation {
             polygon_count,
             timestep_hz,
             text_writer,
-            path_trace,
-            bounce_count,
         }
     }
 
@@ -68,17 +62,6 @@ impl Simulation {
             let mesh = &physics.mesh;
             let polygon_len = mesh.polygons.len();
             self.polygon_count += polygon_len;
-        }
-    }
-
-    pub fn toggle_path_trace(&mut self) {
-        self.path_trace = !self.path_trace;
-    }
-
-    pub fn increment_bounces(&mut self, increment: i32) {
-        let bounce_count = (self.bounce_count as i32 + increment);
-        if bounce_count >= 0 {
-            self.bounce_count = bounce_count as usize;
         }
     }
 
@@ -122,13 +105,8 @@ impl Simulation {
         let object_count = self.objects.len();
         let text_object_count = format!("Objects:  {}", object_count);
         let text_polygon_count = format!("Polygon Count: {}", self.polygon_count);
-        let text_path_trace = format!("Path Tracing: {}", self.path_trace);
-        let text_bounce_count = format!("Bounce Count: {}", self.bounce_count);
         self.text_writer.add_text_top_left(text_object_count, None);
         self.text_writer.add_text_top_left(text_polygon_count, None);
-
-        self.text_writer.add_text_top_left(text_path_trace, None);
-        self.text_writer.add_text_top_left(text_bounce_count, None);
     }
 
     fn write_camera_information(&mut self) {

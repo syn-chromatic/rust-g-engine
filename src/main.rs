@@ -90,17 +90,5 @@ impl WindowHandler for DrawCall {
         if let Some(VirtualKeyCode::Down) = virtual_key_code {
             camera.increment_position_y(-step_val);
         }
-
-        if let Some(VirtualKeyCode::P) = virtual_key_code {
-            self.simulation.toggle_path_trace();
-        }
-
-        if let Some(VirtualKeyCode::Period) = virtual_key_code {
-            self.simulation.increment_bounces(5);
-        }
-
-        if let Some(VirtualKeyCode::Comma) = virtual_key_code {
-            self.simulation.increment_bounces(-5);
-        }
     }
 }
