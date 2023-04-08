@@ -62,8 +62,8 @@ impl DrawCall {
                 lights.push(mesh_light.clone().unwrap());
             }
         }
-        let camera_light: Light = self.get_camera_light();
-        lights.push(camera_light);
+        // let camera_light: Light = self.get_camera_light();
+        // lights.push(camera_light);
         lights
     }
 
@@ -151,10 +151,12 @@ impl DrawCall {
 
     pub fn draw(&mut self, objects: Vec<BodyType>) {
         let meshes: Vec<Mesh> = self.get_meshes(objects);
+        // let lights = self.get_lights(&meshes);
         let mut mesh: Mesh = self.combine_meshes(meshes);
 
-        let lights: Vec<Light> = self.get_lights_1();
+        let lights: Vec<Light> = self.get_lights_2();
         // self.set_bvh_node(&mesh);
+
 
         mesh = self.cull_backfaces_mesh(mesh);
         mesh = self.apply_z_buffer_sort(mesh);

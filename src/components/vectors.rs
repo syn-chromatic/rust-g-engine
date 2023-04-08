@@ -10,8 +10,8 @@ impl Vector3D {
         Vector3D { x, y, z }
     }
 
-    pub fn default() -> Vector3D {
-        Vector3D::new(0.0, 0.0, 0.0)
+    pub fn default(value: f64) -> Vector3D {
+        Vector3D::new(value, value, value)
     }
 
     pub fn to_string(&self) -> String {
@@ -193,5 +193,12 @@ impl Vector3D {
 
         let distance: f64 = (x + y + z).sqrt();
         distance
+    }
+
+    pub fn get_sum(&self) -> f64 {
+        let x: f64 = self.x;
+        let y: f64 = self.y;
+        let z: f64 = self.z;
+        x + y + z
     }
 }

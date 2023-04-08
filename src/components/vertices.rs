@@ -13,6 +13,8 @@ pub struct Sphere {
     x_offset: f64,
     y_offset: f64,
     z_offset: f64,
+    color: RGBA,
+    shader: RGBA,
 }
 
 impl Sphere {
@@ -20,6 +22,8 @@ impl Sphere {
         let x_offset = 0.0;
         let y_offset = 0.0;
         let z_offset = 0.0;
+        let color = RGBA::from_rgb(1.0, 1.0, 1.0);
+        let shader = RGBA::from_rgb(0.0, 0.0, 0.0);
 
         Sphere {
             radius,
@@ -28,6 +32,8 @@ impl Sphere {
             x_offset,
             y_offset,
             z_offset,
+            color,
+            shader,
         }
     }
 
@@ -35,6 +41,10 @@ impl Sphere {
         self.x_offset = x;
         self.y_offset = y;
         self.z_offset = z;
+    }
+
+    pub fn set_color(&mut self, color: RGBA) {
+        self.color = color;
     }
 
     fn get_vertices(&self) -> Vec<Vector3D> {
@@ -102,14 +112,16 @@ impl Sphere {
         for face in faces {
             let triangle_vertices: [Vector3D; 3] =
                 [vertices[face.0], vertices[face.1], vertices[face.2]];
-            let shader: RGBA = RGBA::from_rgb(0.0, 0.0, 0.0);
-            let color: RGBA = RGBA::from_rgb(1.0, 0.2, 0.2);
-            let triangle: Triangle = Triangle::new(triangle_vertices, face, shader, color);
+            let triangle: Triangle =
+                Triangle::new(triangle_vertices, face, self.shader, self.color);
             let polygon: Polygon = Polygon::Triangle(triangle);
             triangle_polygons.push(polygon);
             vertices_count += 3;
         }
-        println!("{} {:?}, {}{:?}", "Sphere Vertices:", vertices_count, "Faces:", faces_count);
+        println!(
+            "{} {:?}, {}{:?}",
+            "Sphere Vertices:", vertices_count, "Faces:", faces_count
+        );
         let mesh = Mesh::new(triangle_polygons);
         mesh
     }
@@ -126,9 +138,7 @@ impl Sphere {
                 vertices[face.2],
                 vertices[face.3],
             ];
-            let shader: RGBA = RGBA::from_rgb(0.0, 0.0, 0.0);
-            let color: RGBA = RGBA::from_rgb(1.0, 1.0, 1.0);
-            let triangle: Quad = Quad::new(quad_vertices, face, shader, color);
+            let triangle: Quad = Quad::new(quad_vertices, face, self.shader, self.color);
             let polygon: Polygon = Polygon::Quad(triangle);
             quad_polygons.push(polygon);
         }

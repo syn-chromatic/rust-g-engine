@@ -30,7 +30,7 @@ impl Frustum {
             height,
             fov: 100.0,
             near_plane: 0.1,
-            far_plane: 30_000.0,
+            far_plane: 100_000_000.0,
             planes,
         };
         let planes = frustum.make_frustum();
@@ -325,7 +325,7 @@ impl Frustum {
             Polygon::Quad(_) => (),
             Polygon::Triangle(triangle) => {
                 let input_vertices = triangle.vertices;
-                let mut output_vertices = [Vector3D::default(); 8];
+                let mut output_vertices = [Vector3D::default(0.0); 8];
                 let mut output_faces = [0usize; 8];
                 let mut vertex_length = 0;
 

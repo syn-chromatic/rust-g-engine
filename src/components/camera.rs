@@ -2,7 +2,6 @@ use crate::components::frustum::Frustum;
 use crate::components::polygons::Mesh;
 use crate::components::polygons::Polygon;
 use crate::components::vectors::Vector3D;
-use rayon::prelude::*;
 
 pub struct Camera {
     pub frustum: Frustum,

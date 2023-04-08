@@ -192,7 +192,7 @@ pub struct Graphics {
 
 impl Graphics {
     pub fn new(width: u32, height: u32) -> Self {
-        let bg_color = RGBA::from_rgb(0.15, 0.15, 0.15);
+        let bg_color = RGBA::from_rgb(0.10, 0.10, 0.10);
         let buffer: Vec<DrawType> = vec![];
         let buffer_execute: bool = false;
 

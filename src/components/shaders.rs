@@ -40,7 +40,7 @@ impl Light {
         let ambient: Vector3D = Vector3D::new(0.2, 0.2, 0.2);
         let diffuse: Vector3D = Vector3D::new(0.95, 0.6, 0.6);
         let specular: Vector3D = Vector3D::new(0.95, 0.6, 0.6);
-        let lumens: f64 = 8_000.0;
+        let lumens: f64 = 20_000.0;
 
         let light: Light = Light::new(position, target, ambient, diffuse, specular, lumens);
         light
@@ -50,7 +50,7 @@ impl Light {
         let ambient: Vector3D = Vector3D::new(0.2, 0.2, 0.2);
         let diffuse: Vector3D = Vector3D::new(0.6, 0.6, 0.6);
         let specular: Vector3D = Vector3D::new(0.6, 0.6, 0.6);
-        let lumens: f64 = 3_000.0;
+        let lumens: f64 = 500_000.0;
 
         let light: Light = Light::new(position, target, ambient, diffuse, specular, lumens);
         light
@@ -151,7 +151,7 @@ impl Shaders {
         let intersecting_polygons = bvh_node.traverse(&centroid, &ray_direction);
 
         for intersecting_polygon in &intersecting_polygons {
-            if intersecting_polygon.eq(polygon) {
+            if std::ptr::eq(&intersecting_polygon, &polygon) {
                 continue;
             }
             if self.intersect_ray(&intersecting_polygon, &centroid, &ray_direction) {

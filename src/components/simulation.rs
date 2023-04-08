@@ -20,7 +20,7 @@ pub struct Simulation {
 impl Simulation {
     pub fn new(camera: Camera, resolution: (u32, u32)) -> Simulation {
         let objects: Vec<BodyType> = vec![];
-        let timestep_hz: f64 = 5000.0;
+        let timestep_hz: f64 = 0.5;
         let polygon_count: usize = 0;
 
         let arial_font: ArialFont = ArialFont::new();
@@ -39,15 +39,14 @@ impl Simulation {
     }
 
     pub fn setup_objects(&mut self) {
-        self.timestep_hz = 10000.0;
-        let z = 0.0;
+        // self.timestep_hz = 10000.0;
+        // let z = 0.0;
 
         // let grid = body_configurations::get_grid();
         // self.objects.push(grid);
 
-        let obj = body_configurations::get_obj("./town_square.obj");
-        self.objects.push(obj);
-
+        // let obj = body_configurations::get_obj("./town_square.obj");
+        // self.objects.push(obj);
 
         // let obj = body_configurations::get_obj("./cottage.obj");
         // self.objects.push(obj);
@@ -55,8 +54,21 @@ impl Simulation {
         // let obj = body_configurations::get_obj("./plane.obj");
         // self.objects.push(obj);
 
-        let sphere = body_configurations::get_sphere();
+        let sphere = body_configurations::get_sphere_light_highmass();
         self.objects.push(sphere);
+
+        // let sphere = body_configurations::get_sphere_light1();
+        // self.objects.push(sphere);
+
+        // let sphere = body_configurations::get_sphere_light2();
+
+        // let sphere = body_configurations::get_sphere_light3();
+        // self.objects.push(sphere);
+
+        for i in 0..100 {
+            let sphere = body_configurations::get_sphere_light3();
+            self.objects.push(sphere);
+        }
 
         for object in self.objects.iter_mut() {
             let physics = object.physics();
@@ -66,27 +78,29 @@ impl Simulation {
         }
     }
 
-    pub fn compute_objects(&mut self, graphics: &mut Graphics) {
-        // let timestep: f64 = 1.0 / self.timestep_hz;
-        // // let mut objects_cl: Vec<BodyType> = self.objects.clone();
-        // for (i, pl1) in self.objects.iter_mut().enumerate() {
-        //     // let pl1_physics = pl1.physics();
-        //     // for (j, pl2) in objects_cl.iter_mut().enumerate() {
-        //     //     if i == j {
-        //     //         continue;
-        //     //     }
+    pub fn increment_timestep(&mut self, increment: f64) {
+        if (self.timestep_hz + increment) > 10.0 {
+            self.timestep_hz += increment;
+        }
+    }
 
-        //     //     let pl2_physics = pl2.physics();
-        //     //     pl1_physics.apply_forces(pl2_physics, timestep);
-        //     // }
-        //     // // pl1_physics.update(timestep);
-        //     // pl1.draw(
-        //     //     graphics,
-        //     //     &mut self.camera,
-        //     //     self.path_trace,
-        //     //     self.bounce_count,
-        //     // );
-        // }
+    pub fn compute_objects(&mut self) {
+        let timestep: f64 = 1.0 / self.timestep_hz;
+
+        for i in 0..self.objects.len() {
+            for j in (i + 1)..self.objects.len() {
+                let (physics1, physics2) = {
+                    let (left, right) = self.objects.split_at_mut(j);
+                    (left[i].physics(), right[0].physics())
+                };
+
+                physics1.apply_forces(physics2);
+            }
+        }
+
+        for object in self.objects.iter_mut() {
+            object.physics().update(timestep);
+        }
     }
 
     fn write_fps_text(&mut self, fps: f64) {
@@ -149,7 +163,8 @@ impl Simulation {
     }
 
     pub fn simulate(&mut self, graphics: &mut Graphics, fps: f64) {
-        // self.compute_objects(graphics);
+        self.compute_objects();
+
         self.write_fps_text(fps);
         self.write_timestep_text();
         self.write_object_count();

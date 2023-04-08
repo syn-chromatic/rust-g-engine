@@ -1,5 +1,9 @@
 use crate::components::vectors::Vector3D;
+
 use speedy2d::color::Color;
+
+use rand::rngs::ThreadRng;
+use rand::Rng;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct RGBA {
@@ -48,6 +52,16 @@ impl RGBA {
 
     pub fn from_rgb_tuple(rgb: (f64, f64, f64)) -> Self {
         RGBA::new(rgb.0, rgb.1, rgb.2, 1.0)
+    }
+
+    pub fn from_random() -> RGBA {
+        let mut rng: ThreadRng = rand::thread_rng();
+        let red: f64 = rng.gen_range(0.0..1.0);
+        let green: f64 = rng.gen_range(0.0..1.0);
+        let blue: f64 = rng.gen_range(0.0..1.0);
+        let alpha: f64 = 1.0;
+
+        RGBA::new(red, green, blue, alpha)
     }
 
     pub fn multiply(&self, color: &RGBA) -> RGBA {
