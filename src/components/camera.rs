@@ -13,6 +13,7 @@ pub struct Camera {
     pub up_direction: Vector3D,
     pub look_direction: Vector3D,
     pub previous_pointer: (f64, f64),
+    pub y_lock: bool,
 }
 
 impl Camera {
@@ -29,6 +30,7 @@ impl Camera {
         let camera_target: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
 
         let previous_pointer: (f64, f64) = (width as f64 / 2.0, height as f64 / 2.0);
+        let y_lock = true;
 
         Camera {
             frustum,
@@ -40,11 +42,16 @@ impl Camera {
             up_direction,
             look_direction,
             previous_pointer,
+            y_lock,
         }
     }
 
     pub fn calibrate(&mut self) {
         self.apply_target_adjustment();
+    }
+
+    pub fn toggle_y_lock(&mut self) {
+        self.y_lock = !self.y_lock;
     }
 
     fn apply_view_transform(&mut self, position: Vector3D) -> Vector3D {
@@ -237,7 +244,9 @@ impl Camera {
 
     pub fn increment_position_x(&mut self, increment: f64) {
         let mut side_vector: Vector3D = self.side_direction.multiply(increment);
-        side_vector.y = 0.0;
+        if self.y_lock {
+            side_vector.y = 0.0;
+        }
         self.camera_position = self.camera_position.add_vector(&side_vector);
         self.camera_target = self.camera_position.add_vector(&self.look_direction);
     }
@@ -250,7 +259,9 @@ impl Camera {
 
     pub fn increment_position_z(&mut self, increment: f64) {
         let mut look_vector: Vector3D = self.look_direction.multiply(-increment);
-        look_vector.y = 0.0;
+        if self.y_lock {
+            look_vector.y = 0.0;
+        }
         self.camera_position = self.camera_position.add_vector(&look_vector);
         self.camera_target = self.camera_position.add_vector(&self.look_direction);
     }

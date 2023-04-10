@@ -151,21 +151,24 @@ impl Physics {
     }
 
     pub fn apply_collision_velocities(&mut self, target: &mut Physics, direction: Vector3D) {
+        let e: f64 = 0.8;
         let v1i: f64 = self.velocity.dot_product(&direction);
         let v2i: f64 = target.velocity.dot_product(&direction);
-        let v1i_vec: Vector3D = direction.multiply(v1i);
-        let v2i_vec: Vector3D = direction.multiply(v2i);
-        let v1p: Vector3D = self.velocity.subtract_vector(&v1i_vec);
-        let v2p: Vector3D = target.velocity.subtract_vector(&v2i_vec);
 
         let m1: f64 = self.mass;
         let m2: f64 = target.mass;
 
-        let v1f: f64 = ((v1i * (m1 - m2)) + 2.0 * (m2 * v2i)) / (m1 + m2);
-        let v2f: f64 = ((v2i * (m2 - m1)) + 2.0 * (m1 * v1i)) / (m1 + m2);
+        let v1f: f64 = ((m1 - e * m2) * v1i + (1.0 + e) * m2 * v2i) / (m1 + m2);
+        let v2f: f64 = ((m2 - e * m1) * v2i + (1.0 + e) * m1 * v1i) / (m1 + m2);
 
         let v1f_vec: Vector3D = direction.multiply(v1f);
         let v2f_vec: Vector3D = direction.multiply(v2f);
+
+        let v1i_vec: Vector3D = direction.multiply(v1i);
+        let v2i_vec: Vector3D = direction.multiply(v2i);
+
+        let v1p: Vector3D = self.velocity.subtract_vector(&v1i_vec);
+        let v2p: Vector3D = target.velocity.subtract_vector(&v2i_vec);
 
         let v1: Vector3D = v1p.add_vector(&v1f_vec);
         let v2: Vector3D = v2p.add_vector(&v2f_vec);

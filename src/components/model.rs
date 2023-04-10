@@ -1,5 +1,7 @@
 use std::fs::read;
-use std::io::{BufRead, BufReader, Cursor};
+use std::io::BufRead;
+use std::io::BufReader;
+use std::io::Cursor;
 
 use crate::components::color::RGBA;
 use crate::components::polygons::Mesh;
@@ -107,12 +109,37 @@ impl OBJModelFormat {
         vertex
     }
 
+    fn get_vertex(&self, tokens: Vec<&str>) -> Vector3D {
+        let vertex_tuple: (f64, f64, f64) = (
+            tokens[1].parse().unwrap(),
+            tokens[2].parse().unwrap(),
+            tokens[3].parse().unwrap(),
+        );
+        let mut vertex = Vector3D::new(vertex_tuple.0, vertex_tuple.1, vertex_tuple.2);
+        vertex = vertex.multiply(self.scale);
+        vertex = self.apply_rotation(vertex);
+
+        let xv = vertex.x + self.x_offset;
+        let yv = vertex.y + self.y_offset;
+        let zv = vertex.z + self.z_offset;
+        vertex = Vector3D::new(xv, yv, zv);
+        vertex
+    }
+
+    fn get_face(&self, tokens: Vec<&str>) -> Vec<usize> {
+        let face_indices: Vec<usize> = tokens[1..]
+            .iter()
+            .map(|tok| tok.split('/').next().unwrap().parse::<usize>().unwrap() - 1)
+            .collect();
+        face_indices
+    }
+
     fn get_model_polygons(&self, num_vertices: usize) -> Mesh {
         let mut vertices = Vec::new();
         let mut faces = Vec::new();
 
         let cursor = Cursor::new(self.file_bytes.clone());
-        let mut reader = BufReader::new(cursor);
+        let reader = BufReader::new(cursor);
 
         for line in reader.lines() {
             let line = line.unwrap();
@@ -124,27 +151,11 @@ impl OBJModelFormat {
 
             match tokens[0] {
                 "v" => {
-                    let vertex_tuple: (f64, f64, f64) = (
-                        tokens[1].parse().unwrap(),
-                        tokens[2].parse().unwrap(),
-                        tokens[3].parse().unwrap(),
-                    );
-                    let mut vertex = Vector3D::new(vertex_tuple.0, vertex_tuple.1, vertex_tuple.2);
-                    vertex = vertex.multiply(self.scale);
-                    vertex = self.apply_rotation(vertex);
-
-                    let xv = vertex.x + self.x_offset;
-                    let yv = vertex.y + self.y_offset;
-                    let zv = vertex.z + self.z_offset;
-                    vertex = Vector3D::new(xv, yv, zv);
-
+                    let vertex = self.get_vertex(tokens);
                     vertices.push(vertex);
                 }
                 "f" => {
-                    let face_indices: Vec<usize> = tokens[1..]
-                        .iter()
-                        .map(|tok| tok.split('/').next().unwrap().parse::<usize>().unwrap() - 1)
-                        .collect();
+                    let face_indices = self.get_face(tokens);
 
                     if face_indices.len() == num_vertices {
                         faces.push(face_indices);

@@ -67,9 +67,6 @@ impl WindowHandler for DrawCall {
         virtual_key_code: Option<VirtualKeyCode>,
         _scancode: KeyScancode,
     ) {
-
-
-
         if let Some(VirtualKeyCode::Period) = virtual_key_code {
             self.simulation.increment_timestep(100.0);
         }
@@ -78,8 +75,7 @@ impl WindowHandler for DrawCall {
             self.simulation.increment_timestep(-100.0);
         }
 
-
-        let step_val = 5000.0;
+        let step_val = 50000.0;
         let camera = &mut self.simulation.camera;
 
         if let Some(VirtualKeyCode::W) = virtual_key_code {
@@ -106,9 +102,8 @@ impl WindowHandler for DrawCall {
             camera.increment_position_y(-step_val);
         }
 
-
-
-
-
+        if let Some(VirtualKeyCode::Y) = virtual_key_code {
+            camera.toggle_y_lock();
+        }
     }
 }
