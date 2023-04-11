@@ -76,7 +76,7 @@ impl Simulation {
         self.objects.extend(system);
 
         let system =
-            body_configurations::orbiting_system(Vector3D::new(4_000_000.0, 2_000_000.0, 0.0));
+            body_configurations::orbiting_system2(Vector3D::new(8_000_000.0, 4_000_000.0, 0.0));
         self.objects.extend(system);
 
         // let system = body_configurations::orbiting_system(Vector3D::new(-4_000_000.0, 2_000_000.0, 0.0,));

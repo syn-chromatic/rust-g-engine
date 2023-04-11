@@ -28,7 +28,7 @@ impl Physics {
         let spin_acceleration: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
         let mass: f64 = 1.0;
         let scale: f64 = 1.0;
-        let g_const: f64 = 0.5;
+        let g_const: f64 = 0.8;
 
         Physics {
             mesh,
@@ -113,6 +113,13 @@ impl Physics {
         direction
     }
 
+    fn ensure_direction(&self, mut direction: Vector3D) -> Vector3D {
+        if direction.get_sum() == 0.0 {
+            direction = self.get_random_direction();
+        }
+        direction
+    }
+
     pub fn apply_forces(&mut self, target: &mut Physics) {
         // Target-To-Self Distance
         let tts_distance: Vector3D = target.position.subtract_vector(&self.position);
@@ -142,17 +149,16 @@ impl Physics {
             // Self-To-Target Distance
             let stt_distance: Vector3D = tts_distance.multiply(-1.0);
             let stt_direction: Vector3D = stt_distance.normalize();
-            if self.mass <= target.mass {
+            let stt_direction: Vector3D = self.ensure_direction(stt_direction);
+            if target.mass >= self.mass {
                 self.apply_shift_correction(stt_direction, distance);
             }
-            if stt_direction.get_sum() != 0.0 {
-                self.apply_collision_velocities(target, stt_direction);
-            }
+            self.apply_collision_velocities(target, stt_direction);
         }
     }
 
     pub fn apply_collision_velocities(&mut self, target: &mut Physics, direction: Vector3D) {
-        let e: f64 = 0.8;
+        let e: f64 = 0.6;
         let v1i: f64 = self.velocity.dot_product(&direction);
         let v2i: f64 = target.velocity.dot_product(&direction);
 
@@ -179,10 +185,6 @@ impl Physics {
     }
 
     pub fn apply_shift_correction(&mut self, mut direction: Vector3D, distance: f64) {
-        if direction.get_sum() == 0.0 {
-            direction = self.get_random_direction();
-        }
-
         let self_vec = direction.multiply(distance.abs());
         self.position = self.position.add_vector(&self_vec);
         self.update_mesh_position(self_vec);

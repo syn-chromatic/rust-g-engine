@@ -205,7 +205,7 @@ pub fn orbiting_system(position: Vector3D) -> Vec<BodyType> {
         let offset = 5000.0;
 
         let position = (lx - (offset * dx), ly - (offset * dy), lz - (offset * dz));
-        let mass = 4_000_000_000_000.0;
+        let mass = 8_000_000_000_000.0;
 
         let mut sphere = Sphere::new(150_000.0, 20, 20);
         sphere.set_offset(position.0, position.1, position.2);
@@ -217,12 +217,13 @@ pub fn orbiting_system(position: Vector3D) -> Vec<BodyType> {
         body.physics()
             .set_position(position.0, position.1, position.2);
         body.physics().set_mass(mass);
+        // body.physics().set_velocity(-250.0, 1.0, -2000.0);
         let body_type = BodyType::Shape(body);
         body_type
     }
 
     pub fn get_sphere_light3(mut position: Vector3D) -> BodyType {
-        position.x += -500_000.0;
+        position.x += -1_000_000.0;
         position.y += 0.0;
         position.z += 0.0;
 
@@ -258,12 +259,110 @@ pub fn orbiting_system(position: Vector3D) -> Vec<BodyType> {
     let high_mass = get_sphere_light_highmass(position.clone());
     objects.push(high_mass);
 
-    for i in 0..400 {
+    for i in 0..250 {
         let sphere = get_sphere_light3(position.clone());
         objects.push(sphere);
     }
     objects
 }
+
+
+
+
+
+
+
+pub fn orbiting_system2(position: Vector3D) -> Vec<BodyType> {
+    pub fn get_sphere_light_highmass(mut position: Vector3D) -> BodyType {
+        position.x += 2000.0;
+        position.y += -100.0;
+        position.z += 4000.0;
+
+        let mut light = Light::get_light();
+        light.position = position;
+        let light_dir: Vector3D = light.target.subtract_vector(&light.position);
+        let light_dir: Vector3D = light_dir.normalize();
+
+        let (lx, ly, lz) = light.position.to_tuple();
+        let (dx, dy, dz) = light_dir.to_tuple();
+        let offset = 5000.0;
+
+        let position = (lx - (offset * dx), ly - (offset * dy), lz - (offset * dz));
+        let mass = 8_000_000_000_000.0;
+
+        let mut sphere = Sphere::new(150_000.0, 20, 20);
+        sphere.set_offset(position.0, position.1, position.2);
+        // sphere.set_color(RGBA::from_rgb(1.0, 0.2, 0.2));
+        sphere.set_color(RGBA::from_random());
+        let mut mesh = sphere.get_triangle_mesh();
+
+        let mut body = Shape::new(mesh);
+        body.physics()
+            .set_position(position.0, position.1, position.2);
+        body.physics().set_mass(mass);
+        body.physics().set_velocity(0.0, 200.0, 0.0);
+        let body_type = BodyType::Shape(body);
+        body_type
+    }
+
+    pub fn get_sphere_light3(mut position: Vector3D) -> BodyType {
+        position.x += -1_000_000.0;
+        position.y += 0.0;
+        position.z += 0.0;
+
+        let mut light = Light::get_light();
+        light.position = position;
+        let light_dir: Vector3D = light.target.subtract_vector(&light.position);
+        let light_dir: Vector3D = light_dir.normalize();
+
+        let (lx, ly, lz) = light.position.to_tuple();
+        let (dx, dy, dz) = light_dir.to_tuple();
+        let offset = 5000.0;
+
+        let position = (lx - (offset * dx), ly - (offset * dy), lz - (offset * dz));
+        let mut rng: ThreadRng = rand::thread_rng();
+        let mass: f64 = rng.gen_range(1000.0..8_000.0);
+
+        let radius = (mass / 1000.0) * 2000.0;
+        let mut sphere = Sphere::new(radius, 3, 3);
+        sphere.set_offset(position.0, position.1, position.2);
+        sphere.set_color(RGBA::from_random());
+        let mut mesh = sphere.get_triangle_mesh();
+
+        let mut body = Shape::new(mesh);
+        body.physics().set_velocity(250.0, 1.0, 2000.0);
+        body.physics()
+            .set_position(position.0, position.1, position.2);
+        body.physics().set_mass(mass);
+        let body_type = BodyType::Shape(body);
+        body_type
+    }
+
+    let mut objects: Vec<BodyType> = Vec::new();
+    let high_mass = get_sphere_light_highmass(position.clone());
+    objects.push(high_mass);
+
+    for i in 0..250 {
+        let sphere = get_sphere_light3(position.clone());
+        objects.push(sphere);
+    }
+    objects
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 pub fn highmass_planet(position: Vector3D) -> BodyType {
     pub fn get_sphere_light_highmass(mut position: Vector3D) -> BodyType {
