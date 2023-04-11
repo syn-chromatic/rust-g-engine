@@ -142,8 +142,9 @@ impl Physics {
             // Self-To-Target Distance
             let stt_distance: Vector3D = tts_distance.multiply(-1.0);
             let stt_direction: Vector3D = stt_distance.normalize();
-
-            self.apply_shift_correction(stt_direction, distance);
+            if self.mass <= target.mass {
+                self.apply_shift_correction(stt_direction, distance);
+            }
             if stt_direction.get_sum() != 0.0 {
                 self.apply_collision_velocities(target, stt_direction);
             }

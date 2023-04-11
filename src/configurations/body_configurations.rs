@@ -209,7 +209,8 @@ pub fn orbiting_system(position: Vector3D) -> Vec<BodyType> {
 
         let mut sphere = Sphere::new(150_000.0, 20, 20);
         sphere.set_offset(position.0, position.1, position.2);
-        sphere.set_color(RGBA::from_rgb(1.0, 0.2, 0.2));
+        // sphere.set_color(RGBA::from_rgb(1.0, 0.2, 0.2));
+        sphere.set_color(RGBA::from_random());
         let mut mesh = sphere.get_triangle_mesh();
 
         let mut body = Shape::new(mesh);
@@ -236,10 +237,10 @@ pub fn orbiting_system(position: Vector3D) -> Vec<BodyType> {
 
         let position = (lx - (offset * dx), ly - (offset * dy), lz - (offset * dz));
         let mut rng: ThreadRng = rand::thread_rng();
-        let mass: f64 = rng.gen_range(100.0..6_000.0);
+        let mass: f64 = rng.gen_range(1000.0..8_000.0);
 
         let radius = (mass / 1000.0) * 2000.0;
-        let mut sphere = Sphere::new(radius, 5, 5);
+        let mut sphere = Sphere::new(radius, 3, 3);
         sphere.set_offset(position.0, position.1, position.2);
         sphere.set_color(RGBA::from_random());
         let mut mesh = sphere.get_triangle_mesh();
@@ -257,7 +258,7 @@ pub fn orbiting_system(position: Vector3D) -> Vec<BodyType> {
     let high_mass = get_sphere_light_highmass(position.clone());
     objects.push(high_mass);
 
-    for i in 0..75 {
+    for i in 0..400 {
         let sphere = get_sphere_light3(position.clone());
         objects.push(sphere);
     }
@@ -284,7 +285,8 @@ pub fn highmass_planet(position: Vector3D) -> BodyType {
 
         let mut sphere = Sphere::new(500_000.0, 20, 20);
         sphere.set_offset(position.0, position.1, position.2);
-        sphere.set_color(RGBA::from_rgb(1.0, 0.2, 0.2));
+        // sphere.set_color(RGBA::from_rgb(1.0, 0.2, 0.2));
+        sphere.set_color(RGBA::from_random());
         let mut mesh = sphere.get_triangle_mesh();
         mesh.add_light(light);
 

@@ -22,7 +22,7 @@ pub struct Simulation {
 impl Simulation {
     pub fn new(camera: Camera, resolution: (u32, u32)) -> Simulation {
         let objects: Vec<BodyType> = vec![];
-        let timestep_hz: f64 = 0.5;
+        let timestep_hz: f64 = 0.2;
         let polygon_count: usize = 0;
 
         let arial_font: ArialFont = ArialFont::new();
@@ -75,55 +75,36 @@ impl Simulation {
         let system = body_configurations::orbiting_system(Vector3D::new(0.0, 0.0, 0.0));
         self.objects.extend(system);
 
-
-        let system = body_configurations::orbiting_system(Vector3D::new(4_000_000.0, 2_000_000.0, 0.0,));
+        let system =
+            body_configurations::orbiting_system(Vector3D::new(4_000_000.0, 2_000_000.0, 0.0));
         self.objects.extend(system);
 
-        let system = body_configurations::orbiting_system(Vector3D::new(-4_000_000.0, 2_000_000.0, 0.0,));
-        self.objects.extend(system);
+        // let system = body_configurations::orbiting_system(Vector3D::new(-4_000_000.0, 2_000_000.0, 0.0,));
+        // self.objects.extend(system);
 
+        // let system = body_configurations::orbiting_system(Vector3D::new(-5_000_000.0, -4_000_000.0, 0.0,));
+        // self.objects.extend(system);
 
-        let system = body_configurations::orbiting_system(Vector3D::new(-5_000_000.0, -4_000_000.0, 0.0,));
-        self.objects.extend(system);
+        // let planet = body_configurations::highmass_planet(Vector3D::new(-20_000_000.0, -30_000_000.0, 10_000_000.0,));
+        // self.objects.push(planet);
 
+        // let planet = body_configurations::highmass_planet(Vector3D::new(20_000_000.0, 30_000_000.0, -10_000_000.0,));
+        // self.objects.push(planet);
 
-        let planet = body_configurations::highmass_planet(Vector3D::new(-20_000_000.0, -30_000_000.0, 10_000_000.0,));
-        self.objects.push(planet);
+        // let planet = body_configurations::highmass_planet(Vector3D::new(30_000_000.0, -30_000_000.0, 10_000_000.0,));
+        // self.objects.push(planet);
 
+        // let planet = body_configurations::highmass_planet(Vector3D::new(50_000_000.0, -30_000_000.0, -20_000_0000.0,));
+        // self.objects.push(planet);
 
-
-        let planet = body_configurations::highmass_planet(Vector3D::new(20_000_000.0, 30_000_000.0, -10_000_000.0,));
-        self.objects.push(planet);
-
-
-        let planet = body_configurations::highmass_planet(Vector3D::new(30_000_000.0, -30_000_000.0, 10_000_000.0,));
-        self.objects.push(planet);
-
-
-
-        let planet = body_configurations::highmass_planet(Vector3D::new(50_000_000.0, -30_000_000.0, -20_000_0000.0,));
-        self.objects.push(planet);
-
-
-        let planet = body_configurations::highmass_planet(Vector3D::new(50_000_000.0, -30_000_000.0, 0.0,));
-        self.objects.push(planet);
-
-
-
-
-
+        // let planet = body_configurations::highmass_planet(Vector3D::new(50_000_000.0, -30_000_000.0, 0.0,));
+        // self.objects.push(planet);
 
         // let system = body_configurations::orbiting_system(Vector3D::new(-4_000_000.0, 4_000_000.0, 2_000_000.0,));
         // self.objects.extend(system);
 
-
         // let system = body_configurations::orbiting_system(Vector3D::new(0.0, 0.0, 0.0));
         // self.objects.extend(system);
-
-
-
-
-
 
         for object in self.objects.iter_mut() {
             let physics = object.physics();

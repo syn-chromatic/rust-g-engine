@@ -7,10 +7,10 @@ use crate::components::vectors::Vector3D;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Plane {
-    A: f64,
-    B: f64,
-    C: f64,
-    D: f64,
+    a: f64,
+    b: f64,
+    c: f64,
+    d: f64,
 }
 
 pub struct Frustum {
@@ -91,23 +91,18 @@ impl Frustum {
 
     fn make_plane(p0: Vector3D, n: Vector3D) -> Plane {
         let n: Vector3D = n.normalize();
-        let pA: f64 = -n.x;
-        let pB: f64 = -n.y;
-        let pC: f64 = -n.z;
-        let pD: f64 = -p0.dot_product(&n);
-        Plane {
-            A: pA,
-            B: pB,
-            C: pC,
-            D: pD,
-        }
+        let a: f64 = -n.x;
+        let b: f64 = -n.y;
+        let c: f64 = -n.z;
+        let d: f64 = -p0.dot_product(&n);
+        Plane { a, b, c, d }
     }
 
     fn get_plane_distance(&self, point: Vector3D, plane: &Plane) -> f64 {
         let x = point.x;
         let y = point.y;
         let z = point.z;
-        plane.A * x + plane.B * y + plane.C * z + plane.D
+        plane.a * x + plane.b * y + plane.c * z + plane.d
     }
 
     fn get_plane_intersection(&self, a: Vector3D, b: Vector3D, plane: &Plane) -> f64 {
@@ -119,7 +114,7 @@ impl Frustum {
         let bz = b.z;
 
         let distance = -self.get_plane_distance(a, plane);
-        let interpolation = plane.A * (bx - ax) + plane.B * (by - ay) + plane.C * (bz - az);
+        let interpolation = plane.a * (bx - ax) + plane.b * (by - ay) + plane.c * (bz - az);
         if interpolation == 0.0 {
             return 0.0;
         }
@@ -130,7 +125,7 @@ impl Frustum {
         let x = point.x;
         let y = point.y;
         let z = point.z;
-        let distance = plane.A * x + plane.B * y + plane.C * z + plane.D;
+        let distance = plane.a * x + plane.b * y + plane.c * z + plane.d;
         distance < 0.0
     }
 

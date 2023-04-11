@@ -151,6 +151,7 @@ impl Vector3D {
             y = (self.y / length) * magnitude;
             z = (self.z / length) * magnitude;
         }
+
         Vector3D::new(x, y, z)
     }
 
@@ -199,6 +200,7 @@ impl Vector3D {
         let x: f64 = self.x;
         let y: f64 = self.y;
         let z: f64 = self.z;
+
         x + y + z
     }
 }
