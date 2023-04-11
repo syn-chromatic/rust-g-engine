@@ -69,12 +69,14 @@ impl WindowHandler for DrawCall {
     }
 
     fn on_mouse_move(&mut self, _helper: &mut WindowHelper, position: Vec2) {
-        let dx = position.x as f64;
-        let dy = position.y as f64;
-        let cursor_grabbed = self.graphics.is_cursor_grabbed();
-        self.simulation
-            .camera
-            .handle_mouse_movement(dx, dy, cursor_grabbed);
+        let dx: f64 = position.x as f64;
+        let dy: f64 = position.y as f64;
+        let cursor_grab = self.graphics.get_cursor_grab();
+        if !cursor_grab.is_grabbed || cursor_grab.first_pass {
+            return;
+        }
+        let camera: &mut Camera = &mut self.simulation.camera;
+        camera.handle_mouse_movement(dx, dy);
     }
 
     fn on_mouse_button_down(

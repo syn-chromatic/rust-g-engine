@@ -106,7 +106,8 @@ impl Simulation {
         // let system = body_configurations::orbiting_system(Vector3D::new(0.0, 0.0, 0.0));
         // self.objects.extend(system);
 
-        self.camera.camera_position = Vector3D::new(-250_000.0, 200.0, -2_000_000.0);
+        let camera_position = Vector3D::new(-250_000.0, 200.0, -2_000_000.0);
+        self.camera.set_camera_position(camera_position);
 
         for object in self.objects.iter_mut() {
             let physics = object.physics();

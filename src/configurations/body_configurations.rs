@@ -268,12 +268,6 @@ pub fn orbiting_system(position: Vector3D) -> Vec<BodyType> {
     objects
 }
 
-
-
-
-
-
-
 pub fn orbiting_system2(position: Vector3D) -> Vec<BodyType> {
     pub fn get_sphere_light_highmass(mut position: Vector3D) -> BodyType {
         position.x += 2000.0;
@@ -299,7 +293,6 @@ pub fn orbiting_system2(position: Vector3D) -> Vec<BodyType> {
         sphere.set_shader(RGBA::from_rgb(0.5, 0.5, 0.5));
 
         let mut mesh = sphere.get_triangle_mesh();
-
 
         let mut body = Shape::new(mesh);
         body.physics()
@@ -354,21 +347,6 @@ pub fn orbiting_system2(position: Vector3D) -> Vec<BodyType> {
     }
     objects
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 pub fn highmass_planet(position: Vector3D) -> BodyType {
     pub fn get_sphere_light_highmass(mut position: Vector3D) -> BodyType {

@@ -184,32 +184,37 @@ impl Draw for DrawType {
 }
 
 pub struct CursorGrab {
-    cursor_grab: bool,
-    previous_state: bool,
+    pub is_grabbed: bool,
+    pub previous_state: bool,
+    pub first_pass: bool,
 }
 
 impl CursorGrab {
     pub fn new() -> CursorGrab {
-        let cursor_grab = false;
+        let is_grabbed = false;
         let previous_state = false;
+        let first_pass = true;
         CursorGrab {
-            cursor_grab,
+            is_grabbed,
             previous_state,
+            first_pass,
         }
     }
 
     pub fn set_cursor_grab(&mut self, state: bool) {
-        self.cursor_grab = state;
+        self.is_grabbed = state;
     }
 
     pub fn apply_cursor_grab(&mut self, helper: &mut WindowHelper) {
-        if self.cursor_grab != self.previous_state {
-            let grab = helper.set_cursor_grab(self.cursor_grab);
+        if self.is_grabbed != self.previous_state {
+            let grab = helper.set_cursor_grab(self.is_grabbed);
+            self.first_pass = false;
             if grab.is_err() {
-                self.cursor_grab = false;
+                self.is_grabbed = false;
+                self.first_pass = true;
             }
         }
-        self.previous_state = self.cursor_grab;
+        self.previous_state = self.is_grabbed;
     }
 }
 
@@ -238,8 +243,9 @@ impl Graphics {
             buffer_execute,
         }
     }
-    pub fn is_cursor_grabbed(&self) -> bool {
-        self.cursor_grab.cursor_grab
+
+    pub fn get_cursor_grab(&self) -> &CursorGrab {
+        &self.cursor_grab
     }
 
     pub fn set_cursor_grab(&mut self, grab: bool) {

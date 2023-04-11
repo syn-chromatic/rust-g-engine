@@ -12,25 +12,22 @@ pub struct Camera {
     pub side_direction: Vector3D,
     pub up_direction: Vector3D,
     pub look_direction: Vector3D,
-    pub previous_pointer: (f64, f64),
     pub y_lock: bool,
 }
 
 impl Camera {
     pub fn new(width: u32, height: u32) -> Camera {
         let frustum: Frustum = Frustum::new(width, height);
-        let yaw: f64 = -90.0;
-        let pitch: f64 = -0.0;
+        let yaw: f64 = 250.0;
+        let pitch: f64 = 0.0;
 
         let side_direction: Vector3D = Vector3D::new(1.0, 0.0, 0.0);
         let up_direction: Vector3D = Vector3D::new(0.0, 1.0, 0.0);
         let look_direction: Vector3D = Vector3D::new(0.0, 0.0, 1.0);
 
         let camera_position: Vector3D = Vector3D::new(-100.0, 200.0, 500.0);
-        let camera_target: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
-
-        let previous_pointer: (f64, f64) = (0.0, 0.0);
-        let y_lock = true;
+        let camera_target: Vector3D = camera_position.clone().add_elements(0.0, 0.0, -1.0);
+        let y_lock: bool = true;
 
         Camera {
             frustum,
@@ -41,7 +38,6 @@ impl Camera {
             side_direction,
             up_direction,
             look_direction,
-            previous_pointer,
             y_lock,
         }
     }
@@ -52,6 +48,11 @@ impl Camera {
 
     pub fn toggle_y_lock(&mut self) {
         self.y_lock = !self.y_lock;
+    }
+
+    pub fn set_camera_position(&mut self, position: Vector3D) {
+        self.camera_position = position;
+        self.camera_target = position.add_elements(0.0, 0.0, -1.0);
     }
 
     fn apply_view_transform(&mut self, position: Vector3D) -> Vector3D {
@@ -182,25 +183,18 @@ impl Camera {
         mesh
     }
 
-    pub fn handle_mouse_movement(&mut self, x: f64, y: f64, cursor_grabbed: bool) {
+    pub fn handle_mouse_movement(&mut self, dx: f64, dy: f64) {
         let sens_x: f64 = 0.3;
         let sens_y: f64 = 0.3;
-        if cursor_grabbed {
-            self.previous_pointer = (0.0, 0.0)
-        }
-
-        let dx = x - self.previous_pointer.0;
-        let dy = y - self.previous_pointer.1;
-        self.previous_pointer = (x, y);
 
         self.yaw += dx * -sens_x;
         self.pitch += dy * sens_y;
 
-        if self.pitch > 89.0 {
-            self.pitch = 89.0
+        if self.pitch >= 90.0 {
+            self.pitch = 90.0
         }
-        if self.pitch < -89.0 {
-            self.pitch = -89.0
+        if self.pitch <= -90.0 {
+            self.pitch = -90.0
         }
 
         self.apply_target_adjustment();
