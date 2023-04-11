@@ -1,4 +1,4 @@
-// #![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
 mod abstracts;
 mod components;
 mod configurations;
@@ -8,7 +8,9 @@ use speedy2d::dimen::Vec2;
 use speedy2d::window::KeyScancode;
 
 use speedy2d::dimen::UVec2;
+use speedy2d::window::MouseButton;
 use speedy2d::window::VirtualKeyCode;
+use speedy2d::window::WindowFullscreenMode;
 use speedy2d::window::WindowHandler;
 use speedy2d::window::WindowHelper;
 use speedy2d::Graphics2D;
@@ -37,6 +39,16 @@ fn main() {
 }
 
 impl WindowHandler for DrawCall {
+    fn on_start(
+        &mut self,
+        helper: &mut WindowHelper<()>,
+        _info: speedy2d::window::WindowStartupInfo,
+    ) {
+        self.graphics.set_cursor_grab(true);
+        helper.set_cursor_visible(false);
+        helper.set_fullscreen_mode(WindowFullscreenMode::Windowed);
+    }
+
     fn on_resize(&mut self, _helper: &mut WindowHelper, size: UVec2) {
         let width = size.x;
         let height = size.y;
@@ -46,6 +58,7 @@ impl WindowHandler for DrawCall {
     fn on_draw(&mut self, helper: &mut WindowHelper, graphics_2d: &mut Graphics2D) {
         let fps = self.frame_timing.get_frames_per_second();
         let graphics = &mut self.graphics;
+        graphics.execute_helper_functions(helper);
         graphics.execute_buffer(graphics_2d);
         graphics.clear_screen();
         self.simulation.simulate(graphics, fps);
@@ -58,21 +71,34 @@ impl WindowHandler for DrawCall {
     fn on_mouse_move(&mut self, _helper: &mut WindowHelper, position: Vec2) {
         let dx = position.x as f64;
         let dy = position.y as f64;
-        self.simulation.camera.handle_mouse_movement(dx, dy);
+        let cursor_grabbed = self.graphics.is_cursor_grabbed();
+        self.simulation
+            .camera
+            .handle_mouse_movement(dx, dy, cursor_grabbed);
+    }
+
+    fn on_mouse_button_down(
+        &mut self,
+        _helper: &mut WindowHelper,
+        button: speedy2d::window::MouseButton,
+    ) {
+        if let MouseButton::Left = button {
+            self.graphics.set_cursor_grab(true);
+        }
     }
 
     fn on_key_down(
         &mut self,
-        _helper: &mut WindowHelper,
+        helper: &mut WindowHelper,
         virtual_key_code: Option<VirtualKeyCode>,
         _scancode: KeyScancode,
     ) {
         if let Some(VirtualKeyCode::Period) = virtual_key_code {
-            self.simulation.increment_timestep(100.0);
+            self.simulation.increment_timestep(1);
         }
 
         if let Some(VirtualKeyCode::Comma) = virtual_key_code {
-            self.simulation.increment_timestep(-100.0);
+            self.simulation.increment_timestep(-1);
         }
 
         let step_val = 50000.0;
@@ -104,6 +130,14 @@ impl WindowHandler for DrawCall {
 
         if let Some(VirtualKeyCode::Y) = virtual_key_code {
             camera.toggle_y_lock();
+        }
+
+        if let Some(VirtualKeyCode::RWin) = virtual_key_code {
+            self.graphics.set_cursor_grab(false);
+        }
+
+        if let Some(VirtualKeyCode::LWin) = virtual_key_code {
+            self.graphics.set_cursor_grab(false);
         }
     }
 }

@@ -14,6 +14,7 @@ use speedy2d::font::FormattedTextBlock;
 use speedy2d::font::TextLayout;
 use speedy2d::font::TextOptions;
 
+use speedy2d::window::WindowHelper;
 use speedy2d::Graphics2D;
 use std::rc::Rc;
 
@@ -182,17 +183,49 @@ impl Draw for DrawType {
     }
 }
 
+pub struct CursorGrab {
+    cursor_grab: bool,
+    previous_state: bool,
+}
+
+impl CursorGrab {
+    pub fn new() -> CursorGrab {
+        let cursor_grab = false;
+        let previous_state = false;
+        CursorGrab {
+            cursor_grab,
+            previous_state,
+        }
+    }
+
+    pub fn set_cursor_grab(&mut self, state: bool) {
+        self.cursor_grab = state;
+    }
+
+    pub fn apply_cursor_grab(&mut self, helper: &mut WindowHelper) {
+        if self.cursor_grab != self.previous_state {
+            let grab = helper.set_cursor_grab(self.cursor_grab);
+            if grab.is_err() {
+                self.cursor_grab = false;
+            }
+        }
+        self.previous_state = self.cursor_grab;
+    }
+}
+
 pub struct Graphics {
     width: u32,
     height: u32,
     bg_color: RGBA,
+    cursor_grab: CursorGrab,
     buffer: Vec<DrawType>,
     buffer_execute: bool,
 }
 
 impl Graphics {
     pub fn new(width: u32, height: u32) -> Self {
-        let bg_color = RGBA::from_rgb(0.10, 0.10, 0.10);
+        let bg_color: RGBA = RGBA::from_rgb(0.05, 0.05, 0.05);
+        let cursor_grab: CursorGrab = CursorGrab::new();
         let buffer: Vec<DrawType> = vec![];
         let buffer_execute: bool = false;
 
@@ -200,13 +233,21 @@ impl Graphics {
             width,
             height,
             bg_color,
+            cursor_grab,
             buffer,
             buffer_execute,
         }
     }
+    pub fn is_cursor_grabbed(&self) -> bool {
+        self.cursor_grab.cursor_grab
+    }
 
-    pub fn get_buffer_state(&self) -> bool {
-        self.buffer_execute
+    pub fn set_cursor_grab(&mut self, grab: bool) {
+        self.cursor_grab.set_cursor_grab(grab);
+    }
+
+    pub fn execute_helper_functions(&mut self, helper: &mut WindowHelper) {
+        self.cursor_grab.apply_cursor_grab(helper);
     }
 
     pub fn execute_buffer(&mut self, graphics: &mut Graphics2D) {
@@ -217,6 +258,10 @@ impl Graphics {
 
         self.buffer.clear();
         self.buffer_execute = false;
+    }
+
+    pub fn get_buffer_state(&self) -> bool {
+        self.buffer_execute
     }
 
     pub fn update(&mut self) {

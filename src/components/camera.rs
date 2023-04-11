@@ -29,7 +29,7 @@ impl Camera {
         let camera_position: Vector3D = Vector3D::new(-100.0, 200.0, 500.0);
         let camera_target: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
 
-        let previous_pointer: (f64, f64) = (width as f64 / 2.0, height as f64 / 2.0);
+        let previous_pointer: (f64, f64) = (0.0, 0.0);
         let y_lock = true;
 
         Camera {
@@ -182,9 +182,12 @@ impl Camera {
         mesh
     }
 
-    pub fn handle_mouse_movement(&mut self, x: f64, y: f64) {
+    pub fn handle_mouse_movement(&mut self, x: f64, y: f64, cursor_grabbed: bool) {
         let sens_x: f64 = 0.3;
         let sens_y: f64 = 0.3;
+        if cursor_grabbed {
+            self.previous_pointer = (0.0, 0.0)
+        }
 
         let dx = x - self.previous_pointer.0;
         let dy = y - self.previous_pointer.1;

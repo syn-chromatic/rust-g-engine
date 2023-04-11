@@ -22,7 +22,7 @@ pub struct Simulation {
 impl Simulation {
     pub fn new(camera: Camera, resolution: (u32, u32)) -> Simulation {
         let objects: Vec<BodyType> = vec![];
-        let timestep_hz: f64 = 0.2;
+        let timestep_hz: f64 = 1.0;
         let polygon_count: usize = 0;
 
         let arial_font: ArialFont = ArialFont::new();
@@ -106,6 +106,8 @@ impl Simulation {
         // let system = body_configurations::orbiting_system(Vector3D::new(0.0, 0.0, 0.0));
         // self.objects.extend(system);
 
+        self.camera.camera_position = Vector3D::new(-250_000.0, 200.0, -2_000_000.0);
+
         for object in self.objects.iter_mut() {
             let physics = object.physics();
             let mesh = &physics.mesh;
@@ -114,10 +116,15 @@ impl Simulation {
         }
     }
 
-    pub fn increment_timestep(&mut self, increment: f64) {
-        if (self.timestep_hz + increment) > 10.0 {
-            self.timestep_hz += increment;
-        }
+    pub fn increment_timestep(&mut self, mut direction: i32) {
+        let min_timestep_hz: f64 = 0.1;
+        let max_timestep_hz: f64 = 100.0 * 1000.0;
+        let proportion: f64 = 0.05;
+        let increment: f64 = self.timestep_hz * proportion * direction as f64;
+        let timestep: f64 = self.timestep_hz + increment;
+        let timestep: f64 = timestep.max(min_timestep_hz);
+        let timestep: f64 = timestep.min(max_timestep_hz);
+        self.timestep_hz = timestep;
     }
 
     pub fn compute_objects(&mut self) {
@@ -139,6 +146,17 @@ impl Simulation {
         }
     }
 
+    fn get_timestep_text(&self) -> String {
+        if self.timestep_hz >= 1000.0 {
+            let khz = self.timestep_hz / 1000.0;
+            let text = format!("Timestep:  {:.2} khz", khz);
+            return text;
+        }
+        let khz = self.timestep_hz;
+        let text = format!("Timestep:  {:.2} hz", khz);
+        text
+    }
+
     fn write_fps_text(&mut self, fps: f64) {
         let header_text = format!("Engine information");
         let text = format!("{:.2} FPS", fps);
@@ -147,8 +165,7 @@ impl Simulation {
     }
 
     fn write_timestep_text(&mut self) {
-        let khz = self.timestep_hz / 1000.0;
-        let text = format!("Timestep:  {:.1} khz", khz);
+        let text = self.get_timestep_text();
         self.text_writer.add_text_top_left(text, None);
     }
 

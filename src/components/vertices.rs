@@ -47,6 +47,10 @@ impl Sphere {
         self.color = color;
     }
 
+    pub fn set_shader(&mut self, shader: RGBA) {
+        self.shader = shader;
+    }
+
     fn get_vertices(&self) -> Vec<Vector3D> {
         let mut vertices: Vec<Vector3D> = vec![];
 

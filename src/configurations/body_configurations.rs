@@ -211,6 +211,7 @@ pub fn orbiting_system(position: Vector3D) -> Vec<BodyType> {
         sphere.set_offset(position.0, position.1, position.2);
         // sphere.set_color(RGBA::from_rgb(1.0, 0.2, 0.2));
         sphere.set_color(RGBA::from_random());
+        sphere.set_shader(RGBA::from_rgb(0.5, 0.5, 0.5));
         let mut mesh = sphere.get_triangle_mesh();
 
         let mut body = Shape::new(mesh);
@@ -244,6 +245,7 @@ pub fn orbiting_system(position: Vector3D) -> Vec<BodyType> {
         let mut sphere = Sphere::new(radius, 3, 3);
         sphere.set_offset(position.0, position.1, position.2);
         sphere.set_color(RGBA::from_random());
+        sphere.set_shader(RGBA::from_rgb(0.5, 0.5, 0.5));
         let mut mesh = sphere.get_triangle_mesh();
 
         let mut body = Shape::new(mesh);
@@ -294,7 +296,10 @@ pub fn orbiting_system2(position: Vector3D) -> Vec<BodyType> {
         sphere.set_offset(position.0, position.1, position.2);
         // sphere.set_color(RGBA::from_rgb(1.0, 0.2, 0.2));
         sphere.set_color(RGBA::from_random());
+        sphere.set_shader(RGBA::from_rgb(0.5, 0.5, 0.5));
+
         let mut mesh = sphere.get_triangle_mesh();
+
 
         let mut body = Shape::new(mesh);
         body.physics()
@@ -327,6 +332,7 @@ pub fn orbiting_system2(position: Vector3D) -> Vec<BodyType> {
         let mut sphere = Sphere::new(radius, 3, 3);
         sphere.set_offset(position.0, position.1, position.2);
         sphere.set_color(RGBA::from_random());
+        sphere.set_shader(RGBA::from_rgb(0.5, 0.5, 0.5));
         let mut mesh = sphere.get_triangle_mesh();
 
         let mut body = Shape::new(mesh);
