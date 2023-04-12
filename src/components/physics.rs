@@ -143,7 +143,7 @@ impl Physics {
     }
 
     pub fn apply_collision(&mut self, target: &mut Physics, tts_distance: Vector3D) {
-        let distance: f64 = self.mesh.get_distance(&target.mesh);
+        let distance = self.mesh.get_distance_bvh(&target.mesh);
 
         if distance <= 0.0 {
             // Self-To-Target Distance
@@ -258,6 +258,7 @@ impl Physics {
                 }
             }
         }
+        self.mesh.update_bvh_node();
     }
 
     pub fn update(&mut self, timestep: f64) {

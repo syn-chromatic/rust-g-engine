@@ -3,7 +3,6 @@ use super::vectors::Vector3D;
 use crate::abstracts::body::Body;
 use crate::abstracts::body::BodyType;
 use crate::components::backface_culling::BackfaceCulling;
-use crate::components::bvh::BVHNode;
 use crate::components::frametime::FrameTimeHandler;
 use crate::components::graphics::Graphics;
 use crate::components::polygons::Polygon;
@@ -12,7 +11,6 @@ use crate::components::shaders::Shaders;
 use crate::components::simulation::Simulation;
 use crate::components::z_buffer::ZBufferSort;
 use crate::Camera;
-
 use rayon::prelude::*;
 
 pub struct DrawCall {
@@ -23,7 +21,6 @@ pub struct DrawCall {
     shaders: Shaders,
     backface_culling: BackfaceCulling,
     z_buffer_sort: ZBufferSort,
-    bvh_node: BVHNode,
 }
 
 impl DrawCall {
@@ -33,7 +30,6 @@ impl DrawCall {
         let shaders: Shaders = Shaders::new();
         let backface_culling: BackfaceCulling = BackfaceCulling::new();
         let z_buffer_sort: ZBufferSort = ZBufferSort::new();
-        let bvh_node: BVHNode = BVHNode::new();
         DrawCall {
             graphics,
             frame_timing,
@@ -42,7 +38,6 @@ impl DrawCall {
             shaders,
             backface_culling,
             z_buffer_sort,
-            bvh_node,
         }
     }
 
@@ -83,15 +78,6 @@ impl DrawCall {
         Mesh::new(polygons)
     }
 
-    fn get_and_combine_meshes(&self, objects: Vec<BodyType>) -> Mesh {
-        let polygons: Vec<Polygon> = objects
-            .into_par_iter()
-            .flat_map(|body| body.mesh().polygons.clone())
-            .collect();
-
-        Mesh::new(polygons)
-    }
-
     fn cull_backfaces_meshes(&self, meshes: Vec<Mesh>) {}
 
     fn apply_lighting_meshes(&self, meshes: Vec<Mesh>, lights: Vec<Light>) {}
@@ -103,13 +89,13 @@ impl DrawCall {
         mesh
     }
 
-    fn apply_lighting_mesh(&self, mut mesh: Mesh, lights: Vec<Light>, bvh_node: &BVHNode) -> Mesh {
+    fn apply_lighting_mesh(&self, mut mesh: Mesh, lights: Vec<Light>) -> Mesh {
         let camera: &Camera = &self.simulation.camera;
         let camera_position: Vector3D = camera.camera_position;
         for light in lights {
             mesh = self
                 .shaders
-                .apply_pbr_lighting(mesh, &light, &camera_position, bvh_node);
+                .apply_pbr_lighting(mesh, &light, &camera_position);
         }
         mesh
     }
@@ -127,11 +113,6 @@ impl DrawCall {
             .z_buffer_sort
             .get_sorted_polygons(mesh, camera_position);
         mesh
-    }
-
-    fn set_bvh_node(&mut self, mesh: &Mesh) {
-        let bvh_node: BVHNode = self.bvh_node.fresh_node(mesh.polygons.clone());
-        self.bvh_node = bvh_node;
     }
 
     fn get_lights_1(&self) -> Vec<Light> {
@@ -155,11 +136,10 @@ impl DrawCall {
         let mut mesh: Mesh = self.combine_meshes(meshes);
 
         let lights: Vec<Light> = self.get_lights_2();
-        // self.set_bvh_node(&mesh);
 
         mesh = self.cull_backfaces_mesh(mesh);
         mesh = self.apply_z_buffer_sort(mesh);
-        mesh = self.apply_lighting_mesh(mesh, lights, &self.bvh_node);
+        mesh = self.apply_lighting_mesh(mesh, lights);
         mesh = self.apply_projection(mesh);
 
         self.graphics.draw_polygons(mesh);

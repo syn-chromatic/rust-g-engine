@@ -4,8 +4,6 @@ use crate::components::polygons::Polygon;
 use crate::components::vectors::Vector3D;
 use std::f64::consts::PI;
 
-use super::bvh::BVHNode;
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Light {
     pub position: Vector3D,
@@ -143,12 +141,12 @@ impl Shaders {
 
     pub fn is_occluded(
         &self,
-        bvh_node: &BVHNode,
+        mesh: &Mesh,
         polygon: &Polygon,
         centroid: Vector3D,
         ray_direction: Vector3D,
     ) -> bool {
-        let intersecting_polygons = bvh_node.traverse(&centroid, &ray_direction);
+        let intersecting_polygons = mesh.bvh_node.traverse(&centroid, &ray_direction);
 
         for intersecting_polygon in &intersecting_polygons {
             if std::ptr::eq(&intersecting_polygon, &polygon) {
@@ -265,7 +263,7 @@ impl Shaders {
         light: &Light,
         polygon: &Polygon,
         viewer_position: &Vector3D,
-        bvh_node: &BVHNode,
+        mesh: &Mesh,
     ) -> Vector3D {
         let light_dir: Vector3D = light.target.subtract_vector(&light.position);
         let light_dir: Vector3D = light_dir.normalize();
@@ -277,8 +275,6 @@ impl Shaders {
         let ray_direction = ray_vector.normalize();
         let distance = ray_vector.get_length();
         let attenuation = self.get_reference_attenuation(distance);
-
-        let is_occluded = self.is_occluded(bvh_node, polygon, centroid, ray_direction);
 
         let light_normal = ray_direction.dot_product(&light_dir);
         let light_dir: Vector3D = light_dir.multiply(light_normal);
@@ -298,11 +294,13 @@ impl Shaders {
         let mut light_intensity = diffuse_angle * light.lumens;
         light_intensity = light_intensity * attenuation;
 
-        if is_occluded {
-            let scaling_factor = 0.5;
-            let shadow_term = 1.0 - scaling_factor * (1.0 - diffuse_angle);
-            light_intensity *= shadow_term
-        }
+        // let is_occluded = self.is_occluded(mesh, polygon, centroid, ray_direction);
+
+        // if is_occluded {
+        //     let scaling_factor = 0.5;
+        //     let shadow_term = 1.0 - scaling_factor * (1.0 - diffuse_angle);
+        //     light_intensity *= shadow_term;
+        // }
 
         let ambient: Vector3D = light.ambient.multiply(light_intensity);
         let diffuse: Vector3D = light.diffuse.multiply(light_intensity);
@@ -326,13 +324,13 @@ impl Shaders {
         mut mesh: Mesh,
         light: &Light,
         viewer_position: &Vector3D,
-        bvh_node: &BVHNode,
     ) -> Mesh {
-        for polygon in mesh.polygons.iter_mut() {
-            let shader_vec = self.get_pbr_shader(light, polygon, &viewer_position, &bvh_node);
+        for i in 0..mesh.polygons.len() {
+            let shader_vec = self.get_pbr_shader(light, &mesh.polygons[i], viewer_position, &mesh);
             let shader = RGBA::from_vector(shader_vec);
-            polygon.set_shader(shader);
+            mesh.polygons[i].set_shader(shader);
         }
+
         mesh
     }
 }

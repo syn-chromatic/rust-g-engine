@@ -27,7 +27,7 @@ impl Camera {
 
         let camera_position: Vector3D = Vector3D::new(-100.0, 200.0, 500.0);
         let camera_target: Vector3D = camera_position.clone().add_elements(0.0, 0.0, -1.0);
-        let y_lock: bool = true;
+        let y_lock: bool = false;
 
         Camera {
             frustum,

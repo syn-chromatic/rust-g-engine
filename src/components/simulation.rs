@@ -131,20 +131,37 @@ impl Simulation {
     pub fn compute_objects(&mut self) {
         let timestep: f64 = 1.0 / self.timestep_hz;
 
+        // for object in self.objects.iter_mut() {
+        //     object.physics().mesh.update_bvh_node();
+        // }
+
+
         for i in 0..self.objects.len() {
             for j in (i + 1)..self.objects.len() {
                 let (physics1, physics2) = {
                     let (left, right) = self.objects.split_at_mut(j);
                     (left[i].physics(), right[0].physics())
                 };
-
                 physics1.apply_forces(physics2);
             }
+
         }
 
         for object in self.objects.iter_mut() {
-            object.physics().update(timestep);
+            let physics = object.physics();
+            physics.update(timestep);
+            // physics.update_bvh_node();
+            // object.physics().update(timestep);
+            // object.physics().mesh.update_bvh_node();
         }
+
+
+
+        // for object in self.objects.iter_mut() {
+        //     object.physics().mesh.update_bvh_node();
+        // }
+
+
     }
 
     fn get_timestep_text(&self) -> String {

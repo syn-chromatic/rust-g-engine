@@ -2,6 +2,8 @@ use crate::components::color::RGBA;
 use crate::components::shaders::Light;
 use crate::components::vectors::Vector3D;
 
+use super::bvh::BVHNode;
+
 #[derive(Clone, Copy, Debug)]
 pub struct Triangle {
     pub vertices: [Vector3D; 3],
@@ -167,22 +169,37 @@ impl Polygon {
 #[derive(Clone, Debug)]
 pub struct Mesh {
     pub polygons: Vec<Polygon>,
-    pub original_polygons: Vec<Polygon>,
+    pub bvh_node: BVHNode,
     pub light: Option<Light>,
 }
 
 impl Mesh {
     pub fn new(polygons: Vec<Polygon>) -> Self {
-        let original_polygons = polygons.clone();
+        let bvh_node = BVHNode::new(&polygons);
         Self {
             polygons,
-            original_polygons,
+            bvh_node,
             light: None,
         }
     }
 
     pub fn add_light(&mut self, light: Light) {
         self.light = Some(light);
+    }
+
+    pub fn update_bvh_node(&mut self) {
+        self.bvh_node = BVHNode::new(&self.polygons);
+    }
+
+    pub fn get_distance_bvh(&mut self, other: &Mesh) -> f64 {
+        self.bvh_node.get_distance(&other.bvh_node)
+    }
+
+    pub fn get_distance(&self, other: &Mesh) -> f64 {
+        let self_bounding_box: ([f64; 3], [f64; 3]) = self.get_bounding_box();
+        let other_bounding_box: ([f64; 3], [f64; 3]) = other.get_bounding_box();
+
+        self.get_distance_bounding_boxes(&self_bounding_box, &other_bounding_box)
     }
 
     pub fn get_distance_bounding_boxes(
@@ -266,13 +283,6 @@ impl Mesh {
         let min: [f64; 3] = [min[0], min[1], min[2]];
         let max: [f64; 3] = [max[0], max[1], max[2]];
         (min, max)
-    }
-
-    pub fn get_distance(&self, other: &Mesh) -> f64 {
-        let self_bounding_box: ([f64; 3], [f64; 3]) = self.get_bounding_box();
-        let other_bounding_box: ([f64; 3], [f64; 3]) = other.get_bounding_box();
-
-        self.get_distance_bounding_boxes(&self_bounding_box, &other_bounding_box)
     }
 
     pub fn get_intersect_distance(&self, other: &Mesh) -> Option<f64> {
