@@ -261,7 +261,7 @@ pub fn orbiting_system(position: Vector3D) -> Vec<BodyType> {
     let high_mass = get_sphere_light_highmass(position.clone());
     objects.push(high_mass);
 
-    for i in 0..250 {
+    for i in 0..500 {
         let sphere = get_sphere_light3(position.clone());
         objects.push(sphere);
     }

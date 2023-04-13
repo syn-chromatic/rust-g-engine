@@ -2,14 +2,15 @@ use crate::abstracts::body::{Body, BodyType};
 use crate::components::camera::Camera;
 use crate::components::color::RGBA;
 
+use super::vectors::Vector3D;
 use crate::components::font::ArialFont;
 use crate::components::font::FontSettings;
 use crate::components::font::FontType;
 use crate::components::graphics::Graphics;
+use crate::components::shape::Shape;
 use crate::components::text_writer::TextWriter;
+use crate::components::vertices::Sphere;
 use crate::configurations::body_configurations;
-
-use super::vectors::Vector3D;
 
 pub struct Simulation {
     pub camera: Camera,
@@ -47,13 +48,13 @@ impl Simulation {
         // let grid = body_configurations::get_grid();
         // self.objects.push(grid);
 
-        // let obj = body_configurations::get_obj("./town_square.obj");
+        // let obj = body_configurations::get_obj("./models/town_square.obj");
         // self.objects.push(obj);
 
-        // let obj = body_configurations::get_obj("./cottage.obj");
+        // let obj = body_configurations::get_obj("./models/cottage.obj");
         // self.objects.push(obj);
 
-        // let obj = body_configurations::get_obj("./plane.obj");
+        // let obj = body_configurations::get_obj("./models/plane.obj");
         // self.objects.push(obj);
 
         // let sphere = body_configurations::get_sphere_light_highmass();
@@ -79,33 +80,6 @@ impl Simulation {
             body_configurations::orbiting_system2(Vector3D::new(8_000_000.0, 4_000_000.0, 0.0));
         self.objects.extend(system);
 
-        // let system = body_configurations::orbiting_system(Vector3D::new(-4_000_000.0, 2_000_000.0, 0.0,));
-        // self.objects.extend(system);
-
-        // let system = body_configurations::orbiting_system(Vector3D::new(-5_000_000.0, -4_000_000.0, 0.0,));
-        // self.objects.extend(system);
-
-        // let planet = body_configurations::highmass_planet(Vector3D::new(-20_000_000.0, -30_000_000.0, 10_000_000.0,));
-        // self.objects.push(planet);
-
-        // let planet = body_configurations::highmass_planet(Vector3D::new(20_000_000.0, 30_000_000.0, -10_000_000.0,));
-        // self.objects.push(planet);
-
-        // let planet = body_configurations::highmass_planet(Vector3D::new(30_000_000.0, -30_000_000.0, 10_000_000.0,));
-        // self.objects.push(planet);
-
-        // let planet = body_configurations::highmass_planet(Vector3D::new(50_000_000.0, -30_000_000.0, -20_000_0000.0,));
-        // self.objects.push(planet);
-
-        // let planet = body_configurations::highmass_planet(Vector3D::new(50_000_000.0, -30_000_000.0, 0.0,));
-        // self.objects.push(planet);
-
-        // let system = body_configurations::orbiting_system(Vector3D::new(-4_000_000.0, 4_000_000.0, 2_000_000.0,));
-        // self.objects.extend(system);
-
-        // let system = body_configurations::orbiting_system(Vector3D::new(0.0, 0.0, 0.0));
-        // self.objects.extend(system);
-
         let camera_position = Vector3D::new(-250_000.0, 200.0, -2_000_000.0);
         self.camera.set_camera_position(camera_position);
 
@@ -128,13 +102,35 @@ impl Simulation {
         self.timestep_hz = timestep;
     }
 
+    pub fn shoot(&mut self) {
+        let camera_position: Vector3D = self.camera.camera_position;
+        let camera_target: Vector3D = self.camera.camera_target;
+
+        let camera_dir: Vector3D = camera_target.subtract_vector(&camera_position);
+        let camera_dir: Vector3D = camera_dir.normalize().multiply(-1.0);
+
+        let mass = 100_000.0;
+
+        let mut sphere = Sphere::new(20_000.0, 5, 5);
+        sphere.set_offset(camera_position.x, camera_position.y, camera_position.z);
+        sphere.set_color(RGBA::from_random());
+        sphere.set_shader(RGBA::from_rgb(0.5, 0.5, 0.5));
+
+        let mesh = sphere.get_triangle_mesh();
+
+        let mut body = Shape::new(mesh);
+        body.physics()
+            .set_position(camera_position.x, camera_position.y, camera_position.z);
+        body.physics().set_mass(mass);
+        let velocity = camera_dir.multiply(200_000.0);
+        body.physics()
+            .set_velocity(velocity.x, velocity.y, velocity.z);
+        let body_type = BodyType::Shape(body);
+        self.objects.push(body_type);
+    }
+
     pub fn compute_objects(&mut self) {
         let timestep: f64 = 1.0 / self.timestep_hz;
-
-        // for object in self.objects.iter_mut() {
-        //     object.physics().mesh.update_bvh_node();
-        // }
-
 
         for i in 0..self.objects.len() {
             for j in (i + 1)..self.objects.len() {
@@ -144,24 +140,12 @@ impl Simulation {
                 };
                 physics1.apply_forces(physics2);
             }
-
         }
 
         for object in self.objects.iter_mut() {
             let physics = object.physics();
             physics.update(timestep);
-            // physics.update_bvh_node();
-            // object.physics().update(timestep);
-            // object.physics().mesh.update_bvh_node();
         }
-
-
-
-        // for object in self.objects.iter_mut() {
-        //     object.physics().mesh.update_bvh_node();
-        // }
-
-
     }
 
     fn get_timestep_text(&self) -> String {

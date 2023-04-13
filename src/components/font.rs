@@ -68,13 +68,4 @@ impl FontSettings {
             padding_percent,
         }
     }
-
-    pub fn get_text_block(&self, text: &String) -> Rc<FormattedTextBlock> {
-        let text_options: TextOptions = TextOptions::new();
-        let text_scale: f32 = self.font_size as f32;
-        let sp2d_font: &Font = self.font_type.get_sp2d_font();
-        let text_block: Rc<FormattedTextBlock> =
-            sp2d_font.layout_text(text, text_scale, text_options);
-        text_block
-    }
 }

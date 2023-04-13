@@ -86,6 +86,7 @@ impl WindowHandler for DrawCall {
     ) {
         if let MouseButton::Left = button {
             self.graphics.set_cursor_grab(true);
+            self.simulation.shoot();
         }
     }
 
