@@ -67,8 +67,9 @@ impl DrawCall {
         meshes
     }
 
-    fn combine_meshes(&self, meshes: Vec<Mesh>) -> Mesh {
+    fn combine_meshes(&mut self, meshes: Vec<Mesh>) -> Mesh {
         let total_polygons: usize = meshes.iter().map(|mesh| mesh.polygons.len()).sum();
+        self.simulation.polygon_count = total_polygons;
         let mut polygons: Vec<Polygon> = Vec::with_capacity(total_polygons);
 
         for mesh in meshes {

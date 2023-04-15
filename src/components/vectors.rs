@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 pub struct Vector3D {
     pub x: f64,
     pub y: f64,
@@ -24,7 +24,7 @@ impl Vector3D {
         let z: f64 = self.z;
         (x, y, z)
     }
-    pub fn to_vec(&self) -> [f64; 3] {
+    pub fn to_array(&self) -> [f64; 3] {
         let x: f64 = self.x;
         let y: f64 = self.y;
         let z: f64 = self.z;
@@ -202,5 +202,15 @@ impl Vector3D {
         let z: f64 = self.z;
 
         x + y + z
+    }
+}
+
+impl Eq for Vector3D {}
+
+impl PartialEq for Vector3D {
+    fn eq(&self, other: &Self) -> bool {
+        (self.x - other.x).abs() < f64::EPSILON
+            && (self.y - other.y).abs() < f64::EPSILON
+            && (self.z - other.z).abs() < f64::EPSILON
     }
 }

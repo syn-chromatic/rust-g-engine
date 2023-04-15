@@ -1,8 +1,8 @@
+use super::bvh::BVHNode;
 use crate::components::color::RGBA;
+use crate::components::convex_hull::quick_hull;
 use crate::components::shaders::Light;
 use crate::components::vectors::Vector3D;
-
-use super::bvh::BVHNode;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Triangle {
@@ -24,6 +24,11 @@ impl Triangle {
             face,
             shader,
             color,
+        }
+    }
+    pub fn translate(&mut self, translation: &Vector3D) {
+        for vertex in self.vertices.iter_mut() {
+            *vertex = vertex.add_vector(translation);
         }
     }
 
@@ -74,6 +79,12 @@ impl Quad {
         }
     }
 
+    pub fn translate(&mut self, translation: &Vector3D) {
+        for vertex in self.vertices.iter_mut() {
+            *vertex = vertex.add_vector(translation);
+        }
+    }
+
     pub fn get_normal(&self) -> Vector3D {
         let v1 = self.vertices[0];
         let v2 = self.vertices[1];
@@ -106,15 +117,22 @@ pub enum Polygon {
 }
 
 impl Polygon {
+    pub fn translate(&mut self, translation: &Vector3D) {
+        match self {
+            Polygon::Triangle(triangle) => triangle.translate(translation),
+            Polygon::Quad(quad) => quad.translate(translation),
+        }
+    }
+
     pub fn get_bounding_box(&self) -> ([f64; 3], [f64; 3]) {
         let infinity: f64 = f64::INFINITY;
         let neg_infinity: f64 = f64::NEG_INFINITY;
-        let mut min: [f64; 3] = Vector3D::default(infinity).to_vec();
-        let mut max: [f64; 3] = Vector3D::default(neg_infinity).to_vec();
+        let mut min: [f64; 3] = Vector3D::default(infinity).to_array();
+        let mut max: [f64; 3] = Vector3D::default(neg_infinity).to_array();
 
         let centroid = match self {
-            Polygon::Triangle(triangle) => triangle.get_centroid().to_vec(),
-            Polygon::Quad(quad) => quad.get_centroid().to_vec(),
+            Polygon::Triangle(triangle) => triangle.get_centroid().to_array(),
+            Polygon::Quad(quad) => quad.get_centroid().to_array(),
         };
 
         for i in 0..3 {
@@ -170,29 +188,70 @@ impl Polygon {
 pub struct Mesh {
     pub polygons: Vec<Polygon>,
     pub bvh_node: BVHNode,
+    pub convex_hull: Vec<Vector3D>,
     pub light: Option<Light>,
 }
 
 impl Mesh {
     pub fn new(polygons: Vec<Polygon>) -> Self {
-        let bvh_node = BVHNode::new(&polygons);
+        let vertices = Self::get_vertices_from_polygons(&polygons);
+        let convex_hull = quick_hull(&vertices);
+        let bvh_node = BVHNode::new(&polygons, &convex_hull);
         Self {
             polygons,
             bvh_node,
+            convex_hull,
             light: None,
         }
+    }
+
+    fn get_vertices_from_polygons(polygons: &[Polygon]) -> Vec<Vector3D> {
+        let mut vertices: Vec<Vector3D> = Vec::new();
+
+        for polygon in polygons {
+            let polygon_vertices: &[Vector3D] = match polygon {
+                Polygon::Triangle(triangle) => &triangle.vertices,
+                Polygon::Quad(quad) => &quad.vertices,
+            };
+
+            vertices.extend_from_slice(polygon_vertices);
+        }
+
+        vertices
     }
 
     pub fn add_light(&mut self, light: Light) {
         self.light = Some(light);
     }
 
-    pub fn update_bvh_node(&mut self) {
-        self.bvh_node = BVHNode::new(&self.polygons);
+    pub fn translate_polygons(&mut self, translation: Vector3D) {
+        for polygon in &mut self.polygons {
+            polygon.translate(&translation);
+        }
+        self.translate_hull(translation);
+        self.translate_bvh_node(translation);
+    }
+
+    fn translate_hull(&mut self, translation: Vector3D) {
+        for vertex in self.convex_hull.iter_mut() {
+            *vertex = vertex.add_vector(&translation);
+        }
+    }
+
+    fn translate_bvh_node(&mut self, translation: Vector3D) {
+        for polygon in &mut self.bvh_node.polygons {
+            polygon.translate(&translation);
+        }
+
+        self.bvh_node.convex_hull = self.convex_hull.clone();
     }
 
     pub fn get_distance_bvh(&mut self, other: &Mesh) -> f64 {
         self.bvh_node.get_distance(&other.bvh_node)
+    }
+
+    pub fn is_intersecting_bvh(&self, other: &Mesh) -> Option<Vector3D> {
+        self.bvh_node.is_intersecting(&other.bvh_node)
     }
 
     pub fn get_distance(&self, other: &Mesh) -> f64 {
@@ -266,11 +325,11 @@ impl Mesh {
     pub fn get_bounding_box(&self) -> ([f64; 3], [f64; 3]) {
         let infinity: f64 = f64::INFINITY;
         let neg_infinity: f64 = f64::NEG_INFINITY;
-        let mut min: [f64; 3] = Vector3D::default(infinity).to_vec();
-        let mut max: [f64; 3] = Vector3D::default(neg_infinity).to_vec();
+        let mut min: [f64; 3] = Vector3D::default(infinity).to_array();
+        let mut max: [f64; 3] = Vector3D::default(neg_infinity).to_array();
 
         for poly in &self.polygons {
-            let centroid = poly.get_centroid().to_vec();
+            let centroid = poly.get_centroid().to_array();
             for i in 0..3 {
                 if centroid[i] < min[i] {
                     min[i] = centroid[i];

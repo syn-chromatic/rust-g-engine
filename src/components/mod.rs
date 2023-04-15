@@ -17,3 +17,4 @@ pub mod vectors;
 pub mod vertices;
 pub mod z_buffer;
 pub mod bvh;
+pub mod convex_hull;

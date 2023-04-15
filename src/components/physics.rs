@@ -17,6 +17,9 @@ pub struct Physics {
     pub mass: f64,
     pub scale: f64,
     pub g_const: f64,
+    pub gravity: f64,
+    pub is_stationary: bool,
+    pub shifted: bool,
 }
 
 impl Physics {
@@ -29,6 +32,9 @@ impl Physics {
         let mass: f64 = 1.0;
         let scale: f64 = 1.0;
         let g_const: f64 = 0.8;
+        let gravity = -9.8;
+        let is_stationary = false;
+        let shifted = false;
 
         Physics {
             mesh,
@@ -40,6 +46,9 @@ impl Physics {
             mass,
             scale,
             g_const,
+            gravity,
+            is_stationary,
+            shifted,
         }
     }
 
@@ -125,7 +134,14 @@ impl Physics {
         let tts_distance: Vector3D = target.position.subtract_vector(&self.position);
 
         self.apply_collision(target, tts_distance);
+        // self.apply_gravity();
         self.apply_attraction(target, tts_distance);
+    }
+
+    fn apply_gravity(&mut self) {
+        let mut acceleration = self.acceleration;
+        acceleration.y = acceleration.y + self.gravity;
+        self.acceleration = acceleration;
     }
 
     pub fn apply_attraction(&mut self, target: &mut Physics, tts_distance: Vector3D) {
@@ -143,17 +159,26 @@ impl Physics {
     }
 
     pub fn apply_collision(&mut self, target: &mut Physics, tts_distance: Vector3D) {
-        let distance = self.mesh.get_distance_bvh(&target.mesh);
+        let mtv: Option<Vector3D> = self.mesh.is_intersecting_bvh(&target.mesh);
 
-        if distance <= 0.0 {
+        if let Some(direction) = mtv {
+            // let distance: f64 = self.mesh.get_distance_bvh(&target.mesh);
+            // println!("{}, {}", distance, direction.get_length());
+            let distance = direction.get_length();
+
             // Self-To-Target Distance
-            let stt_distance: Vector3D = tts_distance.multiply(-1.0);
-            let stt_direction: Vector3D = stt_distance.normalize();
-            let stt_direction: Vector3D = self.ensure_direction(stt_direction);
+            let direction: Vector3D = direction.multiply(-1.0);
+            let direction: Vector3D = direction.normalize();
+            // let stt_direction: Vector3D = self.ensure_direction(stt_direction);
+
+            // if !self.is_stationary {
             if target.mass >= self.mass {
-                self.apply_shift_correction(stt_direction, distance);
+                self.apply_shift_correction(direction, distance);
             }
-            self.apply_collision_velocities(target, stt_direction);
+
+            self.apply_collision_velocities(target, direction);
+
+            // }
         }
     }
 
@@ -184,10 +209,12 @@ impl Physics {
         target.velocity = v2;
     }
 
-    pub fn apply_shift_correction(&mut self, mut direction: Vector3D, distance: f64) {
-        let self_vec = direction.multiply(distance.abs());
+    pub fn apply_shift_correction(&mut self, direction: Vector3D, distance: f64) {
+        // let distance = distance + self.velocity.get_length();
+        let self_vec = direction.multiply(distance);
         self.position = self.position.add_vector(&self_vec);
         self.update_mesh_position(self_vec);
+        self.shifted = true;
     }
 
     fn apply_spin_forces(&mut self, timestep: f64) {
@@ -244,25 +271,19 @@ impl Physics {
     }
 
     fn update_mesh_position(&mut self, velocity_change: Vector3D) {
-        for polygon in &mut self.mesh.polygons {
-            match polygon {
-                Polygon::Triangle(triangle) => {
-                    for vertex in &mut triangle.vertices {
-                        *vertex = vertex.add_vector(&velocity_change);
-                    }
-                }
-                Polygon::Quad(quad) => {
-                    for vertex in &mut quad.vertices {
-                        *vertex = vertex.add_vector(&velocity_change);
-                    }
-                }
-            }
-        }
-        self.mesh.update_bvh_node();
+        self.mesh.translate_polygons(velocity_change);
     }
 
     pub fn update(&mut self, timestep: f64) {
+        // self.apply_gravity();
+
+        if self.is_stationary {
+            self.acceleration = self.acceleration.multiply(0.0);
+            self.velocity = self.velocity.multiply(0.0);
+        }
+
         self.update_position(timestep);
         self.acceleration = self.acceleration.multiply(0.0);
+        self.shifted = false;
     }
 }

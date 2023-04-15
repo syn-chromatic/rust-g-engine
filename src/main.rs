@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+// #![windows_subsystem = "windows"]
 mod abstracts;
 mod components;
 mod configurations;
@@ -104,7 +104,7 @@ impl WindowHandler for DrawCall {
             self.simulation.increment_timestep(-1);
         }
 
-        let step_val = 50000.0;
+        let step_val = 50_000.0;
         let camera = &mut self.simulation.camera;
 
         if let Some(VirtualKeyCode::W) = virtual_key_code {

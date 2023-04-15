@@ -15,7 +15,7 @@ use crate::configurations::body_configurations;
 pub struct Simulation {
     pub camera: Camera,
     pub objects: Vec<BodyType>,
-    polygon_count: usize,
+    pub polygon_count: usize,
     timestep_hz: f64,
     text_writer: TextWriter,
 }
@@ -76,9 +76,9 @@ impl Simulation {
         let system = body_configurations::orbiting_system(Vector3D::new(0.0, 0.0, 0.0));
         self.objects.extend(system);
 
-        let system =
-            body_configurations::orbiting_system2(Vector3D::new(8_000_000.0, 4_000_000.0, 0.0));
-        self.objects.extend(system);
+        // let system =
+        //     body_configurations::orbiting_system2(Vector3D::new(8_000_000.0, 4_000_000.0, 0.0));
+        // self.objects.extend(system);
 
         let camera_position = Vector3D::new(-250_000.0, 200.0, -2_000_000.0);
         self.camera.set_camera_position(camera_position);
@@ -91,7 +91,7 @@ impl Simulation {
         }
     }
 
-    pub fn increment_timestep(&mut self, mut direction: i32) {
+    pub fn increment_timestep(&mut self, direction: i32) {
         let min_timestep_hz: f64 = 0.1;
         let max_timestep_hz: f64 = 100.0 * 1000.0;
         let proportion: f64 = 0.05;
@@ -111,7 +111,7 @@ impl Simulation {
 
         let mass = 100_000.0;
 
-        let mut sphere = Sphere::new(20_000.0, 5, 5);
+        let mut sphere = Sphere::new(100_000.0, 5, 5);
         sphere.set_offset(camera_position.x, camera_position.y, camera_position.z);
         sphere.set_color(RGBA::from_random());
         sphere.set_shader(RGBA::from_rgb(0.5, 0.5, 0.5));
@@ -123,6 +123,7 @@ impl Simulation {
             .set_position(camera_position.x, camera_position.y, camera_position.z);
         body.physics().set_mass(mass);
         let velocity = camera_dir.multiply(200_000.0);
+        //  let velocity = camera_dir.multiply(1.0);
         body.physics()
             .set_velocity(velocity.x, velocity.y, velocity.z);
         let body_type = BodyType::Shape(body);

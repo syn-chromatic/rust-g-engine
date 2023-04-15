@@ -161,16 +161,16 @@ impl Camera {
     }
 
     pub fn apply_projection_polygons(&mut self, mut mesh: Mesh) -> Mesh {
-        let polygon_count = mesh.polygons.len();
-        let mut transformed_polygons = Vec::with_capacity(polygon_count);
+        let polygon_count: usize = mesh.polygons.len();
+        let mut transformed_polygons: Vec<Polygon> = Vec::with_capacity(polygon_count);
 
         for polygon in mesh.polygons {
-            let polygon = self.apply_polygon_view_transform(polygon);
+            let polygon: Polygon = self.apply_polygon_view_transform(polygon);
             if self.frustum.is_polygon_outside_frustum(&polygon) {
                 continue;
             }
 
-            let clipped_polygons = self.frustum.clip_polygon_against_frustum_stack(polygon);
+            let clipped_polygons: Vec<Polygon> = self.frustum.clip_polygon_against_frustum(polygon);
 
             for mut clipped_polygon in clipped_polygons {
                 clipped_polygon = self.apply_polygon_perspective_transform(clipped_polygon);
