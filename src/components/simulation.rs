@@ -23,7 +23,7 @@ pub struct Simulation {
 impl Simulation {
     pub fn new(camera: Camera, resolution: (u32, u32)) -> Simulation {
         let objects: Vec<BodyType> = vec![];
-        let timestep_hz: f64 = 1.0;
+        let timestep_hz: f64 = 5.0;
         let polygon_count: usize = 0;
 
         let arial_font: ArialFont = ArialFont::new();
@@ -55,6 +55,9 @@ impl Simulation {
         // self.objects.push(obj);
 
         // let obj = body_configurations::get_obj("./models/plane.obj");
+        // self.objects.push(obj);
+
+        // let obj = body_configurations::get_obj("./models/TerrorTubby_01.obj");
         // self.objects.push(obj);
 
         // let sphere = body_configurations::get_sphere_light_highmass();
@@ -111,7 +114,7 @@ impl Simulation {
 
         let mass = 100_000.0;
 
-        let mut sphere = Sphere::new(100_000.0, 5, 5);
+        let mut sphere = Sphere::new(50_000.0, 10, 10);
         sphere.set_offset(camera_position.x, camera_position.y, camera_position.z);
         sphere.set_color(RGBA::from_random());
         sphere.set_shader(RGBA::from_rgb(0.5, 0.5, 0.5));

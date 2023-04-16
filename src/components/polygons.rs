@@ -1,6 +1,9 @@
+use std::sync::Arc;
+
 use super::bvh::BVHNode;
 use crate::components::color::RGBA;
-use crate::components::convex_hull::quick_hull;
+use crate::components::convex_hull;
+
 use crate::components::shaders::Light;
 use crate::components::vectors::Vector3D;
 
@@ -33,12 +36,12 @@ impl Triangle {
     }
 
     pub fn get_normal(&self) -> Vector3D {
-        let v1 = self.vertices[0];
-        let v2 = self.vertices[1];
-        let v3 = self.vertices[2];
+        let v1: Vector3D = self.vertices[0];
+        let v2: Vector3D = self.vertices[1];
+        let v3: Vector3D = self.vertices[2];
 
-        let edge1 = v2.subtract_vector(&v1);
-        let edge2 = v3.subtract_vector(&v1);
+        let edge1: Vector3D = v2.subtract_vector(&v1);
+        let edge2: Vector3D = v3.subtract_vector(&v1);
 
         edge1.cross_product(&edge2).normalize()
     }
@@ -190,18 +193,36 @@ pub struct Mesh {
     pub bvh_node: BVHNode,
     pub convex_hull: Vec<Vector3D>,
     pub light: Option<Light>,
+    pub previous_mesh: Option<Arc<Mesh>>,
 }
 
 impl Mesh {
     pub fn new(polygons: Vec<Polygon>) -> Self {
         let vertices = Self::get_vertices_from_polygons(&polygons);
-        let convex_hull = quick_hull(&vertices);
+        // let convex_hull = convex_hull::QuickHull::new(vertices).get_hull();
+        let mut faces_len = 0;
+        for polygon in &polygons {
+            let faces: usize = match polygon {
+                Polygon::Triangle(triangle) => triangle.vertices.len() / 3,
+                Polygon::Quad(quad) => quad.vertices.len() / 4,
+            };
+            faces_len += faces;
+        }
+        faces_len /= 2;
+
+        // println!("ChansM: {}", faces_len);
+        // let convex_hull = convex_hull::ChansHull::new(vertices, faces_len).get_hull();
+        // let convex_hull = convex_hull::QuickHull::new(vertices).get_hull();
+        let convex_hull = Self::get_vertices_from_polygons(&polygons);
+        // println!("Hull Len: {}", convex_hull.len());
+
         let bvh_node = BVHNode::new(&polygons, &convex_hull);
         Self {
             polygons,
             bvh_node,
             convex_hull,
             light: None,
+            previous_mesh: None,
         }
     }
 
@@ -224,7 +245,20 @@ impl Mesh {
         self.light = Some(light);
     }
 
+    pub fn revert_to_previous(&mut self) {
+        if self.previous_mesh.is_some() {
+            let previous_mesh = self.previous_mesh.as_ref().unwrap();
+            self.polygons = previous_mesh.polygons.clone();
+            self.bvh_node = previous_mesh.bvh_node.clone();
+            self.convex_hull = previous_mesh.convex_hull.clone();
+            self.light = previous_mesh.light.clone();
+            self.previous_mesh = None;
+        }
+    }
+
     pub fn translate_polygons(&mut self, translation: Vector3D) {
+        self.previous_mesh = Some(Arc::new(self.clone()));
+
         for polygon in &mut self.polygons {
             polygon.translate(&translation);
         }
@@ -242,16 +276,19 @@ impl Mesh {
         for polygon in &mut self.bvh_node.polygons {
             polygon.translate(&translation);
         }
-
-        self.bvh_node.convex_hull = self.convex_hull.clone();
+        for vertex in self.bvh_node.vertices.iter_mut() {
+            *vertex = vertex.add_vector(&translation);
+        }
+        // self.bvh_node.vertices = self.convex_hull.clone();
+        // self.bvh_node = BVHNode::new(&self.polygons, &self.convex_hull);
     }
 
     pub fn get_distance_bvh(&mut self, other: &Mesh) -> f64 {
         self.bvh_node.get_distance(&other.bvh_node)
     }
 
-    pub fn is_intersecting_bvh(&self, other: &Mesh) -> Option<Vector3D> {
-        self.bvh_node.is_intersecting(&other.bvh_node)
+    pub fn is_intersecting_bvh(&mut self, other: &mut Mesh) -> Option<Vector3D> {
+        self.bvh_node.is_intersecting(&mut other.bvh_node)
     }
 
     pub fn get_distance(&self, other: &Mesh) -> f64 {

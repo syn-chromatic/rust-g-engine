@@ -3,6 +3,7 @@ use super::vectors::Vector3D;
 use crate::abstracts::body::Body;
 use crate::abstracts::body::BodyType;
 use crate::components::backface_culling::BackfaceCulling;
+use crate::components::color::RGBA;
 use crate::components::frametime::FrameTimeHandler;
 use crate::components::graphics::Graphics;
 use crate::components::polygons::Polygon;
@@ -65,6 +66,25 @@ impl DrawCall {
     fn get_meshes(&mut self, objects: Vec<BodyType>) -> Vec<Mesh> {
         let meshes: Vec<Mesh> = objects.par_iter().map(|body| body.mesh().clone()).collect();
         meshes
+    }
+
+    fn draw_convex_hulls(&mut self, meshes: Vec<Mesh>) {
+        let camera: &mut Camera = &mut self.simulation.camera;
+        let color: RGBA = RGBA::from_rgb(0.6, 1.0, 0.6);
+        let thickness = 4.0;
+
+        for mesh in meshes {
+            for i in 0..mesh.convex_hull.len() {
+                let v1: Vector3D = mesh.convex_hull[i];
+                let v2: Vector3D = mesh.convex_hull[(i + 1) % mesh.convex_hull.len()];
+
+                let line: Option<(Vector3D, Vector3D)> = camera.transform_line(v1, v2);
+                if line.is_some() {
+                    let (v1, v2): (Vector3D, Vector3D) = line.unwrap();
+                    self.graphics.draw_line(v1, v2, color, thickness);
+                }
+            }
+        }
     }
 
     fn combine_meshes(&mut self, meshes: Vec<Mesh>) -> Mesh {
@@ -134,6 +154,7 @@ impl DrawCall {
     pub fn draw(&mut self, objects: Vec<BodyType>) {
         let meshes: Vec<Mesh> = self.get_meshes(objects);
         // let lights = self.get_lights(&meshes);
+        // self.draw_convex_hulls(meshes);
         let mut mesh: Mesh = self.combine_meshes(meshes);
 
         let lights: Vec<Light> = self.get_lights_2();

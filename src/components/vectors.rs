@@ -1,13 +1,25 @@
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+use std::cmp::Ordering;
+use std::f64::EPSILON;
+
 #[derive(Clone, Copy, Debug)]
 pub struct Vector3D {
     pub x: f64,
     pub y: f64,
     pub z: f64,
+    hash_value: Option<u64>,
 }
 
 impl Vector3D {
     pub fn new(x: f64, y: f64, z: f64) -> Self {
-        Vector3D { x, y, z }
+        let hash_value: Option<u64> = None;
+        Vector3D {
+            x,
+            y,
+            z,
+            hash_value,
+        }
     }
 
     pub fn default(value: f64) -> Vector3D {
@@ -29,6 +41,25 @@ impl Vector3D {
         let y: f64 = self.y;
         let z: f64 = self.z;
         [x, y, z]
+    }
+
+    pub fn get_hash(&mut self) -> u64 {
+        if self.hash_value.is_some() {
+            return self.hash_value.unwrap();
+        }
+        let mut hasher: DefaultHasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        let hash_value: u64 = hasher.finish();
+        self.hash_value = Some(hash_value);
+        hash_value
+    }
+
+    pub fn abs(&self) -> Self {
+        let x: f64 = self.x.abs();
+        let y: f64 = self.y.abs();
+        let z: f64 = self.z.abs();
+
+        Vector3D::new(x, y, z)
     }
 
     pub fn clamp(&self, min_value: f64, max_value: f64) -> Self {
@@ -205,12 +236,48 @@ impl Vector3D {
     }
 }
 
-impl Eq for Vector3D {}
+
+impl Hash for Vector3D {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        state.write_u64(self.x.to_bits());
+        state.write_u64(self.y.to_bits());
+        state.write_u64(self.z.to_bits());
+    }
+}
+
 
 impl PartialEq for Vector3D {
     fn eq(&self, other: &Self) -> bool {
-        (self.x - other.x).abs() < f64::EPSILON
-            && (self.y - other.y).abs() < f64::EPSILON
-            && (self.z - other.z).abs() < f64::EPSILON
+        (self.x - other.x).abs() < EPSILON
+            && (self.y - other.y).abs() < EPSILON
+            && (self.z - other.z).abs() < EPSILON
+    }
+
+    // fn eq(&self, other: &Self) -> bool {
+    //     self.x == other.x && self.y == other.y && self.z == other.z
+    // }
+
+
+
+}
+
+impl Eq for Vector3D {}
+
+
+impl PartialOrd for Vector3D {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if (self.x - other.x).abs() < EPSILON {
+            if (self.y - other.y).abs() < EPSILON {
+                if (self.z - other.z).abs() < EPSILON {
+                    Some(Ordering::Equal)
+                } else {
+                    self.z.partial_cmp(&other.z)
+                }
+            } else {
+                self.y.partial_cmp(&other.y)
+            }
+        } else {
+            self.x.partial_cmp(&other.x)
+        }
     }
 }

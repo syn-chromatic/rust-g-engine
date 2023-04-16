@@ -120,11 +120,16 @@ impl Frustum {
         distance / interpolation
     }
 
-    fn is_point_behind_plane(&self, point: Vector3D, plane: &Plane) -> bool {
+    fn get_distance_to_plane(&self, point: Vector3D, plane: &Plane) -> f64 {
         let x: f64 = point.x;
         let y: f64 = point.y;
         let z: f64 = point.z;
         let distance: f64 = plane.a * x + plane.b * y + plane.c * z + plane.d;
+        distance
+    }
+
+    fn is_point_behind_plane(&self, point: Vector3D, plane: &Plane) -> bool {
+        let distance: f64 = self.get_distance_to_plane(point, plane);
         distance < 0.0
     }
 
@@ -307,5 +312,35 @@ impl Frustum {
         }
 
         clipped_polygons
+    }
+
+    pub fn clip_line_to_frustum(&self, v1: Vector3D, v2: Vector3D) -> Option<(Vector3D, Vector3D)> {
+        let mut t_min: f64 = 0.0;
+        let mut t_max: f64 = 1.0;
+
+        for plane in &self.planes {
+            let start_dist: f64 = self.get_distance_to_plane(v1, plane);
+            let end_dist: f64 = self.get_distance_to_plane(v2, plane);
+
+            if start_dist < 0.0 && end_dist < 0.0 {
+                return None;
+            }
+
+            if start_dist >= 0.0 && end_dist >= 0.0 {
+                continue;
+            }
+
+            let t = start_dist / (start_dist - end_dist);
+
+            if start_dist < 0.0 {
+                t_min = t_max.min(t);
+            } else {
+                t_max = t_min.max(t);
+            }
+        }
+
+        let start = v1.lerp_interpolation(&v2, t_min);
+        let end = v1.lerp_interpolation(&v2, t_max);
+        Some((start, end))
     }
 }

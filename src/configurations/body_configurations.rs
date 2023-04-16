@@ -273,7 +273,7 @@ pub fn orbiting_system(position: Vector3D) -> Vec<BodyType> {
         let mass: f64 = rng.gen_range(1000.0..8_000.0);
 
         let radius = (mass / 1000.0) * 2000.0;
-        let mut sphere = Sphere::new(radius, 3, 3);
+        let mut sphere = Sphere::new(radius, 5, 5);
         sphere.set_offset(position.0, position.1, position.2);
         sphere.set_color(RGBA::from_random());
         sphere.set_shader(RGBA::from_rgb(0.5, 0.5, 0.5));
@@ -289,13 +289,20 @@ pub fn orbiting_system(position: Vector3D) -> Vec<BodyType> {
     }
 
     let mut objects: Vec<BodyType> = Vec::new();
-    let high_mass = get_sphere_light_highmass(position.clone());
+    let mut high_mass = get_sphere_light_highmass(position.clone());
+    let physics = high_mass.physics();
+    physics.is_stationary = true;
     objects.push(high_mass);
 
-    for i in 0..200 {
-        let sphere = get_sphere_light3(position.clone());
-        objects.push(sphere);
-    }
+    let mut high_mass = get_sphere_light_highmass(position.add_elements(500_000.0, 0.0, 0.0));
+    let physics = high_mass.physics();
+    physics.is_stationary = true;
+    objects.push(high_mass);
+
+    // for i in 0..50 {
+    //     let sphere = get_sphere_light3(position.clone());
+    //     objects.push(sphere);
+    // }
     objects
 }
 
