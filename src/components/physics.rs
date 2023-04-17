@@ -130,12 +130,9 @@ impl Physics {
     }
 
     pub fn apply_forces(&mut self, target: &mut Physics) {
-        // Target-To-Self Distance
-        let tts_distance: Vector3D = target.position.subtract_vector(&self.position);
-
-        self.apply_collision(target, tts_distance);
         // self.apply_gravity();
-        self.apply_attraction(target, tts_distance);
+        self.apply_collision(target);
+        self.apply_attraction(target);
     }
 
     fn apply_gravity(&mut self) {
@@ -144,7 +141,8 @@ impl Physics {
         self.acceleration = acceleration;
     }
 
-    pub fn apply_attraction(&mut self, target: &mut Physics, tts_distance: Vector3D) {
+    pub fn apply_attraction(&mut self, target: &mut Physics) {
+        let tts_distance: Vector3D = target.position.subtract_vector(&self.position);
         let distance: f64 = tts_distance.get_length();
 
         if distance > 0.0 {
@@ -158,72 +156,15 @@ impl Physics {
         }
     }
 
-    pub fn apply_collision(&mut self, target: &mut Physics, tts_distance: Vector3D) {
-        // let test_distance = self.mesh.get_distance(&target.mesh);
-
-        // if test_distance <= 0.0 {
-        //     if target.mass >= self.mass {
-        //         // println!("distance: {}", distance);
-        //         let direction = self.get_random_direction();
-        //         self.apply_shift_correction(direction, test_distance * 2.0);
-        //         // return;
-        //     }
-        //     // return;
-        // }
-
+    pub fn apply_collision(&mut self, target: &mut Physics) {
         let mtv: Option<Vector3D> = self.mesh.is_intersecting_bvh(&mut target.mesh);
 
-        // println!("{}", mtv.is_some());
-        // if mtv.is_some() {
-        //     println!("collision! {}", self.is_stationary);
-        // }
-        // if self.is_stationary {
-        //     return;
-        // }
-
         if let Some(direction) = mtv {
-
-
-
-
-
-
-
-            // self.mesh.revert_to_previous();
             target.mesh.revert_to_previous();
-            // self.velocity = self.velocity.multiply(0.0);
-            // self.acceleration = self.acceleration.multiply(0.0);
-            // target.velocity = target.velocity.multiply(0.0);
-            // target.acceleration = target.acceleration.multiply(0.0);
-            // let distance: f64 = self.mesh.get_distance_bvh(&target.mesh);
-            // let distance: f64 = direction.get_length();
 
-            // if target.mass >= self.mass {
-            //     //     // println!("distance: {}", distance);
-            //     let distance: f64 = self.mesh.get_distance_bvh(&target.mesh);
-            //     if distance < -5000.0 {
-            //         //     // let distance: f64 = direction.get_length();
-            //         let test_direction = self.get_random_direction();
-            //         self.apply_shift_correction(test_direction, distance);
-            //         // return;
-            //     }
-            // }
-
-
-
-
-
-            // Self-To-Target Distance
             let direction: Vector3D = direction.multiply(-1.0);
-            // println!("direction: {}", direction.to_string());
             let direction: Vector3D = direction.normalize();
-            // let direction: Vector3D = self.ensure_direction(direction);
-
-            // if !self.is_stationary {
-
             self.apply_collision_velocities(target, direction);
-
-            // }
         }
     }
 

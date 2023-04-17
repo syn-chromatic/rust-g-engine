@@ -16,6 +16,8 @@ pub struct Simulation {
     pub camera: Camera,
     pub objects: Vec<BodyType>,
     pub polygon_count: usize,
+    pub draw_polygons: bool,
+    pub draw_mesh: bool,
     timestep_hz: f64,
     text_writer: TextWriter,
 }
@@ -36,10 +38,18 @@ impl Simulation {
             camera,
             objects,
             polygon_count,
+            draw_polygons: true,
+            draw_mesh: false,
             timestep_hz,
             text_writer,
         }
     }
+
+    pub fn toggle_draw_polygons(&mut self) {
+        self.draw_polygons = !self.draw_polygons;
+        self.draw_mesh = !self.draw_mesh;
+    }
+
 
     pub fn setup_objects(&mut self) {
         // self.timestep_hz = 10000.0;
@@ -179,8 +189,12 @@ impl Simulation {
         let object_count = self.objects.len();
         let text_object_count = format!("Objects:  {}", object_count);
         let text_polygon_count = format!("Polygon Count: {}", self.polygon_count);
+        let text_draw_polygons = format!("Show Polygons: {}", self.draw_polygons);
+        let text_draw_mesh = format!("Show Mesh: {}", self.draw_mesh);
         self.text_writer.add_text_top_left(text_object_count, None);
         self.text_writer.add_text_top_left(text_polygon_count, None);
+        self.text_writer.add_text_top_left(text_draw_polygons, None);
+        self.text_writer.add_text_top_left(text_draw_mesh, None);
     }
 
     fn write_camera_information(&mut self) {

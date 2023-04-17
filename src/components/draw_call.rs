@@ -71,7 +71,7 @@ impl DrawCall {
     fn draw_convex_hulls(&mut self, meshes: Vec<Mesh>) {
         let camera: &mut Camera = &mut self.simulation.camera;
         let color: RGBA = RGBA::from_rgb(0.6, 1.0, 0.6);
-        let thickness = 4.0;
+        let thickness = 1.0;
 
         for mesh in meshes {
             for i in 0..mesh.convex_hull.len() {
@@ -154,17 +154,23 @@ impl DrawCall {
     pub fn draw(&mut self, objects: Vec<BodyType>) {
         let meshes: Vec<Mesh> = self.get_meshes(objects);
         // let lights = self.get_lights(&meshes);
-        // self.draw_convex_hulls(meshes);
-        let mut mesh: Mesh = self.combine_meshes(meshes);
 
-        let lights: Vec<Light> = self.get_lights_2();
+        if self.simulation.draw_mesh {
+            self.draw_convex_hulls(meshes.clone());
+        }
 
-        mesh = self.cull_backfaces_mesh(mesh);
-        mesh = self.apply_z_buffer_sort(mesh);
-        mesh = self.apply_lighting_mesh(mesh, lights);
-        mesh = self.apply_projection(mesh);
+        if self.simulation.draw_polygons {
+            let mut mesh: Mesh = self.combine_meshes(meshes);
 
-        self.graphics.draw_polygons(mesh);
+            let lights: Vec<Light> = self.get_lights_2();
+
+            mesh = self.cull_backfaces_mesh(mesh);
+            mesh = self.apply_z_buffer_sort(mesh);
+            mesh = self.apply_lighting_mesh(mesh, lights);
+            mesh = self.apply_projection(mesh);
+
+            self.graphics.draw_polygons(mesh);
+        }
         self.graphics.update();
     }
 }

@@ -85,7 +85,11 @@ impl WindowHandler for DrawCall {
         button: speedy2d::window::MouseButton,
     ) {
         if let MouseButton::Left = button {
-            self.graphics.set_cursor_grab(true);
+            let cursor_grab = self.graphics.get_cursor_grab();
+            if !cursor_grab.is_grabbed {
+                self.graphics.set_cursor_grab(true);
+                return;
+            }
             self.simulation.shoot();
         }
     }
@@ -141,6 +145,10 @@ impl WindowHandler for DrawCall {
 
         if let Some(VirtualKeyCode::LWin) = virtual_key_code {
             self.graphics.set_cursor_grab(false);
+        }
+
+        if let Some(VirtualKeyCode::RBracket) = virtual_key_code {
+            self.simulation.toggle_draw_polygons();
         }
     }
 }
