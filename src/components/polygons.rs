@@ -188,12 +188,20 @@ impl Polygon {
 }
 
 #[derive(Clone, Debug)]
+pub struct MeshSnapshot {
+    pub polygons: Vec<Polygon>,
+    pub bvh_node: BVHNode,
+    pub convex_hull: Vec<Vector3D>,
+    pub light: Option<Light>,
+}
+
+#[derive(Clone, Debug)]
 pub struct Mesh {
     pub polygons: Vec<Polygon>,
     pub bvh_node: BVHNode,
     pub convex_hull: Vec<Vector3D>,
     pub light: Option<Light>,
-    pub previous_mesh: Option<Arc<Mesh>>,
+    pub previous_mesh: Option<MeshSnapshot>,
 }
 
 impl Mesh {
@@ -246,24 +254,40 @@ impl Mesh {
     }
 
     pub fn revert_to_previous(&mut self) {
-        if self.previous_mesh.is_some() {
-            let previous_mesh = self.previous_mesh.as_ref().unwrap();
-            self.polygons = previous_mesh.polygons.clone();
-            self.bvh_node = previous_mesh.bvh_node.clone();
-            self.convex_hull = previous_mesh.convex_hull.clone();
-            self.light = previous_mesh.light.clone();
-            self.previous_mesh = None;
+        if let Some(previous_mesh) = self.previous_mesh.take() {
+            self.polygons = previous_mesh.polygons;
+            self.bvh_node = previous_mesh.bvh_node;
+            self.convex_hull = previous_mesh.convex_hull;
+            self.light = previous_mesh.light;
         }
     }
 
-    pub fn translate_polygons(&mut self, translation: Vector3D) {
-        self.previous_mesh = Some(Arc::new(self.clone()));
+    pub fn update_snapshot(&mut self) {
+        let snapshot: MeshSnapshot = self.get_mesh_snapshot();
+        self.previous_mesh = Some(snapshot);
+    }
 
+    pub fn translate_polygons(&mut self, translation: Vector3D) {
         for polygon in &mut self.polygons {
             polygon.translate(&translation);
         }
         self.translate_hull(translation);
         self.translate_bvh_node(translation);
+    }
+
+    fn get_mesh_snapshot(&self) -> MeshSnapshot {
+        let polygons: Vec<Polygon> = self.polygons.clone();
+        let bvh_node: BVHNode = self.bvh_node.clone();
+        let convex_hull: Vec<Vector3D> = self.convex_hull.clone();
+        let light: Option<Light> = self.light.clone();
+
+        let snapshot: MeshSnapshot = MeshSnapshot {
+            polygons,
+            bvh_node,
+            convex_hull,
+            light,
+        };
+        snapshot
     }
 
     fn translate_hull(&mut self, translation: Vector3D) {
@@ -273,14 +297,14 @@ impl Mesh {
     }
 
     fn translate_bvh_node(&mut self, translation: Vector3D) {
-        for polygon in &mut self.bvh_node.polygons {
-            polygon.translate(&translation);
-        }
-        for vertex in self.bvh_node.vertices.iter_mut() {
-            *vertex = vertex.add_vector(&translation);
-        }
-        // self.bvh_node.vertices = self.convex_hull.clone();
-        // self.bvh_node = BVHNode::new(&self.polygons, &self.convex_hull);
+        // for polygon in &mut self.bvh_node.polygons {
+        //     polygon.translate(&translation);
+        // }
+        // for vertex in self.bvh_node.vertices.iter_mut() {
+        //     *vertex = vertex.add_vector(&translation);
+        // }
+        self.bvh_node.vertices = self.convex_hull.clone();
+        self.bvh_node = BVHNode::new(&self.polygons, &self.convex_hull);
     }
 
     pub fn get_distance_bvh(&mut self, other: &Mesh) -> f64 {

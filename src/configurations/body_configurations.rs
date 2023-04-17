@@ -13,8 +13,8 @@ use rand::Rng;
 
 pub fn get_grid() -> BodyType {
     // let mut grid = GridHorizontal::new(50, 50, 10_000_00.0);
-    let mut grid = GridHorizontal::new(50, 50, 10_000_00.0);
-    let position = (-20_000_000.0, -5_000_000.0, -20_000_000.0);
+    let mut grid = GridHorizontal::new(25, 25, 1_000_00.0);
+    let position = (-1_000_000.0, -5_000_000.0, -1_000_000.0);
     grid.set_offset(position.0, position.1, position.2);
     // grid.set_offset(-1000.0, -100.0, -1000.0);
     // let mesh = grid.get_triangle_polygons();
@@ -294,15 +294,15 @@ pub fn orbiting_system(position: Vector3D) -> Vec<BodyType> {
     physics.is_stationary = true;
     objects.push(high_mass);
 
-    let mut high_mass = get_sphere_light_highmass(position.add_elements(500_000.0, 0.0, 0.0));
-    let physics = high_mass.physics();
-    physics.is_stationary = true;
-    objects.push(high_mass);
+    // let mut high_mass = get_sphere_light_highmass(position.add_elements(500_000.0, 0.0, 0.0));
+    // let physics = high_mass.physics();
+    // physics.is_stationary = true;
+    // objects.push(high_mass);
 
-    // for i in 0..50 {
-    //     let sphere = get_sphere_light3(position.clone());
-    //     objects.push(sphere);
-    // }
+    for i in 0..200 {
+        let sphere = get_sphere_light3(position.clone());
+        objects.push(sphere);
+    }
     objects
 }
 
