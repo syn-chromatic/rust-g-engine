@@ -186,6 +186,10 @@ impl Physics {
     }
 
     pub fn apply_collision(&mut self, target: &mut Physics, timestep: f64) {
+        // Collision prediction has similarity with the previous method
+        // by reverting to the previous mesh position.
+        // An ideal solution is to figure out how to combine the two methods.
+
         // let self_mtv: Option<Vector3D> = self.mesh.is_intersecting_bvh(&mut target.mesh);
         let self_mtv: Option<Vector3D> = self.get_intersection_next_step(target, timestep);
 
