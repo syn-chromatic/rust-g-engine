@@ -132,7 +132,7 @@ impl Physics {
     pub fn apply_forces(&mut self, target: &mut Physics) {
         // self.apply_gravity();
         self.apply_collision(target);
-        // self.apply_attraction(target);
+        self.apply_attraction(target);
     }
 
     fn apply_gravity(&mut self) {
@@ -174,33 +174,36 @@ impl Physics {
 
             if distance < 0.0 {
                 let direction = self.ensure_direction(direction);
-                self.apply_shift_correction(direction, distance);
+                let distance = distance / 2.0;
+                self.apply_shift_correction(direction, -distance);
+                target.apply_shift_correction(direction, distance);
 
                 let corrected_distance: f64 = self.mesh.get_distance(&target.mesh);
                 if corrected_distance > 0.0 {
                     self.update_mesh_snapshot();
+                    target.update_mesh_snapshot();
                     return;
                 }
             }
         }
 
-        let target_mtv: Option<Vector3D> = target.mesh.is_intersecting_bvh(&mut self.mesh);
-        if let Some(direction) = target_mtv {
-            target.mesh.revert_to_previous();
-            let distance: f64 = target.mesh.get_distance(&self.mesh);
+        // let target_mtv: Option<Vector3D> = target.mesh.is_intersecting_bvh(&mut self.mesh);
+        // if let Some(direction) = target_mtv {
+        //     target.mesh.revert_to_previous();
+        //     let distance: f64 = target.mesh.get_distance(&self.mesh);
 
-            let direction: Vector3D = direction.multiply(-1.0);
-            let direction: Vector3D = direction.normalize();
+        //     let direction: Vector3D = direction.multiply(-1.0);
+        //     let direction: Vector3D = direction.normalize();
 
-            if distance < 0.0 {
-                let direction = self.ensure_direction(direction);
-                target.apply_shift_correction(direction, distance);
-            }
-        }
+        //     if distance < 0.0 {
+        //         let direction = self.ensure_direction(direction);
+        //         target.apply_shift_correction(direction, distance);
+        //     }
+        // }
     }
 
     pub fn apply_shift_correction(&mut self, direction: Vector3D, distance: f64) {
-        let self_vec = direction.multiply(-distance);
+        let self_vec = direction.multiply(distance);
         self.position = self.position.add_vector(&self_vec);
         self.update_mesh_position(self_vec);
     }

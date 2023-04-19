@@ -18,13 +18,13 @@ pub struct BVHNode {
 }
 
 impl BVHNode {
-    pub fn new(polygons: &Vec<Polygon>, vertices: &Vec<Vector3D>) -> Self {
+    pub fn new(polygons: &[Polygon], vertices: &[Vector3D]) -> Self {
         let aabb: ([f64; 3], [f64; 3]) = Self::get_aabb(polygons);
-        let polygons: Vec<Polygon> = polygons.clone();
+        let polygons: Vec<Polygon> = polygons.to_vec();
         let face_normals: Vec<Vector3D> = polygons.iter().map(|p| p.get_normal()).collect();
 
         let max_leaf_size: usize = vertices.len();
-        let vertices: Vec<Vector3D> = vertices.clone();
+        let vertices: Vec<Vector3D> = vertices.to_vec();
 
         let mut bvh_node: BVHNode = BVHNode {
             polygons,

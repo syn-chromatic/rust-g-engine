@@ -57,8 +57,8 @@ impl Simulation {
         // let grid = body_configurations::get_grid();
         // self.objects.push(grid);
 
-        let obj = body_configurations::get_obj("./models/town_square.obj");
-        self.objects.push(obj);
+        // let obj = body_configurations::get_obj("./models/town_square.obj");
+        // self.objects.push(obj);
 
         // let obj = body_configurations::get_obj("./models/cottage.obj");
         // self.objects.push(obj);
@@ -85,8 +85,8 @@ impl Simulation {
         //     self.objects.push(sphere);
         // }
 
-        // let system = body_configurations::orbiting_system(Vector3D::new(0.0, 0.0, 0.0));
-        // self.objects.extend(system);
+        let system = body_configurations::orbiting_system(Vector3D::new(0.0, 0.0, 0.0));
+        self.objects.extend(system);
 
         // let system =
         //     body_configurations::orbiting_system2(Vector3D::new(8_000_000.0, 4_000_000.0, 0.0));

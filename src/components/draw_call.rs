@@ -50,7 +50,7 @@ impl DrawCall {
         light_camera
     }
 
-    fn get_lights(&self, meshes: &Vec<Mesh>) -> Vec<Light> {
+    fn get_lights(&self, meshes: &[Mesh]) -> Vec<Light> {
         let mut lights: Vec<Light> = vec![];
         for mesh in meshes {
             let mesh_light: &Option<Light> = &mesh.light;
@@ -63,20 +63,21 @@ impl DrawCall {
         lights
     }
 
-    fn get_meshes(&mut self, objects: Vec<BodyType>) -> Vec<Mesh> {
+    fn get_meshes(&mut self) -> Vec<Mesh> {
+        let objects: &Vec<BodyType> = &self.simulation.objects;
         let meshes: Vec<Mesh> = objects.par_iter().map(|body| body.mesh().clone()).collect();
         meshes
     }
 
-    fn draw_convex_hulls(&mut self, meshes: Vec<Mesh>) {
+    fn draw_convex_hulls(&mut self, meshes: &[Mesh]) {
         let camera: &mut Camera = &mut self.simulation.camera;
         let color: RGBA = RGBA::from_rgb(0.6, 1.0, 0.6);
         let thickness = 1.0;
 
         for mesh in meshes {
-            for i in 0..mesh.convex_hull.len() {
-                let v1: Vector3D = mesh.convex_hull[i];
-                let v2: Vector3D = mesh.convex_hull[(i + 1) % mesh.convex_hull.len()];
+            for i in 0..mesh.vertices.len() {
+                let v1: Vector3D = mesh.vertices[i];
+                let v2: Vector3D = mesh.vertices[(i + 1) % mesh.vertices.len()];
 
                 let line: Option<(Vector3D, Vector3D)> = camera.transform_line(v1, v2);
                 if line.is_some() {
@@ -87,21 +88,21 @@ impl DrawCall {
         }
     }
 
-    fn combine_meshes(&mut self, meshes: Vec<Mesh>) -> Mesh {
+    fn combine_meshes(&mut self, meshes: &[Mesh]) -> Mesh {
         let total_polygons: usize = meshes.iter().map(|mesh| mesh.polygons.len()).sum();
         self.simulation.polygon_count = total_polygons;
         let mut polygons: Vec<Polygon> = Vec::with_capacity(total_polygons);
 
         for mesh in meshes {
-            polygons.extend(mesh.polygons);
+            polygons.extend(mesh.polygons.clone());
         }
 
         Mesh::new(polygons)
     }
 
-    fn cull_backfaces_meshes(&self, meshes: Vec<Mesh>) {}
+    fn cull_backfaces_meshes(&self, meshes: &[Mesh]) {}
 
-    fn apply_lighting_meshes(&self, meshes: Vec<Mesh>, lights: Vec<Light>) {}
+    fn apply_lighting_meshes(&self, meshes: &[Mesh], lights: &[Light]) {}
 
     fn cull_backfaces_mesh(&self, mut mesh: Mesh) -> Mesh {
         let camera: &Camera = &self.simulation.camera;
@@ -110,7 +111,7 @@ impl DrawCall {
         mesh
     }
 
-    fn apply_lighting_mesh(&self, mut mesh: Mesh, lights: Vec<Light>) -> Mesh {
+    fn apply_lighting_mesh(&self, mut mesh: Mesh, lights: &[Light]) -> Mesh {
         let camera: &Camera = &self.simulation.camera;
         let camera_position: Vector3D = camera.camera_position;
         for light in lights {
@@ -151,22 +152,24 @@ impl DrawCall {
         lights
     }
 
-    pub fn draw(&mut self, objects: Vec<BodyType>) {
-        let meshes: Vec<Mesh> = self.get_meshes(objects);
+    pub fn draw(&mut self) {
+        // let objects = &mut self.simulation.objects;
+        let meshes: Vec<Mesh> = self.get_meshes();
+
         // let lights = self.get_lights(&meshes);
 
         if self.simulation.draw_mesh {
-            self.draw_convex_hulls(meshes.clone());
+            self.draw_convex_hulls(&meshes);
         }
 
         if self.simulation.draw_polygons {
-            let mut mesh: Mesh = self.combine_meshes(meshes);
+            let mut mesh: Mesh = self.combine_meshes(&meshes);
 
             let lights: Vec<Light> = self.get_lights_2();
 
             mesh = self.cull_backfaces_mesh(mesh);
             mesh = self.apply_z_buffer_sort(mesh);
-            mesh = self.apply_lighting_mesh(mesh, lights);
+            mesh = self.apply_lighting_mesh(mesh, &lights);
             mesh = self.apply_projection(mesh);
 
             self.graphics.draw_polygons(mesh);

@@ -62,8 +62,8 @@ impl WindowHandler for DrawCall {
         graphics.execute_buffer(graphics_2d);
         graphics.clear_screen();
         self.simulation.simulate(graphics, fps);
-        let objects = self.simulation.objects.clone();
-        self.draw(objects);
+        // let objects_ref = &mut self.simulation.objects;
+        self.draw();
         self.frame_timing.tick();
         helper.request_redraw();
     }

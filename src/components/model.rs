@@ -109,7 +109,7 @@ impl OBJModelFormat {
         vertex
     }
 
-    fn get_vertex(&self, tokens: Vec<&str>) -> Vector3D {
+    fn get_vertex(&self, tokens: &[&str]) -> Vector3D {
         let vertex_tuple: (f64, f64, f64) = (
             tokens[1].parse().unwrap(),
             tokens[2].parse().unwrap(),
@@ -126,7 +126,7 @@ impl OBJModelFormat {
         vertex
     }
 
-    fn get_face(&self, tokens: Vec<&str>) -> Vec<usize> {
+    fn get_face(&self, tokens: &[&str]) -> Vec<usize> {
         let face_indices: Vec<usize> = tokens[1..]
             .iter()
             .map(|tok| tok.split('/').next().unwrap().parse::<usize>().unwrap() - 1)
@@ -151,11 +151,11 @@ impl OBJModelFormat {
 
             match tokens[0] {
                 "v" => {
-                    let vertex = self.get_vertex(tokens);
+                    let vertex = self.get_vertex(&tokens);
                     vertices.push(vertex);
                 }
                 "f" => {
-                    let face_indices = self.get_face(tokens);
+                    let face_indices = self.get_face(&tokens);
 
                     if face_indices.len() == num_vertices {
                         faces.push(face_indices);
