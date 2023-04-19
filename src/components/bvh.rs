@@ -1,9 +1,6 @@
 use crate::components::polygons::Polygon;
 use crate::components::vectors::Vector3D;
-
-use rayon::prelude::ParallelSliceMut;
 use std::cmp::Ordering;
-use std::collections::HashSet;
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]
@@ -138,79 +135,7 @@ impl BVHNode {
         mtv
     }
 
-    // fn sat_intersection(&self, other: &BVHNode) -> Option<Vector3D> {
-    //     let mut mtv: Option<Vector3D> = None;
-    //     let mut min_overlap: f64 = f64::MAX;
-    //     let epsilon: f64 = 1e-6;
-
-    //     let axes = self
-    //         .faces
-    //         .iter()
-    //         .chain(other.faces.iter())
-    //         .cloned()
-    //         .collect::<Vec<_>>();
-
-    //     for axis in axes {
-    //         let mut axis = axis.normalize();
-    //         if axis.get_length() < epsilon {
-    //             continue;
-    //         }
-    //         let (min_a, max_a): (f64, f64) = self.project_onto_axis(&axis);
-    //         let (min_b, max_b): (f64, f64) = other.project_onto_axis(&axis);
-
-    //         if max_a < min_b || max_b < min_a {
-    //             return None;
-    //         }
-
-    //         let overlap = (max_a - min_b).min(max_b - min_a);
-    //         if overlap < min_overlap && overlap > epsilon {
-    //             min_overlap = overlap;
-    //             let center_a = self.get_center();
-    //             let center_b = other.get_center();
-    //             let direction = center_b.subtract_vector(&center_a).normalize();
-    //             if direction.dot_product(&axis) < 0.0 {
-    //                 axis = axis.multiply(-1.0);
-    //             }
-    //             mtv = Some(axis.multiply(overlap));
-    //         }
-    //     }
-
-    //     let edges_a: Vec<Vector3D> = self.get_edges();
-    //     let edges_b: Vec<Vector3D> = other.get_edges();
-
-    //     for edge_a in &edges_a {
-    //         for edge_b in &edges_b {
-    //             let mut axis = edge_a.cross_product(edge_b).normalize();
-    //             if axis.get_length() < epsilon {
-    //                 continue;
-    //             }
-
-    //             let (min_a, max_a): (f64, f64) = self.project_onto_axis(&axis);
-    //             let (min_b, max_b): (f64, f64) = other.project_onto_axis(&axis);
-
-    //             if max_a < min_b || max_b < min_a {
-    //                 return None;
-    //             }
-
-    //             let overlap = (max_a - min_b).min(max_b - min_a);
-    //             if overlap < min_overlap && overlap > epsilon {
-    //                 min_overlap = overlap;
-    //                 let center_a = self.get_center();
-    //                 let center_b = other.get_center();
-    //                 let direction = center_b.subtract_vector(&center_a).normalize();
-    //                 if direction.dot_product(&axis) < 0.0 {
-    //                     axis = axis.multiply(-1.0);
-    //                 }
-    //                 mtv = Some(axis.multiply(overlap));
-    //             }
-    //         }
-    //     }
-    //     mtv
-    // }
-
     pub fn is_intersecting(&mut self, other: &mut BVHNode) -> Option<Vector3D> {
-        // self.faces = self.polygons.iter().map(|p| p.get_normal()).collect();
-        // other.faces = other.polygons.iter().map(|p| p.get_normal()).collect();
         self.sat_intersection(other)
     }
 

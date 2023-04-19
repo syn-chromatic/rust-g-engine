@@ -3,8 +3,6 @@ use std::cmp::Ordering;
 
 use std::f64::EPSILON;
 
-
-
 pub struct QuickHull {
     vertices: Vec<Vector3D>,
 }
@@ -473,4 +471,3 @@ impl ChansHull {
 //         hull
 //     }
 // }
-

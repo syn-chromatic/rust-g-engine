@@ -1,12 +1,7 @@
-use std::sync::Arc;
-
-use super::bvh::BVHNode;
+use crate::components::bvh::BVHNode;
 use crate::components::color::RGBA;
-use crate::components::convex_hull;
-
 use crate::components::shaders::Light;
 use crate::components::vectors::Vector3D;
-use rayon::prelude::*;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Triangle {
@@ -272,39 +267,6 @@ impl Mesh {
         self.bvh_node.vertices = self.vertices.clone();
         self.bvh_node = BVHNode::new(&self.polygons, &self.vertices);
     }
-
-
-    // pub fn translate_polygons(&mut self, translation: Vector3D) {
-    //     self.polygons.par_iter_mut().for_each(|polygon| {
-    //         polygon.translate(&translation);
-    //     });
-    //     self.translate_hull(translation);
-    //     self.translate_bvh_node(translation);
-    // }
-
-    // fn translate_hull(&mut self, translation: Vector3D) {
-    //     self.vertices.par_iter_mut().for_each(|vertex| {
-    //         *vertex = vertex.add_vector(&translation);
-    //     });
-    // }
-
-    // fn translate_bvh_node(&mut self, translation: Vector3D) {
-    //     self.bvh_node.polygons.par_iter_mut().for_each(|polygon| {
-    //         polygon.translate(&translation);
-    //     });
-    //     self.bvh_node.vertices.par_iter_mut().for_each(|vertex| {
-    //         *vertex = vertex.add_vector(&translation);
-    //     });
-    // }
-
-
-
-
-
-
-
-
-
 
     pub fn update_snapshot(&mut self) {
         let snapshot: MeshSnapshot = self.get_mesh_snapshot();

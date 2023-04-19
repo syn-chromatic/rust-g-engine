@@ -1,7 +1,7 @@
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
 use std::cmp::Ordering;
+use std::collections::hash_map::DefaultHasher;
 use std::f64::EPSILON;
+use std::hash::{Hash, Hasher};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Vector3D {
@@ -236,7 +236,6 @@ impl Vector3D {
     }
 }
 
-
 impl Hash for Vector3D {
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write_u64(self.x.to_bits());
@@ -244,7 +243,6 @@ impl Hash for Vector3D {
         state.write_u64(self.z.to_bits());
     }
 }
-
 
 impl PartialEq for Vector3D {
     fn eq(&self, other: &Self) -> bool {
@@ -256,13 +254,9 @@ impl PartialEq for Vector3D {
     // fn eq(&self, other: &Self) -> bool {
     //     self.x == other.x && self.y == other.y && self.z == other.z
     // }
-
-
-
 }
 
 impl Eq for Vector3D {}
-
 
 impl PartialOrd for Vector3D {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {

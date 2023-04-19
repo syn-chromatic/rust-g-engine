@@ -19,7 +19,6 @@ pub struct Physics {
     pub g_const: f64,
     pub gravity: f64,
     pub is_stationary: bool,
-    pub shifted: bool,
 }
 
 impl Physics {
@@ -34,7 +33,6 @@ impl Physics {
         let g_const: f64 = 0.8;
         let gravity = -9.8;
         let is_stationary = false;
-        let shifted = false;
 
         Physics {
             mesh,
@@ -48,7 +46,6 @@ impl Physics {
             g_const,
             gravity,
             is_stationary,
-            shifted,
         }
     }
 
@@ -174,32 +171,14 @@ impl Physics {
 
             if distance < 0.0 {
                 let direction = self.ensure_direction(direction);
-                let distance = distance / 2.0;
+                let distance = (distance / 2.0) + 1.0;
                 self.apply_shift_correction(direction, -distance);
                 target.apply_shift_correction(direction, distance);
 
-                let corrected_distance: f64 = self.mesh.get_distance(&target.mesh);
-                if corrected_distance > 0.0 {
-                    self.update_mesh_snapshot();
-                    target.update_mesh_snapshot();
-                    return;
-                }
+                self.update_mesh_snapshot();
+                target.update_mesh_snapshot();
             }
         }
-
-        // let target_mtv: Option<Vector3D> = target.mesh.is_intersecting_bvh(&mut self.mesh);
-        // if let Some(direction) = target_mtv {
-        //     target.mesh.revert_to_previous();
-        //     let distance: f64 = target.mesh.get_distance(&self.mesh);
-
-        //     let direction: Vector3D = direction.multiply(-1.0);
-        //     let direction: Vector3D = direction.normalize();
-
-        //     if distance < 0.0 {
-        //         let direction = self.ensure_direction(direction);
-        //         target.apply_shift_correction(direction, distance);
-        //     }
-        // }
     }
 
     pub fn apply_shift_correction(&mut self, direction: Vector3D, distance: f64) {
@@ -298,8 +277,6 @@ impl Physics {
     }
 
     pub fn update(&mut self, timestep: f64) {
-        // self.apply_gravity();
-
         if self.is_stationary {
             self.acceleration = self.acceleration.multiply(0.0);
             self.velocity = self.velocity.multiply(0.0);

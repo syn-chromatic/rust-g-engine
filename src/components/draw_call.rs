@@ -58,8 +58,8 @@ impl DrawCall {
                 lights.push(mesh_light.unwrap());
             }
         }
-        // let camera_light: Light = self.get_camera_light();
-        // lights.push(camera_light);
+        let camera_light: Light = self.get_camera_light();
+        lights.push(camera_light);
         lights
     }
 
@@ -153,10 +153,7 @@ impl DrawCall {
     }
 
     pub fn draw(&mut self) {
-        // let objects = &mut self.simulation.objects;
         let meshes: Vec<Mesh> = self.get_meshes();
-
-        // let lights = self.get_lights(&meshes);
 
         if self.simulation.draw_mesh {
             self.draw_convex_hulls(&meshes);
