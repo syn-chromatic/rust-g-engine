@@ -88,9 +88,9 @@ impl Simulation {
         let system = body_configurations::orbiting_system(Vector3D::new(0.0, 0.0, 0.0));
         self.objects.extend(system);
 
-        // let system =
-        //     body_configurations::orbiting_system2(Vector3D::new(8_000_000.0, 4_000_000.0, 0.0));
-        // self.objects.extend(system);
+        let system =
+            body_configurations::orbiting_system2(Vector3D::new(8_000_000.0, 4_000_000.0, 0.0));
+        self.objects.extend(system);
 
         let camera_position = Vector3D::new(-250_000.0, 200.0, -2_000_000.0);
         self.camera.set_camera_position(camera_position);
@@ -121,7 +121,7 @@ impl Simulation {
         let camera_dir: Vector3D = camera_target.subtract_vector(&camera_position);
         let camera_dir: Vector3D = camera_dir.normalize().multiply(-1.0);
 
-        let mass = 100_000.0;
+        let mass = 1_000_000.0;
 
         let mut sphere = Sphere::new(50_000.0, 10, 10);
         sphere.set_offset(camera_position.x, camera_position.y, camera_position.z);
@@ -151,7 +151,7 @@ impl Simulation {
                     let (left, right) = self.objects.split_at_mut(j);
                     (left[i].physics(), right[0].physics())
                 };
-                physics1.apply_forces(physics2);
+                physics1.apply_forces(physics2, timestep);
             }
         }
 

@@ -291,7 +291,7 @@ pub fn orbiting_system(position: Vector3D) -> Vec<BodyType> {
     let mut objects: Vec<BodyType> = Vec::new();
     let mut high_mass = get_sphere_light_highmass(position.clone());
     let physics = high_mass.physics();
-    physics.is_stationary = true;
+    // physics.is_stationary = true;
     objects.push(high_mass);
 
     // let mut high_mass = get_sphere_light_highmass(position.add_elements(500_000.0, 0.0, 0.0));

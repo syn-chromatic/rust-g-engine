@@ -2,6 +2,7 @@ use crate::components::polygons::Mesh;
 use crate::components::polygons::Polygon;
 use crate::components::shaders::Light;
 use crate::components::vectors::Vector3D;
+use crate::debug::sleep;
 
 use rand::rngs::ThreadRng;
 use rand::Rng;
@@ -126,9 +127,9 @@ impl Physics {
         direction
     }
 
-    pub fn apply_forces(&mut self, target: &mut Physics) {
+    pub fn apply_forces(&mut self, target: &mut Physics, timestep: f64) {
         // self.apply_gravity();
-        self.apply_collision(target);
+        self.apply_collision(target, timestep);
         self.apply_attraction(target);
     }
 
@@ -158,16 +159,45 @@ impl Physics {
         self.acceleration = Vector3D::default(0.0);
     }
 
-    pub fn apply_collision(&mut self, target: &mut Physics) {
-        let self_mtv: Option<Vector3D> = self.mesh.is_intersecting_bvh(&mut target.mesh);
+    fn get_position_next_step(&self, timestep: f64) -> Vector3D {
+        let acceleration_change: Vector3D = self.acceleration.multiply(timestep);
+        let predicted_velocity: Vector3D = self.velocity.add_vector(&acceleration_change);
+        let velocity_change: Vector3D = predicted_velocity.multiply(timestep);
+        let position: Vector3D = self.position.add_vector(&velocity_change);
+        position
+    }
+
+    pub fn get_intersection_next_step(&self, target: &Physics, timestep: f64) -> Option<Vector3D> {
+        let self_next_position: Vector3D = self.get_position_next_step(timestep);
+        let target_next_position: Vector3D = target.get_position_next_step(timestep);
+
+        let mut self_next_mesh: Mesh = self.mesh.clone();
+        let mut target_next_mesh: Mesh = target.mesh.clone();
+
+        let self_velocity_change: Vector3D = self_next_position.subtract_vector(&self.position);
+        let target_velocity_change: Vector3D =
+            target_next_position.subtract_vector(&target.position);
+
+        self_next_mesh.translate_polygons(self_velocity_change);
+        target_next_mesh.translate_polygons(target_velocity_change);
+
+        let mtv: Option<Vector3D> = self_next_mesh.is_intersecting_bvh(&mut target_next_mesh);
+        mtv
+    }
+
+    pub fn apply_collision(&mut self, target: &mut Physics, timestep: f64) {
+        // let self_mtv: Option<Vector3D> = self.mesh.is_intersecting_bvh(&mut target.mesh);
+        let self_mtv: Option<Vector3D> = self.get_intersection_next_step(target, timestep);
+
+        // println!("{}, {}", self_mtv_test.is_some(), self_mtv.is_some());
 
         if let Some(direction) = self_mtv {
-            self.mesh.revert_to_previous();
-            let distance: f64 = self.mesh.get_distance(&target.mesh);
+            // self.mesh.revert_to_previous();
 
             let direction: Vector3D = direction.multiply(-1.0);
             let direction: Vector3D = direction.normalize();
             self.apply_collision_velocities(target, direction);
+            let distance: f64 = self.mesh.get_distance(&target.mesh);
 
             if distance < 0.0 {
                 let direction = self.ensure_direction(direction);
@@ -175,8 +205,8 @@ impl Physics {
                 self.apply_shift_correction(direction, -distance);
                 target.apply_shift_correction(direction, distance);
 
-                self.update_mesh_snapshot();
-                target.update_mesh_snapshot();
+                // self.update_mesh_snapshot();
+                // target.update_mesh_snapshot();
             }
         }
     }
