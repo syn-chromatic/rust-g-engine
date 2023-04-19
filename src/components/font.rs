@@ -1,10 +1,5 @@
-use speedy2d::font::Font;
-use speedy2d::font::FormattedTextBlock;
-use speedy2d::font::TextLayout;
-use speedy2d::font::TextOptions;
-use std::rc::Rc;
-
 use crate::components::color::RGBA;
+use speedy2d::font::Font;
 
 pub trait FontTrait {
     fn get_sp2d_font(&self) -> &Font;

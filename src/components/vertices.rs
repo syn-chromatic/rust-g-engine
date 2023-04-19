@@ -300,4 +300,26 @@ impl GridHorizontal {
         }
         Mesh::new(triangle_polygons)
     }
+
+    pub fn get_quad_polygons(&self) -> Mesh {
+        let vertices = self.get_vertices();
+        let faces = self.get_quad_faces();
+        let mut quad_polygons = Vec::new();
+
+        for face in faces {
+            let quad = Quad::new(
+                [
+                    vertices[face.0],
+                    vertices[face.1],
+                    vertices[face.2],
+                    vertices[face.3],
+                ],
+                face,
+                RGBA::from_rgb(0.0, 0.0, 0.0),
+                RGBA::from_rgb(1.0, 1.0, 1.0),
+            );
+            quad_polygons.push(Polygon::Quad(quad));
+        }
+        Mesh::new(quad_polygons)
+    }
 }

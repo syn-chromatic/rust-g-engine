@@ -17,6 +17,8 @@ pub struct Physics {
     pub mass: f64,
     pub scale: f64,
     pub g_const: f64,
+    pub gravity: f64,
+    pub is_stationary: bool,
 }
 
 impl Physics {
@@ -29,6 +31,8 @@ impl Physics {
         let mass: f64 = 1.0;
         let scale: f64 = 1.0;
         let g_const: f64 = 0.8;
+        let gravity = -9.8;
+        let is_stationary = false;
 
         Physics {
             mesh,
@@ -40,6 +44,8 @@ impl Physics {
             mass,
             scale,
             g_const,
+            gravity,
+            is_stationary,
         }
     }
 
@@ -121,14 +127,19 @@ impl Physics {
     }
 
     pub fn apply_forces(&mut self, target: &mut Physics) {
-        // Target-To-Self Distance
-        let tts_distance: Vector3D = target.position.subtract_vector(&self.position);
-
-        self.apply_collision(target, tts_distance);
-        self.apply_attraction(target, tts_distance);
+        // self.apply_gravity();
+        self.apply_collision(target);
+        self.apply_attraction(target);
     }
 
-    pub fn apply_attraction(&mut self, target: &mut Physics, tts_distance: Vector3D) {
+    fn apply_gravity(&mut self) {
+        let mut acceleration = self.acceleration;
+        acceleration.y = acceleration.y + self.gravity;
+        self.acceleration = acceleration;
+    }
+
+    pub fn apply_attraction(&mut self, target: &mut Physics) {
+        let tts_distance: Vector3D = target.position.subtract_vector(&self.position);
         let distance: f64 = tts_distance.get_length();
 
         if distance > 0.0 {
@@ -142,19 +153,38 @@ impl Physics {
         }
     }
 
-    pub fn apply_collision(&mut self, target: &mut Physics, tts_distance: Vector3D) {
-        let distance = self.mesh.get_distance_bvh(&target.mesh);
+    pub fn freeze_velocity(&mut self) {
+        self.velocity = Vector3D::default(0.0);
+        self.acceleration = Vector3D::default(0.0);
+    }
 
-        if distance <= 0.0 {
-            // Self-To-Target Distance
-            let stt_distance: Vector3D = tts_distance.multiply(-1.0);
-            let stt_direction: Vector3D = stt_distance.normalize();
-            let stt_direction: Vector3D = self.ensure_direction(stt_direction);
-            if target.mass >= self.mass {
-                self.apply_shift_correction(stt_direction, distance);
+    pub fn apply_collision(&mut self, target: &mut Physics) {
+        let self_mtv: Option<Vector3D> = self.mesh.is_intersecting_bvh(&mut target.mesh);
+
+        if let Some(direction) = self_mtv {
+            self.mesh.revert_to_previous();
+            let distance: f64 = self.mesh.get_distance(&target.mesh);
+
+            let direction: Vector3D = direction.multiply(-1.0);
+            let direction: Vector3D = direction.normalize();
+            self.apply_collision_velocities(target, direction);
+
+            if distance < 0.0 {
+                let direction = self.ensure_direction(direction);
+                let distance = (distance / 2.0) + 1.0;
+                self.apply_shift_correction(direction, -distance);
+                target.apply_shift_correction(direction, distance);
+
+                self.update_mesh_snapshot();
+                target.update_mesh_snapshot();
             }
-            self.apply_collision_velocities(target, stt_direction);
         }
+    }
+
+    pub fn apply_shift_correction(&mut self, direction: Vector3D, distance: f64) {
+        let self_vec = direction.multiply(distance);
+        self.position = self.position.add_vector(&self_vec);
+        self.update_mesh_position(self_vec);
     }
 
     pub fn apply_collision_velocities(&mut self, target: &mut Physics, direction: Vector3D) {
@@ -182,12 +212,6 @@ impl Physics {
 
         self.velocity = v1;
         target.velocity = v2;
-    }
-
-    pub fn apply_shift_correction(&mut self, mut direction: Vector3D, distance: f64) {
-        let self_vec = direction.multiply(distance.abs());
-        self.position = self.position.add_vector(&self_vec);
-        self.update_mesh_position(self_vec);
     }
 
     fn apply_spin_forces(&mut self, timestep: f64) {
@@ -231,6 +255,7 @@ impl Physics {
         self.position = self.position.add_vector(&velocity_change);
 
         self.update_light_position(velocity_change);
+        self.update_mesh_snapshot();
         self.update_mesh_position(velocity_change);
     }
 
@@ -243,25 +268,20 @@ impl Physics {
         }
     }
 
-    fn update_mesh_position(&mut self, velocity_change: Vector3D) {
-        for polygon in &mut self.mesh.polygons {
-            match polygon {
-                Polygon::Triangle(triangle) => {
-                    for vertex in &mut triangle.vertices {
-                        *vertex = vertex.add_vector(&velocity_change);
-                    }
-                }
-                Polygon::Quad(quad) => {
-                    for vertex in &mut quad.vertices {
-                        *vertex = vertex.add_vector(&velocity_change);
-                    }
-                }
-            }
-        }
-        self.mesh.update_bvh_node();
+    fn update_mesh_snapshot(&mut self) {
+        self.mesh.update_snapshot();
+    }
+
+    fn update_mesh_position(&mut self, translation: Vector3D) {
+        self.mesh.translate_polygons(translation);
     }
 
     pub fn update(&mut self, timestep: f64) {
+        if self.is_stationary {
+            self.acceleration = self.acceleration.multiply(0.0);
+            self.velocity = self.velocity.multiply(0.0);
+        }
+
         self.update_position(timestep);
         self.acceleration = self.acceleration.multiply(0.0);
     }

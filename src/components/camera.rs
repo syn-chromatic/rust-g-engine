@@ -109,6 +109,33 @@ impl Camera {
         vo
     }
 
+    pub fn transform_vertex(&mut self, vertex: Vector3D) -> Vector3D {
+        let vertex = self.apply_view_transform(vertex);
+        let vertex = self.calculate_perspective_projection(vertex);
+        let vertex = self.ndc_to_screen_coordinates(vertex);
+        vertex
+    }
+
+    pub fn transform_line(&mut self, v1: Vector3D, v2: Vector3D) -> Option<(Vector3D, Vector3D)> {
+        let v1 = self.apply_view_transform(v1);
+        let v2 = self.apply_view_transform(v2);
+
+        let clipped_line = self.frustum.clip_line_to_frustum(v1, v2);
+        if clipped_line.is_some() {
+            let (v1, v2) = clipped_line.unwrap();
+            let v1 = self.calculate_perspective_projection(v1);
+            let v2 = self.calculate_perspective_projection(v2);
+
+            let v1 = self.ndc_to_screen_coordinates(v1);
+            let v2 = self.ndc_to_screen_coordinates(v2);
+            return Some((v1, v2));
+        }
+
+        None
+    }
+
+    pub fn clip_line(&self, v1: Vector3D, v2: Vector3D) {}
+
     fn apply_polygon_view_transform(&mut self, polygon: Polygon) -> Polygon {
         match polygon {
             Polygon::Triangle(mut triangle) => {
@@ -161,16 +188,16 @@ impl Camera {
     }
 
     pub fn apply_projection_polygons(&mut self, mut mesh: Mesh) -> Mesh {
-        let polygon_count = mesh.polygons.len();
-        let mut transformed_polygons = Vec::with_capacity(polygon_count);
+        let polygon_count: usize = mesh.polygons.len();
+        let mut transformed_polygons: Vec<Polygon> = Vec::with_capacity(polygon_count);
 
         for polygon in mesh.polygons {
-            let polygon = self.apply_polygon_view_transform(polygon);
+            let polygon: Polygon = self.apply_polygon_view_transform(polygon);
             if self.frustum.is_polygon_outside_frustum(&polygon) {
                 continue;
             }
 
-            let clipped_polygons = self.frustum.clip_polygon_against_frustum_stack(polygon);
+            let clipped_polygons: Vec<Polygon> = self.frustum.clip_polygon_against_frustum(polygon);
 
             for mut clipped_polygon in clipped_polygons {
                 clipped_polygon = self.apply_polygon_perspective_transform(clipped_polygon);

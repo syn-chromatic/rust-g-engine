@@ -47,6 +47,26 @@ impl QuadDraw {
 }
 
 #[derive(Debug)]
+struct LineDraw {
+    points: ((f64, f64), (f64, f64)),
+    color: RGBA,
+    thickness: f64,
+    id: u32,
+}
+
+impl LineDraw {
+    pub fn new(points: ((f64, f64), (f64, f64)), color: RGBA, thickness: f64) -> LineDraw {
+        let id = 2;
+        LineDraw {
+            points,
+            color,
+            id,
+            thickness,
+        }
+    }
+}
+
+#[derive(Debug)]
 struct TextDraw {
     position: (f64, f64),
     text: String,
@@ -119,6 +139,23 @@ impl Draw for QuadDraw {
     }
 }
 
+impl Draw for LineDraw {
+    fn draw(&self, graphics: &mut Graphics2D) {
+        let p1: (f64, f64) = self.points.0;
+        let p2: (f64, f64) = self.points.1;
+
+        let v1: Vector2<f32> = Vector2::new(p1.0 as f32, p1.1 as f32);
+        let v2: Vector2<f32> = Vector2::new(p2.0 as f32, p2.1 as f32);
+
+        let color: Color = self.color.to_sp2d_color();
+        let thickness: f32 = self.thickness as f32;
+        graphics.draw_line(v1, v2, thickness, color);
+    }
+    fn id(&self) -> u32 {
+        self.id
+    }
+}
+
 impl Draw for TextDraw {
     fn draw(&self, graphics: &mut Graphics2D) {
         let text: &String = &self.text;
@@ -159,6 +196,7 @@ trait Draw {
 enum DrawType {
     TriangleDraw(TriangleDraw),
     QuadDraw(QuadDraw),
+    LineDraw(LineDraw),
     TextDraw(TextDraw),
     FillDraw(FillDraw),
 }
@@ -168,6 +206,7 @@ impl Draw for DrawType {
         match self {
             DrawType::TriangleDraw(s) => s.draw(graphics),
             DrawType::QuadDraw(s) => s.draw(graphics),
+            DrawType::LineDraw(s) => s.draw(graphics),
             DrawType::TextDraw(s) => s.draw(graphics),
             DrawType::FillDraw(s) => s.draw(graphics),
         }
@@ -177,6 +216,7 @@ impl Draw for DrawType {
         match self {
             DrawType::TriangleDraw(s) => s.id(),
             DrawType::QuadDraw(s) => s.id(),
+            DrawType::LineDraw(s) => s.id(),
             DrawType::TextDraw(s) => s.id(),
             DrawType::FillDraw(s) => s.id(),
         }
@@ -257,6 +297,8 @@ impl Graphics {
     }
 
     pub fn execute_buffer(&mut self, graphics: &mut Graphics2D) {
+        let center = Vector3D::new(self.width as f64 / 2.0, self.height as f64 / 2.0, 0.0);
+        self.add_crosshair(center, 20.0);
         self.sort_buffer();
         for buffer_type in &self.buffer {
             buffer_type.draw(graphics);
@@ -300,6 +342,19 @@ impl Graphics {
     fn get_height(&self) {}
 
     fn get_pointer_xy(&self) {}
+
+    pub fn add_crosshair(&mut self, center: Vector3D, size: f64) {
+        let half_size = size / 2.0;
+        let left = Vector3D::new(center.x - half_size, center.y, center.z);
+        let right = Vector3D::new(center.x + half_size, center.y, center.z);
+        let top = Vector3D::new(center.x, center.y - half_size, center.z);
+        let bottom = Vector3D::new(center.x, center.y + half_size, center.z);
+
+        let color = RGBA::from_rgb(1.0, 1.0, 1.0);
+
+        self.draw_line(left, right, color, 1.0);
+        self.draw_line(top, bottom, color, 1.0);
+    }
 
     pub fn draw_polygons(&mut self, mesh: Mesh) {
         for polygon in mesh.polygons {
@@ -353,6 +408,14 @@ impl Graphics {
         let points: [(f64, f64); 4] = [p1, p2, p3, p4];
         let quad_draw: QuadDraw = QuadDraw::new(points, color);
         let draw_type: DrawType = DrawType::QuadDraw(quad_draw);
+        self.push_to_buffer(draw_type);
+    }
+
+    pub fn draw_line(&mut self, v1: Vector3D, v2: Vector3D, color: RGBA, thickness: f64) {
+        let p1: (f64, f64) = (v1.x, v1.y);
+        let p2: (f64, f64) = (v2.x, v2.y);
+        let line_draw: LineDraw = LineDraw::new((p1, p2), color, thickness);
+        let draw_type: DrawType = DrawType::LineDraw(line_draw);
         self.push_to_buffer(draw_type);
     }
 

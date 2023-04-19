@@ -15,7 +15,9 @@ use crate::configurations::body_configurations;
 pub struct Simulation {
     pub camera: Camera,
     pub objects: Vec<BodyType>,
-    polygon_count: usize,
+    pub polygon_count: usize,
+    pub draw_polygons: bool,
+    pub draw_mesh: bool,
     timestep_hz: f64,
     text_writer: TextWriter,
 }
@@ -23,7 +25,7 @@ pub struct Simulation {
 impl Simulation {
     pub fn new(camera: Camera, resolution: (u32, u32)) -> Simulation {
         let objects: Vec<BodyType> = vec![];
-        let timestep_hz: f64 = 1.0;
+        let timestep_hz: f64 = 5.0;
         let polygon_count: usize = 0;
 
         let arial_font: ArialFont = ArialFont::new();
@@ -36,9 +38,16 @@ impl Simulation {
             camera,
             objects,
             polygon_count,
+            draw_polygons: true,
+            draw_mesh: false,
             timestep_hz,
             text_writer,
         }
+    }
+
+    pub fn toggle_draw_polygons(&mut self) {
+        self.draw_polygons = !self.draw_polygons;
+        self.draw_mesh = !self.draw_mesh;
     }
 
     pub fn setup_objects(&mut self) {
@@ -55,6 +64,9 @@ impl Simulation {
         // self.objects.push(obj);
 
         // let obj = body_configurations::get_obj("./models/plane.obj");
+        // self.objects.push(obj);
+
+        // let obj = body_configurations::get_obj("./models/TerrorTubby_01.obj");
         // self.objects.push(obj);
 
         // let sphere = body_configurations::get_sphere_light_highmass();
@@ -76,9 +88,9 @@ impl Simulation {
         let system = body_configurations::orbiting_system(Vector3D::new(0.0, 0.0, 0.0));
         self.objects.extend(system);
 
-        let system =
-            body_configurations::orbiting_system2(Vector3D::new(8_000_000.0, 4_000_000.0, 0.0));
-        self.objects.extend(system);
+        // let system =
+        //     body_configurations::orbiting_system2(Vector3D::new(8_000_000.0, 4_000_000.0, 0.0));
+        // self.objects.extend(system);
 
         let camera_position = Vector3D::new(-250_000.0, 200.0, -2_000_000.0);
         self.camera.set_camera_position(camera_position);
@@ -91,7 +103,7 @@ impl Simulation {
         }
     }
 
-    pub fn increment_timestep(&mut self, mut direction: i32) {
+    pub fn increment_timestep(&mut self, direction: i32) {
         let min_timestep_hz: f64 = 0.1;
         let max_timestep_hz: f64 = 100.0 * 1000.0;
         let proportion: f64 = 0.05;
@@ -111,7 +123,7 @@ impl Simulation {
 
         let mass = 100_000.0;
 
-        let mut sphere = Sphere::new(20_000.0, 5, 5);
+        let mut sphere = Sphere::new(50_000.0, 10, 10);
         sphere.set_offset(camera_position.x, camera_position.y, camera_position.z);
         sphere.set_color(RGBA::from_random());
         sphere.set_shader(RGBA::from_rgb(0.5, 0.5, 0.5));
@@ -123,6 +135,7 @@ impl Simulation {
             .set_position(camera_position.x, camera_position.y, camera_position.z);
         body.physics().set_mass(mass);
         let velocity = camera_dir.multiply(200_000.0);
+        //  let velocity = camera_dir.multiply(1.0);
         body.physics()
             .set_velocity(velocity.x, velocity.y, velocity.z);
         let body_type = BodyType::Shape(body);
@@ -175,8 +188,12 @@ impl Simulation {
         let object_count = self.objects.len();
         let text_object_count = format!("Objects:  {}", object_count);
         let text_polygon_count = format!("Polygon Count: {}", self.polygon_count);
+        let text_draw_polygons = format!("Show Polygons: {}", self.draw_polygons);
+        let text_draw_mesh = format!("Show Mesh: {}", self.draw_mesh);
         self.text_writer.add_text_top_left(text_object_count, None);
         self.text_writer.add_text_top_left(text_polygon_count, None);
+        self.text_writer.add_text_top_left(text_draw_polygons, None);
+        self.text_writer.add_text_top_left(text_draw_mesh, None);
     }
 
     fn write_camera_information(&mut self) {

@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+// #![windows_subsystem = "windows"]
 mod abstracts;
 mod components;
 mod configurations;
@@ -62,8 +62,8 @@ impl WindowHandler for DrawCall {
         graphics.execute_buffer(graphics_2d);
         graphics.clear_screen();
         self.simulation.simulate(graphics, fps);
-        let objects = self.simulation.objects.clone();
-        self.draw(objects);
+        // let objects_ref = &mut self.simulation.objects;
+        self.draw();
         self.frame_timing.tick();
         helper.request_redraw();
     }
@@ -85,7 +85,11 @@ impl WindowHandler for DrawCall {
         button: speedy2d::window::MouseButton,
     ) {
         if let MouseButton::Left = button {
-            self.graphics.set_cursor_grab(true);
+            let cursor_grab = self.graphics.get_cursor_grab();
+            if !cursor_grab.is_grabbed {
+                self.graphics.set_cursor_grab(true);
+                return;
+            }
             self.simulation.shoot();
         }
     }
@@ -104,7 +108,7 @@ impl WindowHandler for DrawCall {
             self.simulation.increment_timestep(-1);
         }
 
-        let step_val = 50000.0;
+        let step_val = 50_000.0;
         let camera = &mut self.simulation.camera;
 
         if let Some(VirtualKeyCode::W) = virtual_key_code {
@@ -141,6 +145,10 @@ impl WindowHandler for DrawCall {
 
         if let Some(VirtualKeyCode::LWin) = virtual_key_code {
             self.graphics.set_cursor_grab(false);
+        }
+
+        if let Some(VirtualKeyCode::RBracket) = virtual_key_code {
+            self.simulation.toggle_draw_polygons();
         }
     }
 }
