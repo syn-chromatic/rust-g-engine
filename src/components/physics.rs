@@ -24,11 +24,11 @@ pub struct Physics {
 
 impl Physics {
     pub fn new(mesh: Mesh) -> Physics {
-        let position: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
-        let velocity: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
-        let acceleration: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
-        let spin_velocity: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
-        let spin_acceleration: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
+        let position: Vector3D = Vector3D::default(0.0);
+        let velocity: Vector3D = Vector3D::default(0.0);
+        let acceleration: Vector3D = Vector3D::default(0.0);
+        let spin_velocity: Vector3D = Vector3D::default(0.0);
+        let spin_acceleration: Vector3D = Vector3D::default(0.0);
         let mass: f64 = 1.0;
         let scale: f64 = 1.0;
         let g_const: f64 = 0.8;
@@ -288,8 +288,8 @@ impl Physics {
         let velocity_change = self.velocity.multiply(timestep);
         self.position = self.position.add_vector(&velocity_change);
 
-        self.update_light_position(velocity_change);
         self.update_mesh_snapshot();
+        self.update_light_position(velocity_change);
         self.update_mesh_position(velocity_change);
     }
 
@@ -312,11 +312,11 @@ impl Physics {
 
     pub fn update(&mut self, timestep: f64) {
         if self.is_stationary {
-            self.acceleration = self.acceleration.multiply(0.0);
-            self.velocity = self.velocity.multiply(0.0);
+            self.acceleration = Vector3D::default(0.0);
+            self.velocity = Vector3D::default(0.0);
         }
 
         self.update_position(timestep);
-        self.acceleration = self.acceleration.multiply(0.0);
+        self.acceleration = Vector3D::default(0.0);
     }
 }

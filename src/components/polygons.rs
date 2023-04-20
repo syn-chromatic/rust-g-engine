@@ -233,6 +233,7 @@ impl Mesh {
     }
 
     pub fn revert_to_previous(&mut self) {
+        let previous_mesh = self.previous_mesh.clone();
         if let Some(previous_mesh) = self.previous_mesh.take() {
             self.polygons = previous_mesh.polygons;
             self.bvh_node = previous_mesh.bvh_node;
