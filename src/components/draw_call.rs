@@ -88,6 +88,41 @@ impl DrawCall {
         }
     }
 
+    fn draw_bounding_box(&mut self, meshes: &[Mesh]) {
+        let camera: &mut Camera = &mut self.simulation.camera;
+        let color: RGBA = RGBA::from_rgb(0.6, 1.0, 0.6);
+        let thickness = 1.0;
+
+        for mesh in meshes {
+            let aabb_points = mesh.bvh_node.get_aabb_points();
+            let edges = [
+                (0, 1),
+                (1, 3),
+                (3, 2),
+                (2, 0),
+                (4, 5),
+                (5, 7),
+                (7, 6),
+                (6, 4),
+                (0, 4),
+                (1, 5),
+                (2, 6),
+                (3, 7),
+            ];
+
+            for &(start, end) in edges.iter() {
+                let v1: Vector3D = aabb_points[start];
+                let v2: Vector3D = aabb_points[end];
+
+                let line: Option<(Vector3D, Vector3D)> = camera.transform_line(v1, v2);
+                if line.is_some() {
+                    let (v1, v2): (Vector3D, Vector3D) = line.unwrap();
+                    self.graphics.draw_line(v1, v2, color, thickness);
+                }
+            }
+        }
+    }
+
     fn combine_meshes(&mut self, meshes: &[Mesh]) -> Mesh {
         let total_polygons: usize = meshes.iter().map(|mesh| mesh.polygons.len()).sum();
         self.simulation.polygon_count = total_polygons;
@@ -160,6 +195,7 @@ impl DrawCall {
         }
 
         if self.simulation.draw_polygons {
+            self.draw_bounding_box(&meshes);
             let mut mesh: Mesh = self.combine_meshes(&meshes);
 
             let lights: Vec<Light> = self.get_lights_2();

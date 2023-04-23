@@ -299,7 +299,7 @@ pub fn orbiting_system(position: Vector3D) -> Vec<BodyType> {
     // physics.is_stationary = true;
     // objects.push(high_mass);
 
-    for i in 0..50 {
+    for i in 0..100 {
         let sphere = get_sphere_light3(position.clone());
         objects.push(sphere);
     }

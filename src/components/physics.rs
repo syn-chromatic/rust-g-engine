@@ -1,3 +1,4 @@
+use crate::components::color::RGBA;
 use crate::components::polygons::Mesh;
 use crate::components::polygons::Polygon;
 use crate::components::shaders::Light;
@@ -6,6 +7,21 @@ use crate::debug::sleep;
 
 use rand::rngs::ThreadRng;
 use rand::Rng;
+
+#[derive(Clone, Debug)]
+pub struct PhysicsSnapshot {
+    pub mesh: Mesh,
+    pub position: Vector3D,
+    pub velocity: Vector3D,
+    pub acceleration: Vector3D,
+    pub spin_velocity: Vector3D,
+    pub spin_acceleration: Vector3D,
+    pub mass: f64,
+    pub scale: f64,
+    pub g_const: f64,
+    pub gravity: f64,
+    pub is_stationary: bool,
+}
 
 #[derive(Clone, Debug)]
 pub struct Physics {
@@ -20,6 +36,7 @@ pub struct Physics {
     pub g_const: f64,
     pub gravity: f64,
     pub is_stationary: bool,
+    pub snapshot: Option<PhysicsSnapshot>,
 }
 
 impl Physics {
@@ -47,6 +64,7 @@ impl Physics {
             g_const,
             gravity,
             is_stationary,
+            snapshot: None,
         }
     }
 
@@ -111,6 +129,7 @@ impl Physics {
     }
 
     fn get_random_direction(&self) -> Vector3D {
+        println!("Retrieving Random Direction");
         let mut rng: ThreadRng = rand::thread_rng();
         let x_rnd: f64 = rng.gen_range(-1.0..1.0);
         let y_rnd: f64 = rng.gen_range(-1.0..1.0);
@@ -121,7 +140,7 @@ impl Physics {
     }
 
     fn ensure_direction(&self, mut direction: Vector3D) -> Vector3D {
-        if direction.get_sum() == 0.0 {
+        if direction.get_length() == 0.0 {
             direction = self.get_random_direction();
         }
         direction
@@ -185,32 +204,87 @@ impl Physics {
         mtv
     }
 
-    pub fn apply_collision(&mut self, target: &mut Physics, timestep: f64) {
-        // Collision prediction has similarity with the previous method
-        // by reverting to the previous mesh position.
-        // An ideal solution is to figure out how to combine the two methods.
+    // pub fn apply_collision(&mut self, target: &mut Physics, timestep: f64) {
+    //     let self_mtv: Option<Vector3D> = self.mesh.is_intersecting_bvh(&mut target.mesh);
 
-        // let self_mtv: Option<Vector3D> = self.mesh.is_intersecting_bvh(&mut target.mesh);
+    //     if let Some(direction) = self_mtv {
+    //         self.revert_to_snapshot();
+
+    //         let direction: Vector3D = direction.multiply(-1.0);
+    //         let direction: Vector3D = direction.normalize();
+    //         self.apply_collision_velocities(target, direction);
+    //         let distance: f64 = self.mesh.get_distance(&target.mesh);
+
+    //         if distance < 0.0 {
+    //             let direction = self.ensure_direction(direction);
+    //             let distance = (distance / 2.0) + 1.0;
+    //             self.apply_shift_correction(direction, -distance);
+    //             target.apply_shift_correction(direction, distance);
+    //         }
+    //         self.update_snapshot();
+    //         target.update_snapshot();
+    //     }
+    // }
+
+    // pub fn apply_collision(&mut self, target: &mut Physics, timestep: f64) {
+    //     if let Some(direction) = self.get_intersection_next_step(target, timestep) {
+    //         let direction: Vector3D = direction.multiply(-1.0);
+    //         let direction: Vector3D = direction.normalize();
+
+    //         // let penetration = mtv.get_length();
+    //         let penetration: f64 = self.mesh.get_distance(&target.mesh);
+    //         if penetration < 0.0 {
+    //             let percent_correction = 1.0;
+    //             let correction_distance = penetration * percent_correction;
+
+    //             self.apply_shift_correction(direction, -correction_distance / 2.0);
+    //             target.apply_shift_correction(direction, correction_distance / 2.0);
+    //         }
+    //         self.apply_collision_velocities(target, direction);
+    //     }
+    // }
+
+    fn is_bounding_collided(&self, target: &Physics) -> bool {
+        let bounding_collided: bool = self
+            .mesh
+            .bvh_node
+            .traverse_and_collide(&target.mesh.bvh_node);
+        bounding_collided
+    }
+
+    fn set_bounding_color(&mut self, target: &mut Physics, bounding_collided: bool) {
+        if !bounding_collided {
+            let color = RGBA::from_rgb(0.6, 0.6, 0.6);
+            self.mesh.set_uniform_color(color);
+            target.mesh.set_uniform_color(color);
+        } else {
+            let color = RGBA::from_rgb(0.8, 0.2, 0.2);
+            self.mesh.set_uniform_color(color);
+            target.mesh.set_uniform_color(color);
+        }
+    }
+
+    pub fn apply_collision(&mut self, target: &mut Physics, timestep: f64) {
+        let bounding_collided = self.is_bounding_collided(target);
+        self.set_bounding_color(target, bounding_collided);
+
+        if !bounding_collided {
+            return;
+        }
+
         let self_mtv: Option<Vector3D> = self.get_intersection_next_step(target, timestep);
 
-        // println!("{}, {}", self_mtv_test.is_some(), self_mtv.is_some());
-
-        if let Some(direction) = self_mtv {
-            // self.mesh.revert_to_previous();
-
-            let direction: Vector3D = direction.multiply(-1.0);
+        if let Some(mtv) = self_mtv {
+            let direction: Vector3D = mtv.multiply(-1.0);
             let direction: Vector3D = direction.normalize();
             self.apply_collision_velocities(target, direction);
-            let distance: f64 = self.mesh.get_distance(&target.mesh);
+            let distance = mtv.get_length();
 
-            if distance < 0.0 {
-                let direction = self.ensure_direction(direction);
-                let distance = (distance / 2.0) + 1.0;
-                self.apply_shift_correction(direction, -distance);
-                target.apply_shift_correction(direction, distance);
-
-                // self.update_mesh_snapshot();
-                // target.update_mesh_snapshot();
+            if distance > 0.0 {
+                let direction: Vector3D = self.ensure_direction(direction);
+                let correction: f64 = distance * 0.1;
+                self.apply_shift_correction(direction, correction);
+                target.apply_shift_correction(direction, -correction);
             }
         }
     }
@@ -288,7 +362,6 @@ impl Physics {
         let velocity_change = self.velocity.multiply(timestep);
         self.position = self.position.add_vector(&velocity_change);
 
-        self.update_mesh_snapshot();
         self.update_light_position(velocity_change);
         self.update_mesh_position(velocity_change);
     }
@@ -302,15 +375,64 @@ impl Physics {
         }
     }
 
-    fn update_mesh_snapshot(&mut self) {
-        self.mesh.update_snapshot();
-    }
-
     fn update_mesh_position(&mut self, translation: Vector3D) {
         self.mesh.translate_polygons(translation);
     }
 
+    pub fn update_snapshot(&mut self) {
+        let snapshot: PhysicsSnapshot = self.get_physics_snapshot();
+        self.snapshot = Some(snapshot);
+    }
+
+    pub fn revert_to_snapshot(&mut self) {
+        let snapshot: Option<PhysicsSnapshot> = self.snapshot.clone();
+        if let Some(snapshot) = snapshot {
+            self.mesh = snapshot.mesh;
+            self.position = snapshot.position;
+            self.velocity = snapshot.velocity;
+            self.acceleration = snapshot.acceleration;
+            self.spin_velocity = snapshot.spin_velocity;
+            self.spin_acceleration = snapshot.spin_acceleration;
+            self.mass = snapshot.mass;
+            self.scale = snapshot.scale;
+            self.g_const = snapshot.g_const;
+            self.gravity = snapshot.gravity;
+            self.is_stationary = snapshot.is_stationary;
+        }
+    }
+
+    fn get_physics_snapshot(&self) -> PhysicsSnapshot {
+        let mesh: Mesh = self.mesh.clone();
+        let position: Vector3D = self.position.clone();
+        let velocity: Vector3D = self.velocity.clone();
+        let acceleration: Vector3D = self.acceleration.clone();
+        let spin_velocity: Vector3D = self.spin_velocity.clone();
+        let spin_acceleration: Vector3D = self.spin_acceleration.clone();
+        let mass: f64 = self.mass.clone();
+        let scale: f64 = self.scale.clone();
+        let g_const: f64 = self.g_const.clone();
+        let gravity: f64 = self.gravity.clone();
+        let is_stationary: bool = self.is_stationary.clone();
+
+        let snapshot: PhysicsSnapshot = PhysicsSnapshot {
+            mesh,
+            position,
+            velocity,
+            acceleration,
+            spin_velocity,
+            spin_acceleration,
+            mass,
+            scale,
+            g_const,
+            gravity,
+            is_stationary,
+        };
+        snapshot
+    }
+
     pub fn update(&mut self, timestep: f64) {
+        // self.update_snapshot();
+
         if self.is_stationary {
             self.acceleration = Vector3D::default(0.0);
             self.velocity = Vector3D::default(0.0);

@@ -116,6 +116,13 @@ pub enum Polygon {
 }
 
 impl Polygon {
+    pub fn set_color(&mut self, color: &RGBA) {
+        match self {
+            Polygon::Triangle(triangle) => triangle.color = color.clone(),
+            Polygon::Quad(quad) => quad.color = color.clone(),
+        }
+    }
+
     pub fn translate(&mut self, translation: &Vector3D) {
         match self {
             Polygon::Triangle(triangle) => triangle.translate(translation),
@@ -184,20 +191,11 @@ impl Polygon {
 }
 
 #[derive(Clone, Debug)]
-pub struct MeshSnapshot {
-    pub polygons: Vec<Polygon>,
-    pub bvh_node: BVHNode,
-    pub vertices: Vec<Vector3D>,
-    pub light: Option<Light>,
-}
-
-#[derive(Clone, Debug)]
 pub struct Mesh {
     pub polygons: Vec<Polygon>,
     pub bvh_node: BVHNode,
     pub vertices: Vec<Vector3D>,
     pub light: Option<Light>,
-    pub previous_mesh: Option<MeshSnapshot>,
 }
 
 impl Mesh {
@@ -209,7 +207,12 @@ impl Mesh {
             bvh_node,
             vertices,
             light: None,
-            previous_mesh: None,
+        }
+    }
+
+    pub fn set_uniform_color(&mut self, color: RGBA) {
+        for polygon in self.polygons.iter_mut() {
+            polygon.set_color(&color);
         }
     }
 
@@ -232,16 +235,6 @@ impl Mesh {
         self.light = Some(light);
     }
 
-    pub fn revert_to_previous(&mut self) {
-        let previous_mesh = self.previous_mesh.clone();
-        if let Some(previous_mesh) = self.previous_mesh.take() {
-            self.polygons = previous_mesh.polygons;
-            self.bvh_node = previous_mesh.bvh_node;
-            self.vertices = previous_mesh.vertices;
-            self.light = previous_mesh.light;
-        }
-    }
-
     pub fn translate_polygons(&mut self, translation: Vector3D) {
         for polygon in &mut self.polygons {
             polygon.translate(&translation);
@@ -254,39 +247,11 @@ impl Mesh {
         for vertex in self.vertices.iter_mut() {
             *vertex = vertex.add_vector(&translation);
         }
-        // self.bvh_node.polygons = self.polygons.clone();
-        // self.bvh_node.vertices = self.vertices.clone();
     }
 
     fn translate_bvh_node(&mut self, translation: Vector3D) {
-        // for polygon in self.bvh_node.polygons.iter_mut() {
-        //     polygon.translate(&translation);
-        // }
-        // for vertex in self.bvh_node.vertices.iter_mut() {
-        //     *vertex = vertex.add_vector(&translation);
-        // }
         self.bvh_node.vertices = self.vertices.clone();
         self.bvh_node = BVHNode::new(&self.polygons, &self.vertices);
-    }
-
-    pub fn update_snapshot(&mut self) {
-        let snapshot: MeshSnapshot = self.get_mesh_snapshot();
-        self.previous_mesh = Some(snapshot);
-    }
-
-    fn get_mesh_snapshot(&self) -> MeshSnapshot {
-        let polygons: Vec<Polygon> = self.polygons.clone();
-        let bvh_node: BVHNode = self.bvh_node.clone();
-        let vertices: Vec<Vector3D> = self.vertices.clone();
-        let light: Option<Light> = self.light.clone();
-
-        let snapshot: MeshSnapshot = MeshSnapshot {
-            polygons,
-            bvh_node,
-            vertices,
-            light,
-        };
-        snapshot
     }
 
     pub fn get_distance_bvh(&mut self, other: &Mesh) -> f64 {

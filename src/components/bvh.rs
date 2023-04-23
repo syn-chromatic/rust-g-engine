@@ -402,4 +402,117 @@ impl BVHNode {
 
         intersecting_polygons
     }
+
+    pub fn traverse_and_collide_sat(&self, other: &Self) -> Option<Vector3D> {
+        let mut stack_a: Vec<&BVHNode> = Vec::new();
+        let mut stack_b: Vec<&BVHNode> = Vec::new();
+        stack_a.push(self);
+        stack_b.push(other);
+
+        while let (Some(node_a), Some(node_b)) = (stack_a.pop(), stack_b.pop()) {
+            if !node_a.aabb_intersects(node_b) {
+                continue;
+            }
+
+            match (&node_a.left, &node_a.right, &node_b.left, &node_b.right) {
+                (None, None, None, None) => {
+                    if let Some(mtv) = node_a.sat_intersection(node_b) {
+                        return Some(mtv);
+                    }
+                }
+                (Some(left_a), Some(right_a), None, None) => {
+                    stack_a.push(left_a);
+                    stack_a.push(right_a);
+                    stack_b.push(node_b);
+                    stack_b.push(node_b);
+                }
+                (None, None, Some(left_b), Some(right_b)) => {
+                    stack_a.push(node_a);
+                    stack_a.push(node_a);
+                    stack_b.push(left_b);
+                    stack_b.push(right_b);
+                }
+                _ => {
+                    if let Some(left_a) = &node_a.left {
+                        stack_a.push(left_a);
+                    }
+                    if let Some(right_a) = &node_a.right {
+                        stack_a.push(right_a);
+                    }
+                    if let Some(left_b) = &node_b.left {
+                        stack_b.push(left_b);
+                    }
+                    if let Some(right_b) = &node_b.right {
+                        stack_b.push(right_b);
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
+    pub fn traverse_and_collide(&self, other: &Self) -> bool {
+        let mut stack_a: Vec<&BVHNode> = Vec::new();
+        let mut stack_b: Vec<&BVHNode> = Vec::new();
+        stack_a.push(self);
+        stack_b.push(other);
+
+        while let (Some(node_a), Some(node_b)) = (stack_a.pop(), stack_b.pop()) {
+            if !node_a.aabb_intersects(node_b) {
+                continue;
+            }
+
+            match (&node_a.left, &node_a.right, &node_b.left, &node_b.right) {
+                (None, None, None, None) => {
+                    return true;
+                }
+                (Some(left_a), Some(right_a), None, None) => {
+                    stack_a.push(left_a);
+                    stack_a.push(right_a);
+                    stack_b.push(node_b);
+                    stack_b.push(node_b);
+                }
+                (None, None, Some(left_b), Some(right_b)) => {
+                    stack_a.push(node_a);
+                    stack_a.push(node_a);
+                    stack_b.push(left_b);
+                    stack_b.push(right_b);
+                }
+                _ => {
+                    if let Some(left_a) = &node_a.left {
+                        stack_a.push(left_a);
+                    }
+                    if let Some(right_a) = &node_a.right {
+                        stack_a.push(right_a);
+                    }
+                    if let Some(left_b) = &node_b.left {
+                        stack_b.push(left_b);
+                    }
+                    if let Some(right_b) = &node_b.right {
+                        stack_b.push(right_b);
+                    }
+                }
+            }
+        }
+
+        false
+    }
+
+    pub fn get_aabb_points(&self) -> Vec<Vector3D> {
+        let (min, max): &([f64; 3], [f64; 3]) = &self.aabb;
+        let min: Vector3D = Vector3D::new(min[0], min[1], min[2]);
+        let max: Vector3D = Vector3D::new(max[0], max[1], max[2]);
+
+        vec![
+            min,
+            Vector3D::new(min.x, min.y, max.z),
+            Vector3D::new(min.x, max.y, min.z),
+            Vector3D::new(min.x, max.y, max.z),
+            Vector3D::new(max.x, min.y, min.z),
+            Vector3D::new(max.x, min.y, max.z),
+            Vector3D::new(max.x, max.y, min.z),
+            max,
+        ]
+    }
 }
