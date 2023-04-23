@@ -14,6 +14,9 @@ ___
 * Change: Implement texture mapping
 * Change: Separate physics from the Body abstraction 
 
+___
+### Axis-Aligned Bounding Boxes (AABB) Visualization
+https://user-images.githubusercontent.com/68112904/233858841-6550eba6-14a6-4242-abb4-bce76000eed6.mp4
 
 ___
 ### Binary System Formation
