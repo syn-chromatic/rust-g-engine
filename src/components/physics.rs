@@ -197,8 +197,8 @@ impl Physics {
         let target_velocity_change: Vector3D =
             target_next_position.subtract_vector(&target.position);
 
-        self_next_mesh.translate_polygons(self_velocity_change);
-        target_next_mesh.translate_polygons(target_velocity_change);
+        self_next_mesh.translate_polygons(&self_velocity_change);
+        target_next_mesh.translate_polygons(&target_velocity_change);
 
         let mtv: Option<Vector3D> = self_next_mesh.is_intersecting_bvh(&mut target_next_mesh);
         mtv
@@ -244,11 +244,8 @@ impl Physics {
     //     }
     // }
 
-    fn is_bounding_collided(&self, target: &Physics) -> bool {
-        let bounding_collided: bool = self
-            .mesh
-            .bvh_node
-            .traverse_and_collide(&target.mesh.bvh_node);
+    pub fn is_bounding_collided(&self, target: &Physics) -> bool {
+        let bounding_collided: bool = self.mesh.bvh_node.aabb_intersects(&target.mesh.bvh_node);
         bounding_collided
     }
 
@@ -264,6 +261,18 @@ impl Physics {
         }
     }
 
+    fn get_mass_ratio(&self, target: &Physics) -> f64 {
+        if self.mass > target.mass {
+            let mass_ratio: f64 = target.mass / self.mass;
+            return mass_ratio;
+        } else if self.mass < target.mass {
+            let mass_ratio: f64 = self.mass / target.mass;
+            let mass_ratio: f64 = 1.0 - mass_ratio;
+            return mass_ratio;
+        }
+        0.5
+    }
+
     pub fn apply_collision(&mut self, target: &mut Physics, timestep: f64) {
         let bounding_collided = self.is_bounding_collided(target);
         self.set_bounding_color(target, bounding_collided);
@@ -272,19 +281,23 @@ impl Physics {
             return;
         }
 
-        let self_mtv: Option<Vector3D> = self.get_intersection_next_step(target, timestep);
+        // let self_mtv: Option<Vector3D> = self.get_intersection_next_step(target, timestep);
+        let self_mtv: Option<Vector3D> = self.mesh.is_intersecting_bvh(&mut target.mesh);
 
         if let Some(mtv) = self_mtv {
             let direction: Vector3D = mtv.multiply(-1.0);
             let direction: Vector3D = direction.normalize();
             self.apply_collision_velocities(target, direction);
-            let distance = mtv.get_length();
+            let distance: f64 = self.mesh.get_distance(&target.mesh);
 
-            if distance > 0.0 {
+            if distance < 0.0 {
                 let direction: Vector3D = self.ensure_direction(direction);
-                let correction: f64 = distance * 0.1;
-                self.apply_shift_correction(direction, correction);
-                target.apply_shift_correction(direction, -correction);
+                let mass_ratio: f64 = self.get_mass_ratio(target);
+                let self_correction: f64 = distance * mass_ratio;
+                let target_correction: f64 = distance - self_correction;
+
+                self.apply_shift_correction(direction, -self_correction);
+                target.apply_shift_correction(direction, target_correction);
             }
         }
     }
@@ -292,7 +305,7 @@ impl Physics {
     pub fn apply_shift_correction(&mut self, direction: Vector3D, distance: f64) {
         let self_vec = direction.multiply(distance);
         self.position = self.position.add_vector(&self_vec);
-        self.update_mesh_position(self_vec);
+        self.update_mesh_position(&self_vec);
     }
 
     pub fn apply_collision_velocities(&mut self, target: &mut Physics, direction: Vector3D) {
@@ -362,20 +375,20 @@ impl Physics {
         let velocity_change = self.velocity.multiply(timestep);
         self.position = self.position.add_vector(&velocity_change);
 
-        self.update_light_position(velocity_change);
-        self.update_mesh_position(velocity_change);
+        self.update_light_position(&velocity_change);
+        self.update_mesh_position(&velocity_change);
     }
 
-    fn update_light_position(&mut self, velocity_change: Vector3D) {
+    fn update_light_position(&mut self, translation: &Vector3D) {
         if self.mesh.light.is_some() {
             let mut light: Light = self.mesh.light.unwrap();
-            light.position = light.position.add_vector(&velocity_change);
-            light.target = light.target.add_vector(&velocity_change);
+            light.position = light.position.add_vector(translation);
+            light.target = light.target.add_vector(translation);
             self.mesh.light = Some(light);
         }
     }
 
-    fn update_mesh_position(&mut self, translation: Vector3D) {
+    fn update_mesh_position(&mut self, translation: &Vector3D) {
         self.mesh.translate_polygons(translation);
     }
 

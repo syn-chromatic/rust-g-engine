@@ -190,22 +190,35 @@ impl Polygon {
     }
 }
 
+fn get_vertices_from_polygons(polygons: &[Polygon]) -> Vec<Vector3D> {
+    let mut vertices: Vec<Vector3D> = Vec::new();
+
+    for polygon in polygons {
+        let polygon_vertices: &[Vector3D] = match polygon {
+            Polygon::Triangle(triangle) => &triangle.vertices,
+            Polygon::Quad(quad) => &quad.vertices,
+        };
+
+        vertices.extend_from_slice(polygon_vertices);
+    }
+
+    vertices
+}
+
 #[derive(Clone, Debug)]
 pub struct Mesh {
     pub polygons: Vec<Polygon>,
     pub bvh_node: BVHNode,
-    pub vertices: Vec<Vector3D>,
     pub light: Option<Light>,
 }
 
 impl Mesh {
     pub fn new(polygons: Vec<Polygon>) -> Self {
-        let vertices: Vec<Vector3D> = Self::get_vertices_from_polygons(&polygons);
+        let vertices: Vec<Vector3D> = get_vertices_from_polygons(&polygons);
         let bvh_node: BVHNode = BVHNode::new(&polygons, &vertices);
         Self {
             polygons,
             bvh_node,
-            vertices,
             light: None,
         }
     }
@@ -216,42 +229,15 @@ impl Mesh {
         }
     }
 
-    fn get_vertices_from_polygons(polygons: &[Polygon]) -> Vec<Vector3D> {
-        let mut vertices: Vec<Vector3D> = Vec::new();
-
-        for polygon in polygons {
-            let polygon_vertices: &[Vector3D] = match polygon {
-                Polygon::Triangle(triangle) => &triangle.vertices,
-                Polygon::Quad(quad) => &quad.vertices,
-            };
-
-            vertices.extend_from_slice(polygon_vertices);
-        }
-
-        vertices
-    }
-
     pub fn add_light(&mut self, light: Light) {
         self.light = Some(light);
     }
 
-    pub fn translate_polygons(&mut self, translation: Vector3D) {
+    pub fn translate_polygons(&mut self, translation: &Vector3D) {
         for polygon in &mut self.polygons {
-            polygon.translate(&translation);
+            polygon.translate(translation);
         }
-        self.translate_hull(translation);
-        self.translate_bvh_node(translation);
-    }
-
-    fn translate_hull(&mut self, translation: Vector3D) {
-        for vertex in self.vertices.iter_mut() {
-            *vertex = vertex.add_vector(&translation);
-        }
-    }
-
-    fn translate_bvh_node(&mut self, translation: Vector3D) {
-        self.bvh_node.vertices = self.vertices.clone();
-        self.bvh_node = BVHNode::new(&self.polygons, &self.vertices);
+        self.bvh_node.translate_bvh(translation);
     }
 
     pub fn get_distance_bvh(&mut self, other: &Mesh) -> f64 {

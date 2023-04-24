@@ -75,9 +75,10 @@ impl DrawCall {
         let thickness = 1.0;
 
         for mesh in meshes {
-            for i in 0..mesh.vertices.len() {
-                let v1: Vector3D = mesh.vertices[i];
-                let v2: Vector3D = mesh.vertices[(i + 1) % mesh.vertices.len()];
+            let vertices = &mesh.bvh_node.vertices;
+            for i in 0..vertices.len() {
+                let v1: Vector3D = vertices[i];
+                let v2: Vector3D = vertices[(i + 1) % vertices.len()];
 
                 let line: Option<(Vector3D, Vector3D)> = camera.transform_line(v1, v2);
                 if line.is_some() {
@@ -195,7 +196,7 @@ impl DrawCall {
         }
 
         if self.simulation.draw_polygons {
-            self.draw_bounding_box(&meshes);
+            // self.draw_bounding_box(&meshes);
             let mut mesh: Mesh = self.combine_meshes(&meshes);
 
             let lights: Vec<Light> = self.get_lights_2();

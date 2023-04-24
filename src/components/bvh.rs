@@ -1,39 +1,50 @@
 use crate::components::polygons::Polygon;
 use crate::components::vectors::Vector3D;
-use std::cmp::Ordering;
-use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 pub struct BVHNode {
     pub polygons: Vec<Polygon>,
     pub vertices: Vec<Vector3D>,
     pub face_normals: Vec<Vector3D>,
-    left: Option<Arc<BVHNode>>,
-    right: Option<Arc<BVHNode>>,
     aabb: ([f64; 3], [f64; 3]),
-    pub max_leaf_size: usize,
 }
 
 impl BVHNode {
     pub fn new(polygons: &[Polygon], vertices: &[Vector3D]) -> Self {
         let aabb: ([f64; 3], [f64; 3]) = Self::get_aabb(polygons);
         let polygons: Vec<Polygon> = polygons.to_vec();
+        let vertices: Vec<Vector3D> = vertices.to_vec();
         let face_normals: Vec<Vector3D> = polygons.iter().map(|p| p.get_normal()).collect();
 
-        let max_leaf_size: usize = vertices.len();
-        let vertices: Vec<Vector3D> = vertices.to_vec();
-
-        let mut bvh_node: BVHNode = BVHNode {
+        BVHNode {
             polygons,
             vertices,
             face_normals,
-            left: None,
-            right: None,
             aabb,
-            max_leaf_size,
-        };
-        bvh_node.split();
-        bvh_node
+        }
+    }
+
+    pub fn translate_bvh(&mut self, translation: &Vector3D) {
+        for polygon in &mut self.polygons {
+            polygon.translate(&translation);
+        }
+
+        for vertex in self.vertices.iter_mut() {
+            *vertex = vertex.add_vector(&translation);
+        }
+
+        let mut left_aabb = self.aabb.0;
+        let mut right_aabb = self.aabb.1;
+
+        left_aabb[0] += translation.x;
+        left_aabb[1] += translation.y;
+        left_aabb[2] += translation.z;
+
+        right_aabb[0] += translation.x;
+        right_aabb[1] += translation.y;
+        right_aabb[2] += translation.z;
+
+        self.aabb = (left_aabb, right_aabb);
     }
 
     pub fn project_onto_axis(&self, axis: &Vector3D) -> (f64, f64) {
@@ -50,7 +61,7 @@ impl BVHNode {
         (min, max)
     }
 
-    fn aabb_intersects(&self, other: &BVHNode) -> bool {
+    pub fn aabb_intersects(&self, other: &BVHNode) -> bool {
         let (min_a, max_a): ([f64; 3], [f64; 3]) = self.aabb;
         let (min_b, max_b): ([f64; 3], [f64; 3]) = other.aabb;
 
@@ -211,64 +222,6 @@ impl BVHNode {
         self.get_distance_bounding_boxes(other)
     }
 
-    pub fn split(&mut self) {
-        if self.polygons.len() <= self.max_leaf_size {
-            self.face_normals = self.polygons.iter().map(|p| p.get_normal()).collect();
-            return;
-        }
-
-        let mut best_cost: f64 = f64::MAX;
-        let mut best_axis: usize = 0;
-        let mut best_split_position: usize = 0;
-
-        for axis in 0..3 {
-            self.polygons.sort_unstable_by(|a, b| {
-                let centroid_a: [f64; 3] = a.get_centroid().to_array();
-                let centroid_b: [f64; 3] = b.get_centroid().to_array();
-                centroid_a[axis]
-                    .partial_cmp(&centroid_b[axis])
-                    .unwrap_or(Ordering::Equal)
-            });
-
-            let mut left_aabb: ([f64; 3], [f64; 3]) = BVHNode::empty_aabb();
-            let mut right_aabb: ([f64; 3], [f64; 3]) = BVHNode::get_aabb(&self.polygons);
-
-            for i in 0..(self.polygons.len() - 1) {
-                let polygon = &self.polygons[i];
-                left_aabb = BVHNode::expand_aabb(left_aabb, Self::get_polygon_aabb(polygon));
-                right_aabb = BVHNode::shrink_aabb(right_aabb, Self::get_polygon_aabb(polygon));
-
-                let cost = BVHNode::surface_area(left_aabb) * (i + 1) as f64
-                    + BVHNode::surface_area(right_aabb) * (self.polygons.len() - i - 1) as f64;
-
-                if cost < best_cost {
-                    best_cost = cost;
-                    best_axis = axis;
-                    best_split_position = i;
-                }
-            }
-        }
-
-        self.polygons.sort_unstable_by(|a, b| {
-            let centroid_a = a.get_centroid().to_array();
-            let centroid_b = b.get_centroid().to_array();
-            centroid_a[best_axis]
-                .partial_cmp(&centroid_b[best_axis])
-                .unwrap_or(Ordering::Equal)
-        });
-
-        let (left_polygons, right_polygons) = self.polygons.split_at(best_split_position + 1);
-
-        self.left = Some(Arc::new(BVHNode::new(
-            &left_polygons.to_vec(),
-            &self.vertices,
-        )));
-        self.right = Some(Arc::new(BVHNode::new(
-            &right_polygons.to_vec(),
-            &self.vertices,
-        )));
-    }
-
     fn get_polygon_aabb(polygon: &Polygon) -> ([f64; 3], [f64; 3]) {
         let vertices: &[Vector3D] = match polygon {
             Polygon::Triangle(triangle) => &triangle.vertices,
@@ -382,121 +335,13 @@ impl BVHNode {
     }
 
     pub fn traverse(&self, origin: &Vector3D, direction: &Vector3D) -> Vec<Polygon> {
-        if !self.ray_intersect_aabb(origin, direction) {
-            return vec![];
-        }
-
         let mut intersecting_polygons: Vec<Polygon> = vec![];
 
-        if let Some(left_node) = &self.left {
-            intersecting_polygons.extend(left_node.traverse(origin, direction));
-        }
-
-        if let Some(right_node) = &self.right {
-            intersecting_polygons.extend(right_node.traverse(origin, direction));
-        }
-
-        if self.left.is_none() || self.right.is_none() {
+        if self.ray_intersect_aabb(origin, direction) {
             intersecting_polygons.extend(self.polygons.clone());
         }
 
         intersecting_polygons
-    }
-
-    pub fn traverse_and_collide_sat(&self, other: &Self) -> Option<Vector3D> {
-        let mut stack_a: Vec<&BVHNode> = Vec::new();
-        let mut stack_b: Vec<&BVHNode> = Vec::new();
-        stack_a.push(self);
-        stack_b.push(other);
-
-        while let (Some(node_a), Some(node_b)) = (stack_a.pop(), stack_b.pop()) {
-            if !node_a.aabb_intersects(node_b) {
-                continue;
-            }
-
-            match (&node_a.left, &node_a.right, &node_b.left, &node_b.right) {
-                (None, None, None, None) => {
-                    if let Some(mtv) = node_a.sat_intersection(node_b) {
-                        return Some(mtv);
-                    }
-                }
-                (Some(left_a), Some(right_a), None, None) => {
-                    stack_a.push(left_a);
-                    stack_a.push(right_a);
-                    stack_b.push(node_b);
-                    stack_b.push(node_b);
-                }
-                (None, None, Some(left_b), Some(right_b)) => {
-                    stack_a.push(node_a);
-                    stack_a.push(node_a);
-                    stack_b.push(left_b);
-                    stack_b.push(right_b);
-                }
-                _ => {
-                    if let Some(left_a) = &node_a.left {
-                        stack_a.push(left_a);
-                    }
-                    if let Some(right_a) = &node_a.right {
-                        stack_a.push(right_a);
-                    }
-                    if let Some(left_b) = &node_b.left {
-                        stack_b.push(left_b);
-                    }
-                    if let Some(right_b) = &node_b.right {
-                        stack_b.push(right_b);
-                    }
-                }
-            }
-        }
-
-        None
-    }
-
-    pub fn traverse_and_collide(&self, other: &Self) -> bool {
-        let mut stack_a: Vec<&BVHNode> = Vec::new();
-        let mut stack_b: Vec<&BVHNode> = Vec::new();
-        stack_a.push(self);
-        stack_b.push(other);
-
-        while let (Some(node_a), Some(node_b)) = (stack_a.pop(), stack_b.pop()) {
-            if !node_a.aabb_intersects(node_b) {
-                continue;
-            }
-
-            match (&node_a.left, &node_a.right, &node_b.left, &node_b.right) {
-                (None, None, None, None) => {
-                    return true;
-                }
-                (Some(left_a), Some(right_a), None, None) => {
-                    stack_a.push(left_a);
-                    stack_a.push(right_a);
-                    stack_b.push(node_b);
-                    stack_b.push(node_b);
-                }
-                (None, None, Some(left_b), Some(right_b)) => {
-                    stack_a.push(node_a);
-                    stack_a.push(node_a);
-                    stack_b.push(left_b);
-                    stack_b.push(right_b);
-                }
-                _ => {
-                    if let Some(left_a) = &node_a.left {
-                        stack_a.push(left_a);
-                    }
-                    if let Some(right_a) = &node_a.right {
-                        stack_a.push(right_a);
-                    }
-                    if let Some(left_b) = &node_b.left {
-                        stack_b.push(left_b);
-                    }
-                    if let Some(right_b) = &node_b.right {
-                        stack_b.push(right_b);
-                    }
-                }
-            }
-        }
-
-        false
     }
 
     pub fn get_aabb_points(&self) -> Vec<Vector3D> {

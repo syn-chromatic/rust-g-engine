@@ -245,24 +245,24 @@ impl Hash for Vector3D {
 }
 
 impl PartialEq for Vector3D {
-    fn eq(&self, other: &Self) -> bool {
-        (self.x - other.x).abs() < EPSILON
-            && (self.y - other.y).abs() < EPSILON
-            && (self.z - other.z).abs() < EPSILON
-    }
-
     // fn eq(&self, other: &Self) -> bool {
-    //     self.x == other.x && self.y == other.y && self.z == other.z
+    //     (self.x - other.x).abs() < EPSILON
+    //         && (self.y - other.y).abs() < EPSILON
+    //         && (self.z - other.z).abs() < EPSILON
     // }
+
+    fn eq(&self, other: &Self) -> bool {
+        self.x == other.x && self.y == other.y && self.z == other.z
+    }
 }
 
 impl Eq for Vector3D {}
 
 impl PartialOrd for Vector3D {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        if (self.x - other.x).abs() < EPSILON {
-            if (self.y - other.y).abs() < EPSILON {
-                if (self.z - other.z).abs() < EPSILON {
+        if (self.x - other.x).abs() <= EPSILON {
+            if (self.y - other.y).abs() <= EPSILON {
+                if (self.z - other.z).abs() <= EPSILON {
                     Some(Ordering::Equal)
                 } else {
                     self.z.partial_cmp(&other.z)
