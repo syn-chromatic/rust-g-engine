@@ -196,7 +196,7 @@ impl DrawCall {
         }
 
         if self.simulation.draw_polygons {
-            // self.draw_bounding_box(&meshes);
+            self.draw_bounding_box(&meshes);
             let mut mesh: Mesh = self.combine_meshes(&meshes);
 
             let lights: Vec<Light> = self.get_lights_2();
