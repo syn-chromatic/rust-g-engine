@@ -62,16 +62,16 @@ impl Simulation {
         // let grid_cuboid = body_configurations::get_grid_cuboid();
         // self.objects.push(grid_cuboid);
 
-        // let obj = body_configurations::get_obj("./models/town_square.obj");
+        // let obj = body_configurations::get_obj("./assets/town_square.obj");
         // self.objects.push(obj);
 
-        // let obj = body_configurations::get_obj("./models/cottage.obj");
+        // let obj = body_configurations::get_obj("./assets/cottage.obj");
         // self.objects.push(obj);
 
-        // let obj = body_configurations::get_obj("./models/plane.obj");
+        // let obj = body_configurations::get_obj("./assets/plane.obj");
         // self.objects.push(obj);
 
-        // let obj = body_configurations::get_obj("./models/TerrorTubby_01.obj");
+        // let obj = body_configurations::get_obj("./assets/TerrorTubby_01.obj");
         // self.objects.push(obj);
 
         // let sphere = body_configurations::get_sphere_light_highmass();
