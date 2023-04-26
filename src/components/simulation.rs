@@ -8,12 +8,11 @@ use crate::components::font::FontSettings;
 use crate::components::font::FontType;
 use crate::components::graphics::Graphics;
 use crate::components::physics::Physics;
+use crate::components::polygons::Mesh;
 use crate::components::shape::Shape;
 use crate::components::text_writer::TextWriter;
 use crate::components::vertices::Sphere;
 use crate::configurations::body_configurations;
-use rayon::prelude::*;
-use std::sync::{Arc, Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 pub struct Simulation {
     pub camera: Camera,
@@ -60,6 +59,9 @@ impl Simulation {
         // let grid = body_configurations::get_grid();
         // self.objects.push(grid);
 
+        // let grid_cuboid = body_configurations::get_grid_cuboid();
+        // self.objects.push(grid_cuboid);
+
         // let obj = body_configurations::get_obj("./models/town_square.obj");
         // self.objects.push(obj);
 
@@ -91,18 +93,20 @@ impl Simulation {
         let system = body_configurations::orbiting_system(Vector3D::new(0.0, 0.0, 0.0));
         self.objects.extend(system);
 
-        let system =
-            body_configurations::orbiting_system2(Vector3D::new(8_000_000.0, 4_000_000.0, 0.0));
-        self.objects.extend(system);
+        // let system =
+        //     body_configurations::orbiting_system2(Vector3D::new(8_000_000.0, 4_000_000.0, 0.0));
+        // self.objects.extend(system);
 
         let camera_position = Vector3D::new(-250_000.0, 200.0, -2_000_000.0);
         self.camera.set_camera_position(camera_position);
 
         for object in self.objects.iter_mut() {
             let physics = object.physics();
-            let mesh = &physics.mesh;
-            let polygon_len = mesh.polygons.len();
-            self.polygon_count += polygon_len;
+            let mesh_cluster = &physics.mesh_cluster;
+            for mesh in mesh_cluster {
+                let polygon_len = mesh.polygons.len();
+                self.polygon_count += polygon_len;
+            }
         }
     }
 
@@ -127,13 +131,16 @@ impl Simulation {
         let mass = 1_000_000.0;
 
         let mut sphere = Sphere::new(50_000.0, 10, 10);
+        // let mut sphere = Cuboid::new(50_000.0, 50_000.0, 50_000.0);
         sphere.set_offset(camera_position.x, camera_position.y, camera_position.z);
         sphere.set_color(RGBA::from_random());
         sphere.set_shader(RGBA::from_rgb(0.5, 0.5, 0.5));
 
         let mesh = sphere.get_triangle_mesh();
+        let mut meshes: Vec<Mesh> = Vec::new();
+        meshes.push(mesh);
 
-        let mut body = Shape::new(mesh);
+        let mut body = Shape::new(meshes);
         body.physics()
             .set_position(camera_position.x, camera_position.y, camera_position.z);
         body.physics().set_mass(mass);
@@ -147,11 +154,12 @@ impl Simulation {
 
     pub fn compute_objects(&mut self) {
         let timestep: f64 = 1.0 / self.timestep_hz;
+        let objects = &mut self.objects;
 
-        for i in 0..self.objects.len() {
-            for j in (i + 1)..self.objects.len() {
+        for i in 0..objects.len() {
+            for j in (i + 1)..objects.len() {
                 let (physics1, physics2) = {
-                    let (left, right) = self.objects.split_at_mut(j);
+                    let (left, right) = objects.split_at_mut(j);
                     (left[i].physics(), right[0].physics())
                 };
 
@@ -164,79 +172,6 @@ impl Simulation {
             physics.update(timestep);
         }
     }
-
-    // pub fn compute_objects(&mut self) {
-    //     let timestep: f64 = 1.0 / self.timestep_hz;
-
-    //     let mut pairs: Vec<(usize, usize)> = Vec::new();
-    //     for i in 0..self.objects.len() {
-    //         for j in (i + 1)..self.objects.len() {
-    //             let (physics1, physics2) = {
-    //                 let (left, right) = self.objects.split_at_mut(j);
-    //                 (left[i].physics(), right[0].physics())
-    //             };
-    //             let is_collided: bool = physics1.is_bounding_collided(&physics2);
-    //             if is_collided {
-    //                 pairs.push((i, j))
-    //             }
-    //         }
-    //     }
-
-    //     let objects: Arc<Mutex<&mut Vec<BodyType>>> = Arc::new(Mutex::new(&mut self.objects));
-    //     pairs.par_iter().for_each(|(i, j)| {
-    //         let objects: Arc<Mutex<&mut Vec<BodyType>>> = Arc::clone(&objects);
-    //         let mut objects_guard: MutexGuard<&mut Vec<BodyType>> = objects.lock().unwrap();
-    //         let (physics1, physics2): (&mut Physics, &mut Physics) = {
-    //             let (left, right): (&mut [BodyType], &mut [BodyType]) =
-    //                 objects_guard.split_at_mut(*j);
-    //             (left[*i].physics(), right[0].physics())
-    //         };
-
-    //         physics1.apply_forces(physics2, timestep);
-    //     });
-
-    //     self.objects.par_iter_mut().for_each(|object| {
-    //         let physics = object.physics();
-    //         physics.update(timestep);
-    //     });
-    // }
-
-
-
-    // pub fn compute_objects(&mut self) {
-    //     let timestep: f64 = 1.0 / self.timestep_hz;
-
-    //     let mut pairs: Vec<(usize, usize)> = Vec::new();
-    //     for i in 0..self.objects.len() {
-    //         for j in (i + 1)..self.objects.len() {
-    //             pairs.push((i, j));
-    //         }
-    //     }
-
-    //     let objects: Arc<RwLock<&mut Vec<BodyType>>> = Arc::new(RwLock::new(&mut self.objects));
-    //     pairs.par_iter().for_each(|(i, j)| {
-    //         let objects: Arc<RwLock<&mut Vec<BodyType>>> = Arc::clone(&objects);
-    //         let mut objects_guard: RwLockWriteGuard<&mut Vec<BodyType>> = objects.write().unwrap();
-    //         let (physics1, physics2): (&mut Physics, &mut Physics) = {
-    //             let (left, right): (&mut [BodyType], &mut [BodyType]) =
-    //                 objects_guard.split_at_mut(*j);
-    //             (left[*i].physics(), right[0].physics())
-    //         };
-
-    //         physics1.apply_forces(physics2, timestep);
-    //     });
-
-    //     self.objects.par_iter_mut().for_each(|object| {
-    //         let physics = object.physics();
-    //         physics.update(timestep);
-    //     });
-    // }
-
-
-
-
-
-
 
     fn get_timestep_text(&self) -> String {
         if self.timestep_hz >= 1000.0 {

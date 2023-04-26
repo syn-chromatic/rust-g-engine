@@ -27,7 +27,7 @@ struct TriangleDraw {
 
 impl TriangleDraw {
     pub fn new(points: [(f64, f64); 3], color: RGBA) -> TriangleDraw {
-        let id = 2;
+        let id = 3;
         TriangleDraw { points, color, id }
     }
 }
@@ -41,7 +41,7 @@ struct QuadDraw {
 
 impl QuadDraw {
     pub fn new(points: [(f64, f64); 4], color: RGBA) -> QuadDraw {
-        let id = 2;
+        let id = 3;
         QuadDraw { points, color, id }
     }
 }
@@ -76,7 +76,7 @@ struct TextDraw {
 
 impl TextDraw {
     pub fn new(position: (f64, f64), text: String, font_settings: FontSettings) -> TextDraw {
-        let id = 3;
+        let id = 1;
         TextDraw {
             position,
             text,
@@ -94,7 +94,7 @@ struct FillDraw {
 
 impl FillDraw {
     pub fn new(color: RGBA) -> FillDraw {
-        let id = 1;
+        let id = 4;
         FillDraw { color, id }
     }
 }
@@ -326,7 +326,7 @@ impl Graphics {
     }
 
     fn sort_buffer(&mut self) {
-        self.buffer.sort_by(|a, b| a.id().cmp(&b.id()));
+        self.buffer.sort_by(|a, b| a.id().cmp(&b.id()).reverse());
     }
 
     fn push_to_buffer(&mut self, draw_type: DrawType) {

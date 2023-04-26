@@ -218,6 +218,17 @@ impl Vector3D {
         length_squared.sqrt()
     }
 
+    pub fn get_angle_between(&self, other: &Vector3D) -> f64 {
+        let dot_product: f64 = self.dot_product(other);
+        let magnitude_product: f64 = self.get_length() * other.get_length();
+        let cosine_angle: f64 = dot_product / magnitude_product;
+
+        let clamped_cosine: f64 = cosine_angle.max(-1.0).min(1.0);
+        let angle: f64 = clamped_cosine.acos();
+
+        angle
+    }
+
     pub fn get_distance(&self, vec: &Self) -> f64 {
         let x: f64 = (self.x - vec.x).powi(2);
         let y: f64 = (self.y - vec.y).powi(2);

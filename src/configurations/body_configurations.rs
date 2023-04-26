@@ -1,10 +1,12 @@
 use crate::abstracts::body::Body;
 use crate::abstracts::body::BodyType;
 use crate::components::color::RGBA;
+use crate::components::decomposition::MeshDecompose;
 use crate::components::model::OBJModelFormat;
 use crate::components::shaders::Light;
 use crate::components::shape::Shape;
 use crate::components::vectors::Vector3D;
+use crate::components::vertices::Cuboid;
 use crate::components::vertices::GridHorizontal;
 use crate::components::vertices::Sphere;
 
@@ -20,34 +22,28 @@ pub fn get_grid() -> BodyType {
     // let mesh = grid.get_triangle_polygons();
     let mesh = grid.get_triangle_polygons();
 
-    let mut body = Shape::new(mesh);
+    let mut body = Shape::new(vec![mesh]);
     let physics = body.physics();
     physics.is_stationary = true;
     physics.set_position(position.0, position.1, position.2);
     physics.set_mass(100_000.0);
     let body_type = BodyType::Shape(body);
     body_type
+}
 
-    // let position = (-20_000_000.0, -5_000_000.0, -20_000_000.0);
-    // // let mass = 1.0;S
+pub fn get_grid_cuboid() -> BodyType {
+    let mut cuboid = Cuboid::new(1_000_000.0, 1_000_000.0, 1_000_000.0);
+    let position = (-1_000_000.0, -5_000_000.0, -1_000_000.0);
+    cuboid.set_offset(position.0, position.1, position.2);
+    let mesh = cuboid.get_triangle_mesh();
 
-    // let mut sphere = Sphere::new(100_000_000.0, 50, 50);
-    // sphere.set_offset(position.0, position.1, position.2);
-    // // sphere.set_color(RGBA::from_rgb(1.0, 0.2, 0.2));
-    // sphere.set_color(RGBA::from_random());
-    // sphere.set_shader(RGBA::from_rgb(0.5, 0.5, 0.5));
-
-    // let mut mesh = sphere.get_triangle_mesh();
-    // // mesh.add_light(light);
-
-    // let mut body = Shape::new(mesh);
-    // let physics = body.physics();
-    // physics.is_stationary = true;
-    // physics.set_position(position.0, position.1, position.2);
-    // body.physics().set_mass(1_000_000.0);
-    // // body.physics().set_velocity(0.0, 200.0, 0.0);
-    // let body_type = BodyType::Shape(body);
-    // body_type
+    let mut body = Shape::new(vec![mesh]);
+    let physics = body.physics();
+    physics.is_stationary = true;
+    physics.set_position(position.0, position.1, position.2);
+    physics.set_mass(100_000.0);
+    let body_type = BodyType::Shape(body);
+    body_type
 }
 
 pub fn get_obj(file_path: &str) -> BodyType {
@@ -60,8 +56,9 @@ pub fn get_obj(file_path: &str) -> BodyType {
     // obj.set_offset(800.0, 800.0, 0.0);
 
     let mesh = obj.get_polygons();
+    let meshes = MeshDecompose::new(1.0).decompose(&mesh);
 
-    let mut body = Shape::new(mesh);
+    let mut body = Shape::new(meshes);
     let physics = body.physics();
     physics.is_stationary = true;
     body.physics().set_mass(500_000_000.0);
@@ -69,6 +66,7 @@ pub fn get_obj(file_path: &str) -> BodyType {
         .set_position(position.0, position.1, position.2);
     body.physics().set_velocity(2500.0, 1.0, 500.0);
     let body_type = BodyType::Shape(body);
+
     body_type
 }
 
@@ -80,7 +78,7 @@ pub fn get_sphere() -> BodyType {
     sphere.set_color(RGBA::from_rgb(1.0, 0.2, 0.2));
     let mut mesh = sphere.get_triangle_mesh();
 
-    let mut body = Shape::new(mesh);
+    let mut body = Shape::new(vec![mesh]);
     body.physics().set_velocity(20_000.0, 0.0, -1000.0);
     // body.physics().set_acceleration(100.0, 0.0, 100.0);
     let body_type = BodyType::Shape(body);
@@ -108,7 +106,7 @@ pub fn get_sphere_light_highmass() -> BodyType {
     let mut mesh = sphere.get_triangle_mesh();
     // mesh.add_light(light);
 
-    let mut body = Shape::new(mesh);
+    let mut body = Shape::new(vec![mesh]);
     // body.physics().set_velocity(50_000.0, 10_000.0, 100_000.0);
     // body.physics().set_velocity(2500.0, 1.0, 5000.0);
     let physics = body.physics();
@@ -141,7 +139,7 @@ pub fn get_sphere_light1() -> BodyType {
     let mut mesh = sphere.get_triangle_mesh();
     // mesh.add_light(light);
 
-    let mut body = Shape::new(mesh);
+    let mut body = Shape::new(vec![mesh]);
     body.physics().set_velocity(100_000.0, 20_000.0, 200_000.0);
     // body.physics().set_velocity(2500.0, 1.0, 5000.0);
     body.physics()
@@ -173,7 +171,7 @@ pub fn get_sphere_light2() -> BodyType {
     let mut mesh = sphere.get_triangle_mesh();
     // mesh.add_light(light);
 
-    let mut body = Shape::new(mesh);
+    let mut body = Shape::new(vec![mesh]);
     // body.physics().set_velocity(500_000.0, 20_000.0, 200_000.0);
     body.physics().set_velocity(-2500.0, 0.0, 10_000.0);
     body.physics()
@@ -210,7 +208,7 @@ pub fn get_sphere_light3() -> BodyType {
     let mut mesh = sphere.get_triangle_mesh();
     // mesh.add_light(light);
 
-    let mut body = Shape::new(mesh);
+    let mut body = Shape::new(vec![mesh]);
     // body.physics().set_velocity(-500_000.0, -20_000.0, 200_000.0);
     body.physics().set_velocity(250.0, 1.0, 2000.0);
     body.physics()
@@ -245,7 +243,7 @@ pub fn orbiting_system(position: Vector3D) -> Vec<BodyType> {
         sphere.set_shader(RGBA::from_rgb(0.5, 0.5, 0.5));
         let mut mesh = sphere.get_triangle_mesh();
         // mesh.add_light(light);
-        let mut body = Shape::new(mesh);
+        let mut body = Shape::new(vec![mesh]);
         body.physics()
             .set_position(position.0, position.1, position.2);
         body.physics().set_mass(mass);
@@ -279,7 +277,7 @@ pub fn orbiting_system(position: Vector3D) -> Vec<BodyType> {
         sphere.set_shader(RGBA::from_rgb(0.5, 0.5, 0.5));
         let mut mesh = sphere.get_triangle_mesh();
 
-        let mut body = Shape::new(mesh);
+        let mut body = Shape::new(vec![mesh]);
         body.physics().set_velocity(250.0, 1.0, 2000.0);
         body.physics()
             .set_position(position.0, position.1, position.2);
@@ -299,7 +297,7 @@ pub fn orbiting_system(position: Vector3D) -> Vec<BodyType> {
     // physics.is_stationary = true;
     // objects.push(high_mass);
 
-    for i in 0..100 {
+    for i in 0..250 {
         let sphere = get_sphere_light3(position.clone());
         objects.push(sphere);
     }
@@ -333,7 +331,7 @@ pub fn orbiting_system2(position: Vector3D) -> Vec<BodyType> {
         let mut mesh = sphere.get_triangle_mesh();
         // mesh.add_light(light);
 
-        let mut body = Shape::new(mesh);
+        let mut body = Shape::new(vec![mesh]);
         body.physics()
             .set_position(position.0, position.1, position.2);
         body.physics().set_mass(mass);
@@ -367,7 +365,7 @@ pub fn orbiting_system2(position: Vector3D) -> Vec<BodyType> {
         sphere.set_shader(RGBA::from_rgb(0.5, 0.5, 0.5));
         let mut mesh = sphere.get_triangle_mesh();
 
-        let mut body = Shape::new(mesh);
+        let mut body = Shape::new(vec![mesh]);
         body.physics().set_velocity(250.0, 1.0, 2000.0);
         body.physics()
             .set_position(position.0, position.1, position.2);
@@ -412,7 +410,7 @@ pub fn highmass_planet(position: Vector3D) -> BodyType {
         let mut mesh = sphere.get_triangle_mesh();
         mesh.add_light(light);
 
-        let mut body = Shape::new(mesh);
+        let mut body = Shape::new(vec![mesh]);
         body.physics()
             .set_position(position.0, position.1, position.2);
         body.physics().set_mass(mass);

@@ -18,3 +18,4 @@ pub mod vertices;
 pub mod z_buffer;
 pub mod bvh;
 pub mod convex_hull;
+pub mod decomposition;

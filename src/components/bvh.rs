@@ -146,7 +146,7 @@ impl BVHNode {
         mtv
     }
 
-    pub fn is_intersecting(&mut self, other: &mut BVHNode) -> Option<Vector3D> {
+    pub fn is_intersecting(&self, other: &BVHNode) -> Option<Vector3D> {
         self.sat_intersection(other)
     }
 

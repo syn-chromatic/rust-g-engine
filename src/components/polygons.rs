@@ -3,6 +3,8 @@ use crate::components::color::RGBA;
 use crate::components::shaders::Light;
 use crate::components::vectors::Vector3D;
 
+
+
 #[derive(Clone, Copy, Debug)]
 pub struct Triangle {
     pub vertices: [Vector3D; 3],
@@ -25,6 +27,7 @@ impl Triangle {
             color,
         }
     }
+
     pub fn translate(&mut self, translation: &Vector3D) {
         for vertex in self.vertices.iter_mut() {
             *vertex = vertex.add_vector(translation);
@@ -244,8 +247,8 @@ impl Mesh {
         self.bvh_node.get_distance(&other.bvh_node)
     }
 
-    pub fn is_intersecting_bvh(&mut self, other: &mut Mesh) -> Option<Vector3D> {
-        self.bvh_node.is_intersecting(&mut other.bvh_node)
+    pub fn is_intersecting_bvh(&self, other: &Mesh) -> Option<Vector3D> {
+        self.bvh_node.is_intersecting(&other.bvh_node)
     }
 
     pub fn get_distance(&self, other: &Mesh) -> f64 {
@@ -260,8 +263,8 @@ impl Mesh {
         a: &([f64; 3], [f64; 3]),
         b: &([f64; 3], [f64; 3]),
     ) -> f64 {
-        let (min_a, max_a) = a;
-        let (min_b, max_b) = b;
+        let (min_a, max_a): &([f64; 3], [f64; 3]) = a;
+        let (min_b, max_b): &([f64; 3], [f64; 3]) = b;
 
         let mut intersection: bool = true;
         let mut distance: f64 = 0.0;
@@ -293,8 +296,8 @@ impl Mesh {
         a: &([f64; 3], [f64; 3]),
         b: &([f64; 3], [f64; 3]),
     ) -> Option<f64> {
-        let (min_a, max_a) = a;
-        let (min_b, max_b) = b;
+        let (min_a, max_a): &([f64; 3], [f64; 3]) = a;
+        let (min_b, max_b): &([f64; 3], [f64; 3]) = b;
 
         let mut intersection: bool = true;
         let mut min_overlap: f64 = f64::INFINITY;
@@ -323,7 +326,7 @@ impl Mesh {
         let mut max: [f64; 3] = Vector3D::default(neg_infinity).to_array();
 
         for poly in &self.polygons {
-            let centroid = poly.get_centroid().to_array();
+            let centroid: [f64; 3] = poly.get_centroid().to_array();
             for i in 0..3 {
                 if centroid[i] < min[i] {
                     min[i] = centroid[i];

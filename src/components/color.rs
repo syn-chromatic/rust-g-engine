@@ -81,10 +81,10 @@ impl RGBA {
     }
 
     pub fn interpolate(&self, color: &RGBA, weight: (f64, f64)) -> RGBA {
-        let red = self.red * weight.0 + color.red * weight.1;
-        let green = self.green * weight.0 + color.green * weight.1;
-        let blue = self.blue * weight.0 + color.blue * weight.1;
-        let alpha = 1.0;
+        let red: f64 = self.red * weight.0 + color.red * weight.1;
+        let green: f64 = self.green * weight.0 + color.green * weight.1;
+        let blue: f64 = self.blue * weight.0 + color.blue * weight.1;
+        let alpha: f64 = 1.0;
         RGBA::new(red, green, blue, alpha)
     }
 

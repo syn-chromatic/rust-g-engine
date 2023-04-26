@@ -3,29 +3,13 @@ use crate::components::polygons::Mesh;
 use crate::components::polygons::Polygon;
 use crate::components::shaders::Light;
 use crate::components::vectors::Vector3D;
-use crate::debug::sleep;
 
 use rand::rngs::ThreadRng;
 use rand::Rng;
 
 #[derive(Clone, Debug)]
-pub struct PhysicsSnapshot {
-    pub mesh: Mesh,
-    pub position: Vector3D,
-    pub velocity: Vector3D,
-    pub acceleration: Vector3D,
-    pub spin_velocity: Vector3D,
-    pub spin_acceleration: Vector3D,
-    pub mass: f64,
-    pub scale: f64,
-    pub g_const: f64,
-    pub gravity: f64,
-    pub is_stationary: bool,
-}
-
-#[derive(Clone, Debug)]
 pub struct Physics {
-    pub mesh: Mesh,
+    pub mesh_cluster: Vec<Mesh>,
     pub position: Vector3D,
     pub velocity: Vector3D,
     pub acceleration: Vector3D,
@@ -36,11 +20,10 @@ pub struct Physics {
     pub g_const: f64,
     pub gravity: f64,
     pub is_stationary: bool,
-    pub snapshot: Option<PhysicsSnapshot>,
 }
 
 impl Physics {
-    pub fn new(mesh: Mesh) -> Physics {
+    pub fn new(mesh_cluster: Vec<Mesh>) -> Physics {
         let position: Vector3D = Vector3D::default(0.0);
         let velocity: Vector3D = Vector3D::default(0.0);
         let acceleration: Vector3D = Vector3D::default(0.0);
@@ -53,7 +36,7 @@ impl Physics {
         let is_stationary = false;
 
         Physics {
-            mesh,
+            mesh_cluster,
             position,
             velocity,
             acceleration,
@@ -64,7 +47,6 @@ impl Physics {
             g_const,
             gravity,
             is_stationary,
-            snapshot: None,
         }
     }
 
@@ -147,9 +129,10 @@ impl Physics {
     }
 
     pub fn apply_forces(&mut self, target: &mut Physics, timestep: f64) {
-        // self.apply_gravity();
+        // if !target.is_stationary{
         self.apply_collision(target, timestep);
-        self.apply_attraction(target);
+        // self.apply_attraction(target);
+        // }
     }
 
     fn apply_gravity(&mut self) {
@@ -178,88 +161,32 @@ impl Physics {
         self.acceleration = Vector3D::default(0.0);
     }
 
-    fn get_position_next_step(&self, timestep: f64) -> Vector3D {
-        let acceleration_change: Vector3D = self.acceleration.multiply(timestep);
-        let predicted_velocity: Vector3D = self.velocity.add_vector(&acceleration_change);
-        let velocity_change: Vector3D = predicted_velocity.multiply(timestep);
-        let position: Vector3D = self.position.add_vector(&velocity_change);
-        position
-    }
-
-    pub fn get_intersection_next_step(&self, target: &Physics, timestep: f64) -> Option<Vector3D> {
-        let self_next_position: Vector3D = self.get_position_next_step(timestep);
-        let target_next_position: Vector3D = target.get_position_next_step(timestep);
-
-        let mut self_next_mesh: Mesh = self.mesh.clone();
-        let mut target_next_mesh: Mesh = target.mesh.clone();
-
-        let self_velocity_change: Vector3D = self_next_position.subtract_vector(&self.position);
-        let target_velocity_change: Vector3D =
-            target_next_position.subtract_vector(&target.position);
-
-        self_next_mesh.translate_polygons(&self_velocity_change);
-        target_next_mesh.translate_polygons(&target_velocity_change);
-
-        let mtv: Option<Vector3D> = self_next_mesh.is_intersecting_bvh(&mut target_next_mesh);
-        mtv
-    }
-
-    // pub fn apply_collision(&mut self, target: &mut Physics, timestep: f64) {
-    //     let self_mtv: Option<Vector3D> = self.mesh.is_intersecting_bvh(&mut target.mesh);
-
-    //     if let Some(direction) = self_mtv {
-    //         self.revert_to_snapshot();
-
-    //         let direction: Vector3D = direction.multiply(-1.0);
-    //         let direction: Vector3D = direction.normalize();
-    //         self.apply_collision_velocities(target, direction);
-    //         let distance: f64 = self.mesh.get_distance(&target.mesh);
-
-    //         if distance < 0.0 {
-    //             let direction = self.ensure_direction(direction);
-    //             let distance = (distance / 2.0) + 1.0;
-    //             self.apply_shift_correction(direction, -distance);
-    //             target.apply_shift_correction(direction, distance);
-    //         }
-    //         self.update_snapshot();
-    //         target.update_snapshot();
-    //     }
-    // }
-
-    // pub fn apply_collision(&mut self, target: &mut Physics, timestep: f64) {
-    //     if let Some(direction) = self.get_intersection_next_step(target, timestep) {
-    //         let direction: Vector3D = direction.multiply(-1.0);
-    //         let direction: Vector3D = direction.normalize();
-
-    //         // let penetration = mtv.get_length();
-    //         let penetration: f64 = self.mesh.get_distance(&target.mesh);
-    //         if penetration < 0.0 {
-    //             let percent_correction = 1.0;
-    //             let correction_distance = penetration * percent_correction;
-
-    //             self.apply_shift_correction(direction, -correction_distance / 2.0);
-    //             target.apply_shift_correction(direction, correction_distance / 2.0);
-    //         }
-    //         self.apply_collision_velocities(target, direction);
-    //     }
-    // }
-
-    pub fn is_bounding_collided(&self, target: &Physics) -> bool {
-        let bounding_collided: bool = self.mesh.bvh_node.aabb_intersects(&target.mesh.bvh_node);
-        bounding_collided
-    }
-
-    fn set_bounding_color(&mut self, target: &mut Physics, bounding_collided: bool) {
-        if !bounding_collided {
-            let color = RGBA::from_rgb(0.6, 0.6, 0.6);
-            self.mesh.set_uniform_color(color);
-            target.mesh.set_uniform_color(color);
-        } else {
-            let color = RGBA::from_rgb(0.8, 0.2, 0.2);
-            self.mesh.set_uniform_color(color);
-            target.mesh.set_uniform_color(color);
+    pub fn get_bounding_collision(&self, target: &Physics) -> Vec<(usize, usize)> {
+        let mut collision_idxs: Vec<(usize, usize)> = Vec::new();
+        for (self_idx, self_mesh) in self.mesh_cluster.iter().enumerate() {
+            for (target_idx, target_mesh) in target.mesh_cluster.iter().enumerate() {
+                let self_bvh = &self_mesh.bvh_node;
+                let target_bvh = &target_mesh.bvh_node;
+                let bounding_collided: bool = self_bvh.aabb_intersects(&target_bvh);
+                if bounding_collided {
+                    collision_idxs.push((self_idx, target_idx));
+                }
+            }
         }
+        collision_idxs
     }
+
+    // fn set_bounding_color(&mut self, target: &mut Physics, bounding_collided: bool) {
+    //     if !bounding_collided {
+    //         let color = RGBA::from_rgb(0.6, 0.6, 0.6);
+    //         self.mesh.set_uniform_color(color);
+    //         target.mesh.set_uniform_color(color);
+    //     } else {
+    //         let color = RGBA::from_rgb(0.8, 0.2, 0.2);
+    //         self.mesh.set_uniform_color(color);
+    //         target.mesh.set_uniform_color(color);
+    //     }
+    // }
 
     fn get_mass_ratio(&self, target: &Physics) -> f64 {
         if self.mass > target.mass {
@@ -274,30 +201,33 @@ impl Physics {
     }
 
     pub fn apply_collision(&mut self, target: &mut Physics, timestep: f64) {
-        let bounding_collided = self.is_bounding_collided(target);
-        self.set_bounding_color(target, bounding_collided);
+        let bounding_collisions: Vec<(usize, usize)> = self.get_bounding_collision(target);
 
-        if !bounding_collided {
+        if bounding_collisions.is_empty() {
             return;
         }
 
-        // let self_mtv: Option<Vector3D> = self.get_intersection_next_step(target, timestep);
-        let self_mtv: Option<Vector3D> = self.mesh.is_intersecting_bvh(&mut target.mesh);
+        for (self_idx, target_idx) in bounding_collisions {
+            let self_mesh = &self.mesh_cluster[self_idx].clone();
+            let target_mesh = &target.mesh_cluster[target_idx].clone();
 
-        if let Some(mtv) = self_mtv {
-            let direction: Vector3D = mtv.multiply(-1.0);
-            let direction: Vector3D = direction.normalize();
-            self.apply_collision_velocities(target, direction);
-            let distance: f64 = self.mesh.get_distance(&target.mesh);
+            let self_mtv: Option<Vector3D> = self_mesh.is_intersecting_bvh(target_mesh);
 
-            if distance < 0.0 {
-                let direction: Vector3D = self.ensure_direction(direction);
-                let mass_ratio: f64 = self.get_mass_ratio(target);
-                let self_correction: f64 = distance * mass_ratio;
-                let target_correction: f64 = distance - self_correction;
+            if let Some(mtv) = self_mtv {
+                let direction: Vector3D = mtv.multiply(-1.0);
+                let direction: Vector3D = direction.normalize();
+                self.apply_collision_velocities(target, direction);
+                let distance: f64 = self_mesh.get_distance(&target_mesh);
 
-                self.apply_shift_correction(direction, -self_correction);
-                target.apply_shift_correction(direction, target_correction);
+                if distance < 0.0 {
+                    let direction: Vector3D = self.ensure_direction(direction);
+                    let mass_ratio: f64 = self.get_mass_ratio(target);
+                    let self_correction: f64 = distance * mass_ratio;
+                    let target_correction: f64 = distance - self_correction;
+
+                    self.apply_shift_correction(direction, -self_correction);
+                    target.apply_shift_correction(direction, target_correction);
+                }
             }
         }
     }
@@ -335,38 +265,38 @@ impl Physics {
         target.velocity = v2;
     }
 
-    fn apply_spin_forces(&mut self, timestep: f64) {
-        let timestep_spin_acc = self.spin_acceleration.multiply(timestep);
-        self.spin_velocity = self.spin_velocity.add_vector(&timestep_spin_acc);
-        let x_rotation = self.spin_velocity.x * timestep;
-        let y_rotation = self.spin_velocity.y * timestep;
-        let z_rotation = self.spin_velocity.z * timestep;
+    // fn apply_spin_forces(&mut self, timestep: f64) {
+    //     let timestep_spin_acc = self.spin_acceleration.multiply(timestep);
+    //     self.spin_velocity = self.spin_velocity.add_vector(&timestep_spin_acc);
+    //     let x_rotation = self.spin_velocity.x * timestep;
+    //     let y_rotation = self.spin_velocity.y * timestep;
+    //     let z_rotation = self.spin_velocity.z * timestep;
 
-        let mut mesh_polygons = self.mesh.polygons.clone();
-        for polygon in &mut mesh_polygons {
-            match polygon {
-                Polygon::Triangle(triangle) => {
-                    for idx in 0..triangle.vertices.len() {
-                        let vertex = triangle.vertices[idx];
-                        let rotated_vertex = self.rotate_x(&vertex, x_rotation);
-                        let rotated_vertex = self.rotate_y(&rotated_vertex, y_rotation);
-                        let rotated_vertex = self.rotate_z(&rotated_vertex, z_rotation);
-                        triangle.vertices[idx] = rotated_vertex;
-                    }
-                }
-                Polygon::Quad(quad) => {
-                    for idx in 0..quad.vertices.len() {
-                        let vertex = quad.vertices[idx];
-                        let rotated_vertex = self.rotate_x(&vertex, x_rotation);
-                        let rotated_vertex = self.rotate_y(&rotated_vertex, y_rotation);
-                        let rotated_vertex = self.rotate_z(&rotated_vertex, z_rotation);
-                        quad.vertices[idx] = rotated_vertex;
-                    }
-                }
-            }
-        }
-        self.mesh.polygons = mesh_polygons;
-    }
+    //     let mut mesh_polygons = self.mesh.polygons.clone();
+    //     for polygon in &mut mesh_polygons {
+    //         match polygon {
+    //             Polygon::Triangle(triangle) => {
+    //                 for idx in 0..triangle.vertices.len() {
+    //                     let vertex = triangle.vertices[idx];
+    //                     let rotated_vertex = self.rotate_x(&vertex, x_rotation);
+    //                     let rotated_vertex = self.rotate_y(&rotated_vertex, y_rotation);
+    //                     let rotated_vertex = self.rotate_z(&rotated_vertex, z_rotation);
+    //                     triangle.vertices[idx] = rotated_vertex;
+    //                 }
+    //             }
+    //             Polygon::Quad(quad) => {
+    //                 for idx in 0..quad.vertices.len() {
+    //                     let vertex = quad.vertices[idx];
+    //                     let rotated_vertex = self.rotate_x(&vertex, x_rotation);
+    //                     let rotated_vertex = self.rotate_y(&rotated_vertex, y_rotation);
+    //                     let rotated_vertex = self.rotate_z(&rotated_vertex, z_rotation);
+    //                     quad.vertices[idx] = rotated_vertex;
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     self.mesh.polygons = mesh_polygons;
+    // }
 
     fn update_position(&mut self, timestep: f64) {
         let acceleration_change = self.acceleration.multiply(timestep);
@@ -380,72 +310,23 @@ impl Physics {
     }
 
     fn update_light_position(&mut self, translation: &Vector3D) {
-        if self.mesh.light.is_some() {
-            let mut light: Light = self.mesh.light.unwrap();
-            light.position = light.position.add_vector(translation);
-            light.target = light.target.add_vector(translation);
-            self.mesh.light = Some(light);
+        for mesh in self.mesh_cluster.iter_mut() {
+            if mesh.light.is_some() {
+                let mut light: Light = mesh.light.unwrap();
+                light.position = light.position.add_vector(translation);
+                light.target = light.target.add_vector(translation);
+                mesh.light = Some(light);
+            }
         }
     }
 
     fn update_mesh_position(&mut self, translation: &Vector3D) {
-        self.mesh.translate_polygons(translation);
-    }
-
-    pub fn update_snapshot(&mut self) {
-        let snapshot: PhysicsSnapshot = self.get_physics_snapshot();
-        self.snapshot = Some(snapshot);
-    }
-
-    pub fn revert_to_snapshot(&mut self) {
-        let snapshot: Option<PhysicsSnapshot> = self.snapshot.clone();
-        if let Some(snapshot) = snapshot {
-            self.mesh = snapshot.mesh;
-            self.position = snapshot.position;
-            self.velocity = snapshot.velocity;
-            self.acceleration = snapshot.acceleration;
-            self.spin_velocity = snapshot.spin_velocity;
-            self.spin_acceleration = snapshot.spin_acceleration;
-            self.mass = snapshot.mass;
-            self.scale = snapshot.scale;
-            self.g_const = snapshot.g_const;
-            self.gravity = snapshot.gravity;
-            self.is_stationary = snapshot.is_stationary;
+        for mesh in self.mesh_cluster.iter_mut() {
+            mesh.translate_polygons(translation);
         }
     }
 
-    fn get_physics_snapshot(&self) -> PhysicsSnapshot {
-        let mesh: Mesh = self.mesh.clone();
-        let position: Vector3D = self.position.clone();
-        let velocity: Vector3D = self.velocity.clone();
-        let acceleration: Vector3D = self.acceleration.clone();
-        let spin_velocity: Vector3D = self.spin_velocity.clone();
-        let spin_acceleration: Vector3D = self.spin_acceleration.clone();
-        let mass: f64 = self.mass.clone();
-        let scale: f64 = self.scale.clone();
-        let g_const: f64 = self.g_const.clone();
-        let gravity: f64 = self.gravity.clone();
-        let is_stationary: bool = self.is_stationary.clone();
-
-        let snapshot: PhysicsSnapshot = PhysicsSnapshot {
-            mesh,
-            position,
-            velocity,
-            acceleration,
-            spin_velocity,
-            spin_acceleration,
-            mass,
-            scale,
-            g_const,
-            gravity,
-            is_stationary,
-        };
-        snapshot
-    }
-
     pub fn update(&mut self, timestep: f64) {
-        // self.update_snapshot();
-
         if self.is_stationary {
             self.acceleration = Vector3D::default(0.0);
             self.velocity = Vector3D::default(0.0);

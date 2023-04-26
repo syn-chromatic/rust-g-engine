@@ -151,6 +151,122 @@ impl Sphere {
     }
 }
 
+pub struct Cuboid {
+    width: f64,
+    height: f64,
+    depth: f64,
+    x_offset: f64,
+    y_offset: f64,
+    z_offset: f64,
+    color: RGBA,
+    shader: RGBA,
+}
+
+impl Cuboid {
+    pub fn new(width: f64, height: f64, depth: f64) -> Cuboid {
+        let x_offset: f64 = 0.0;
+        let y_offset: f64 = 0.0;
+        let z_offset: f64 = 0.0;
+        let color: RGBA = RGBA::from_rgb(1.0, 1.0, 1.0);
+        let shader: RGBA = RGBA::from_rgb(0.0, 0.0, 0.0);
+
+        Cuboid {
+            width,
+            height,
+            depth,
+            x_offset,
+            y_offset,
+            z_offset,
+            color,
+            shader,
+        }
+    }
+
+    pub fn set_offset(&mut self, x: f64, y: f64, z: f64) {
+        self.x_offset = x;
+        self.y_offset = y;
+        self.z_offset = z;
+    }
+
+    pub fn set_color(&mut self, color: RGBA) {
+        self.color = color;
+    }
+
+    pub fn set_shader(&mut self, shader: RGBA) {
+        self.shader = shader;
+    }
+
+    fn get_vertices(&self) -> Vec<Vector3D> {
+        let mut vertices: Vec<Vector3D> = vec![];
+
+        for x_factor in &[0.0, 1.0] {
+            for y_factor in &[0.0, 1.0] {
+                for z_factor in &[0.0, 1.0] {
+                    let x: f64 = self.width * x_factor + self.x_offset;
+                    let y: f64 = self.height * y_factor + self.y_offset;
+                    let z: f64 = self.depth * z_factor + self.z_offset;
+
+                    let vertex = Vector3D::new(x, y, z);
+                    vertices.push(vertex);
+                }
+            }
+        }
+
+        vertices
+    }
+
+    fn get_quad_faces(&self) -> Vec<[usize; 4]> {
+        vec![
+            [0, 1, 3, 2],
+            [4, 6, 7, 5],
+            [0, 4, 5, 1],
+            [2, 3, 7, 6],
+            [0, 2, 6, 4],
+            [1, 5, 7, 3],
+        ]
+    }
+
+    pub fn get_triangle_mesh(&self) -> Mesh {
+        let vertices: Vec<Vector3D> = self.get_vertices();
+        let quad_faces: Vec<[usize; 4]> = self.get_quad_faces();
+        let mut triangle_polygons: Vec<Polygon> = vec![];
+        let mut vertices_count: usize = 0;
+        let mut faces_count: usize = 0;
+
+        for face in quad_faces {
+            let quad_vertices: [Vector3D; 4] = [
+                vertices[face[0]],
+                vertices[face[1]],
+                vertices[face[2]],
+                vertices[face[3]],
+            ];
+            let triangle1: Triangle = Triangle::new(
+                [quad_vertices[0], quad_vertices[1], quad_vertices[2]],
+                (face[0], face[1], face[2]),
+                self.shader,
+                self.color,
+            );
+            let triangle2: Triangle = Triangle::new(
+                [quad_vertices[0], quad_vertices[2], quad_vertices[3]],
+                (face[0], face[2], face[3]),
+                self.shader,
+                self.color,
+            );
+            let polygon1: Polygon = Polygon::Triangle(triangle1);
+            let polygon2: Polygon = Polygon::Triangle(triangle2);
+            triangle_polygons.extend([polygon1, polygon2]);
+            vertices_count += 4;
+            faces_count += 2;
+        }
+        println!(
+            "{} {:?}, {}{:?}",
+            "Cuboid Vertices:", vertices_count, "Faces:", faces_count
+        );
+        let mesh = Mesh::new(triangle_polygons);
+        mesh
+    }
+}
+
 pub struct MeshConverter {
     mesh: Mesh,
 }

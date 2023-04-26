@@ -110,24 +110,24 @@ impl Camera {
     }
 
     pub fn transform_vertex(&mut self, vertex: Vector3D) -> Vector3D {
-        let vertex = self.apply_view_transform(vertex);
-        let vertex = self.calculate_perspective_projection(vertex);
-        let vertex = self.ndc_to_screen_coordinates(vertex);
+        let vertex: Vector3D = self.apply_view_transform(vertex);
+        let vertex: Vector3D = self.calculate_perspective_projection(vertex);
+        let vertex: Vector3D = self.ndc_to_screen_coordinates(vertex);
         vertex
     }
 
     pub fn transform_line(&mut self, v1: Vector3D, v2: Vector3D) -> Option<(Vector3D, Vector3D)> {
-        let v1 = self.apply_view_transform(v1);
-        let v2 = self.apply_view_transform(v2);
+        let v1: Vector3D = self.apply_view_transform(v1);
+        let v2: Vector3D = self.apply_view_transform(v2);
 
-        let clipped_line = self.frustum.clip_line_to_frustum(v1, v2);
+        let clipped_line: Option<(Vector3D, Vector3D)> = self.frustum.clip_line_to_frustum(v1, v2);
         if clipped_line.is_some() {
-            let (v1, v2) = clipped_line.unwrap();
-            let v1 = self.calculate_perspective_projection(v1);
-            let v2 = self.calculate_perspective_projection(v2);
+            let (v1, v2): (Vector3D, Vector3D) = clipped_line.unwrap();
+            let v1: Vector3D = self.calculate_perspective_projection(v1);
+            let v2: Vector3D = self.calculate_perspective_projection(v2);
 
-            let v1 = self.ndc_to_screen_coordinates(v1);
-            let v2 = self.ndc_to_screen_coordinates(v2);
+            let v1: Vector3D = self.ndc_to_screen_coordinates(v1);
+            let v2: Vector3D = self.ndc_to_screen_coordinates(v2);
             return Some((v1, v2));
         }
 
@@ -235,11 +235,11 @@ impl Camera {
 
         let yaw_rad: f64 = self.yaw.to_radians();
         let pitch_rad: f64 = (self.pitch + 90.0).to_radians();
-        let pitch_rad_cos = pitch_rad.cos();
-        let pitch_rad_sin = pitch_rad.sin();
+        let pitch_rad_cos: f64 = pitch_rad.cos();
+        let pitch_rad_sin: f64 = pitch_rad.sin();
 
-        let yaw_rad_cos = yaw_rad.cos();
-        let yaw_rad_sin = yaw_rad.sin();
+        let yaw_rad_cos: f64 = yaw_rad.cos();
+        let yaw_rad_sin: f64 = yaw_rad.sin();
 
         let up_x: f64 = yaw_rad_cos * pitch_rad_cos;
         let up_y: f64 = pitch_rad_sin;
@@ -248,20 +248,20 @@ impl Camera {
     }
 
     fn apply_target_adjustment(&mut self) {
-        let yaw_rad = self.yaw.to_radians();
-        let pitch_rad = self.pitch.to_radians();
+        let yaw_rad: f64 = self.yaw.to_radians();
+        let pitch_rad: f64 = self.pitch.to_radians();
 
-        let pitch_rad_cos = pitch_rad.cos();
-        let pitch_rad_sin = pitch_rad.sin();
+        let pitch_rad_cos: f64 = pitch_rad.cos();
+        let pitch_rad_sin: f64 = pitch_rad.sin();
 
-        let yaw_rad_cos = yaw_rad.cos();
-        let yaw_rad_sin = yaw_rad.sin();
+        let yaw_rad_cos: f64 = yaw_rad.cos();
+        let yaw_rad_sin: f64 = yaw_rad.sin();
 
         let direction_x: f64 = yaw_rad_cos * pitch_rad_cos;
         let direction_y: f64 = pitch_rad_sin;
         let direction_z: f64 = yaw_rad_sin * pitch_rad_cos;
 
-        let direction = Vector3D::new(direction_x, direction_y, direction_z);
+        let direction: Vector3D = Vector3D::new(direction_x, direction_y, direction_z);
         self.camera_target = self.camera_position.add_vector(&direction);
         self.apply_direction_adjustment();
     }

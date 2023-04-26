@@ -4,10 +4,10 @@ use crate::components::shape::Shape;
 
 pub trait Body {
     fn physics(&mut self) -> &mut Physics;
-    fn mesh(&self) -> &Mesh;
+    fn mesh_cluster(&self) -> &Vec<Mesh>;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum BodyType {
     Shape(Shape),
 }
@@ -18,9 +18,9 @@ impl Body for BodyType {
             BodyType::Shape(s) => s.physics(),
         }
     }
-    fn mesh(&self) -> &Mesh {
+    fn mesh_cluster(&self) -> &Vec<Mesh> {
         match self {
-            BodyType::Shape(s) => s.mesh(),
+            BodyType::Shape(s) => s.mesh_cluster(),
         }
     }
 }
