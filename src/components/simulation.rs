@@ -11,6 +11,7 @@ use crate::components::physics::Physics;
 use crate::components::polygons::Mesh;
 use crate::components::shape::Shape;
 use crate::components::text_writer::TextWriter;
+use crate::components::vertices::Cuboid;
 use crate::components::vertices::Sphere;
 use crate::configurations::body_configurations;
 
@@ -57,21 +58,21 @@ impl Simulation {
         // let z = 0.0;
 
         // let grid = body_configurations::get_grid();
-        // self.objects.push(grid);
+        // // self.objects.push(grid);
 
         // let grid_cuboid = body_configurations::get_grid_cuboid();
         // self.objects.push(grid_cuboid);
 
-        // let obj = body_configurations::get_obj("./assets/town_square.obj");
+        // let obj = body_configurations::get_obj("./assets/town_square.obj", 2.0);
         // self.objects.push(obj);
 
-        // let obj = body_configurations::get_obj("./assets/cottage.obj");
+        // let obj = body_configurations::get_obj("./assets/cottage.obj", 1.0);
         // self.objects.push(obj);
 
-        // let obj = body_configurations::get_obj("./assets/plane.obj");
+        // let obj = body_configurations::get_obj("./assets/plane.obj", 3.0);
         // self.objects.push(obj);
 
-        // let obj = body_configurations::get_obj("./assets/TerrorTubby_01.obj");
+        // let obj = body_configurations::get_obj("./assets/TerrorTubby_01.obj", 1.0);
         // self.objects.push(obj);
 
         // let sphere = body_configurations::get_sphere_light_highmass();
@@ -93,7 +94,7 @@ impl Simulation {
         let system = body_configurations::orbiting_system(Vector3D::new(0.0, 0.0, 0.0));
         self.objects.extend(system);
 
-        // let system =
+        // // let system =
         //     body_configurations::orbiting_system2(Vector3D::new(8_000_000.0, 4_000_000.0, 0.0));
         // self.objects.extend(system);
 
@@ -102,7 +103,10 @@ impl Simulation {
 
         for object in self.objects.iter_mut() {
             let physics = object.physics();
-            let mesh_cluster = &physics.mesh_cluster;
+            let mut mesh_vec = Vec::new();
+            let mesh = &physics.mesh;
+            mesh_vec.push(mesh.clone());
+            let mesh_cluster = physics.mesh_cluster.as_ref().unwrap_or(&mesh_vec);
             for mesh in mesh_cluster {
                 let polygon_len = mesh.polygons.len();
                 self.polygon_count += polygon_len;
@@ -128,7 +132,7 @@ impl Simulation {
         let camera_dir: Vector3D = camera_target.subtract_vector(&camera_position);
         let camera_dir: Vector3D = camera_dir.normalize().multiply(-1.0);
 
-        let mass = 1_000_000.0;
+        let mass = 1_000_000_000.0;
 
         let mut sphere = Sphere::new(50_000.0, 10, 10);
         // let mut sphere = Cuboid::new(50_000.0, 50_000.0, 50_000.0);
@@ -137,10 +141,8 @@ impl Simulation {
         sphere.set_shader(RGBA::from_rgb(0.5, 0.5, 0.5));
 
         let mesh = sphere.get_triangle_mesh();
-        let mut meshes: Vec<Mesh> = Vec::new();
-        meshes.push(mesh);
 
-        let mut body = Shape::new(meshes);
+        let mut body = Shape::new(mesh, None);
         body.physics()
             .set_position(camera_position.x, camera_position.y, camera_position.z);
         body.physics().set_mass(mass);

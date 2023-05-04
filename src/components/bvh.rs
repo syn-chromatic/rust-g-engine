@@ -33,18 +33,40 @@ impl BVHNode {
             *vertex = vertex.add_vector(&translation);
         }
 
-        let mut left_aabb = self.aabb.0;
-        let mut right_aabb = self.aabb.1;
+        let left_aabb_v3d: Vector3D = Vector3D::from_array(self.aabb.0);
+        let left_aabb_v3d: Vector3D = left_aabb_v3d.add_vector(&translation);
 
-        left_aabb[0] += translation.x;
-        left_aabb[1] += translation.y;
-        left_aabb[2] += translation.z;
+        let right_aabb_v3d: Vector3D = Vector3D::from_array(self.aabb.1);
+        let right_aabb_v3d: Vector3D = right_aabb_v3d.add_vector(&translation);
 
-        right_aabb[0] += translation.x;
-        right_aabb[1] += translation.y;
-        right_aabb[2] += translation.z;
+        let left_aabb: [f64; 3] = left_aabb_v3d.to_array();
+        let right_aabb: [f64; 3] = right_aabb_v3d.to_array();
 
         self.aabb = (left_aabb, right_aabb);
+    }
+
+    pub fn rotate_bvh(&mut self, axis: &Vector3D, centroid: &Vector3D, angle: f64) {
+        let translation_to_origin = centroid.multiply(-1.0);
+
+        for polygon in &mut self.polygons {
+            polygon.translate(&translation_to_origin);
+            polygon.rotate(&axis, angle);
+            polygon.translate(&centroid);
+        }
+
+        for vertex in self.vertices.iter_mut() {
+            *vertex = vertex.add_vector(&translation_to_origin);
+            *vertex = vertex.rotate_around_axis(axis, angle);
+            *vertex = vertex.add_vector(&centroid);
+        }
+
+        let mut min: Vector3D = self.vertices[0];
+        let mut max: Vector3D = self.vertices[0];
+        for vertex in self.vertices.iter() {
+            min = min.component_min(vertex);
+            max = max.component_max(vertex);
+        }
+        self.aabb = (min.to_array(), max.to_array());
     }
 
     pub fn project_onto_axis(&self, axis: &Vector3D) -> (f64, f64) {
@@ -73,15 +95,188 @@ impl BVHNode {
         true
     }
 
-    fn sat_intersection(&self, other: &BVHNode) -> Option<Vector3D> {
+    // fn sat_intersection(&self, other: &BVHNode) -> Option<Vector3D> {
+    //     let mut mtv: Option<Vector3D> = None;
+    //     let mut min_overlap: f64 = f64::MAX;
+    //     let epsilon: f64 = f64::EPSILON;
+
+    //     for face_list in [&self.face_normals, &other.face_normals] {
+    //         for face_normal in face_list {
+    //             let mut axis: Vector3D = *face_normal;
+    //             if axis.get_length() < epsilon {
+    //                 continue;
+    //             }
+    //             let (min_a, max_a): (f64, f64) = self.project_onto_axis(&axis);
+    //             let (min_b, max_b): (f64, f64) = other.project_onto_axis(&axis);
+
+    //             if max_a < min_b || max_b < min_a {
+    //                 return None;
+    //             }
+
+    //             let overlap: f64 = (max_a - min_b).min(max_b - min_a);
+    //             if overlap < min_overlap && overlap > epsilon {
+    //                 min_overlap = overlap;
+    //                 let center_a: Vector3D = self.get_center();
+    //                 let center_b: Vector3D = other.get_center();
+    //                 let direction: Vector3D = center_b.subtract_vector(&center_a).normalize();
+    //                 if direction.dot_product(&axis) < 0.0 {
+    //                     axis = axis.multiply(-1.0);
+    //                 }
+    //                 mtv = Some(axis.multiply(min_overlap));
+    //             }
+    //         }
+    //     }
+
+    //     if mtv.is_none() {
+    //         return None;
+    //     }
+
+    //     let edges_a: Vec<Vector3D> = self.get_edges();
+    //     let edges_b: Vec<Vector3D> = other.get_edges();
+
+    //     for edge_list in [&edges_a, &edges_b] {
+    //         for edge in edge_list {
+    //             let edge: Vector3D = *edge;
+    //             let mtv_unwrap: Vector3D = mtv.unwrap();
+    //             let mut axis: Vector3D = edge.cross_product(&mtv_unwrap).normalize();
+
+    //             if axis.get_length() < epsilon {
+    //                 continue;
+    //             }
+
+    //             let (min_a, max_a): (f64, f64) = self.project_onto_axis(&axis);
+    //             let (min_b, max_b): (f64, f64) = other.project_onto_axis(&axis);
+
+    //             if max_a < min_b || max_b < min_a {
+    //                 return None;
+    //             }
+
+    //             let overlap: f64 = (max_a - min_b).min(max_b - min_a);
+    //             if overlap <= min_overlap && overlap > epsilon {
+    //                 min_overlap = overlap;
+    //                 let center_a: Vector3D = self.get_center();
+    //                 let center_b: Vector3D = other.get_center();
+    //                 let direction: Vector3D = center_b.subtract_vector(&center_a).normalize();
+    //                 if direction.dot_product(&axis) < 0.0 {
+    //                     axis = axis.multiply(-1.0);
+    //                 }
+    //                 mtv = Some(axis.multiply(min_overlap));
+    //             }
+    //         }
+    //     }
+
+    //     mtv
+    // }
+
+    // fn sat_intersection(&self, other: &BVHNode) -> Option<(Vector3D, Vector3D)> {
+    //     let mut mtv: Option<Vector3D> = None;
+    //     let mut contact_point: Option<Vector3D> = None;
+    //     let mut min_overlap: f64 = f64::MAX;
+    //     let epsilon: f64 = f64::EPSILON;
+
+    //     for face_list in [&self.face_normals, &other.face_normals] {
+    //         for face_normal in face_list {
+    //             let mut axis: Vector3D = *face_normal;
+    //             if axis.get_length() < epsilon {
+    //                 continue;
+    //             }
+    //             let (min_a, max_a): (f64, f64) = self.project_onto_axis(&axis);
+    //             let (min_b, max_b): (f64, f64) = other.project_onto_axis(&axis);
+
+    //             if max_a < min_b || max_b < min_a {
+    //                 return None;
+    //             }
+
+    //             let overlap: f64 = (max_a - min_b).min(max_b - min_a);
+    //             if overlap < min_overlap && overlap > epsilon {
+    //                 min_overlap = overlap;
+    //                 let center_a: Vector3D = self.get_center();
+    //                 let center_b: Vector3D = other.get_center();
+    //                 let direction: Vector3D = center_b.subtract_vector(&center_a).normalize();
+    //                 if direction.dot_product(&axis) < 0.0 {
+    //                     axis = axis.multiply(-1.0);
+    //                 }
+    //                 mtv = Some(axis.multiply(min_overlap));
+
+    //                 let mut avg_contact: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
+    //                 let mut count: i32 = 0;
+    //                 for vertex in &self.vertices {
+    //                     let dist: f64 = vertex.dot_product(&axis);
+    //                     if dist >= min_a && dist <= max_b {
+    //                         avg_contact = avg_contact.add_vector(vertex);
+    //                         count += 1;
+    //                     }
+    //                 }
+    //                 for vertex in &other.vertices {
+    //                     let dist: f64 = vertex.dot_product(&axis);
+    //                     if dist <= max_a && dist >= min_b {
+    //                         avg_contact = avg_contact.add_vector(vertex);
+    //                         count += 1;
+    //                     }
+    //                 }
+    //                 if count > 0 {
+    //                     avg_contact = avg_contact.multiply(1.0 / count as f64);
+    //                     contact_point = Some(avg_contact);
+    //                 }
+    //             }
+    //         }
+    //     }
+
+    //     if mtv.is_none() || contact_point.is_none() {
+    //         return None;
+    //     }
+
+    //     let edges_a: Vec<Vector3D> = self.get_edges();
+    //     let edges_b: Vec<Vector3D> = other.get_edges();
+
+    //     for edge_list in [&edges_a, &edges_b] {
+    //         for edge in edge_list {
+    //             let edge: Vector3D = *edge;
+    //             let mtv_unwrap: Vector3D = mtv.unwrap();
+    //             let mut axis: Vector3D = edge.cross_product(&mtv_unwrap).normalize();
+
+    //             if axis.get_length() < epsilon {
+    //                 continue;
+    //             }
+
+    //             let (min_a, max_a): (f64, f64) = self.project_onto_axis(&axis);
+    //             let (min_b, max_b): (f64, f64) = other.project_onto_axis(&axis);
+
+    //             if max_a < min_b || max_b < min_a {
+    //                 return None;
+    //             }
+
+    //             let overlap: f64 = (max_a - min_b).min(max_b - min_a);
+    //             if overlap <= min_overlap && overlap > epsilon {
+    //                 min_overlap = overlap;
+    //                 let center_a: Vector3D = self.get_center();
+    //                 let center_b: Vector3D = other.get_center();
+    //                 let direction: Vector3D = center_b.subtract_vector(&center_a).normalize();
+    //                 if direction.dot_product(&axis) < 0.0 {
+    //                     axis = axis.multiply(-1.0);
+    //                 }
+    //                 mtv = Some(axis.multiply(min_overlap));
+    //             }
+    //         }
+    //     }
+
+    //     Some((mtv.unwrap(), contact_point.unwrap()))
+    // }
+
+    fn sat_intersection(&self, other: &BVHNode) -> Option<(Vector3D, Vector3D)> {
         let mut mtv: Option<Vector3D> = None;
+        let mut contact_point: Option<Vector3D> = None;
         let mut min_overlap: f64 = f64::MAX;
         let epsilon: f64 = f64::EPSILON;
 
-        for face_list in [&self.face_normals, &other.face_normals] {
+        let face_normals: Vec<Vector3D> = self.polygons.iter().map(|p| p.get_normal()).collect();
+        let other_face_normals: Vec<Vector3D> =
+            other.polygons.iter().map(|p| p.get_normal()).collect();
+
+        for face_list in [&face_normals, &other_face_normals] {
             for face_normal in face_list {
                 let mut axis: Vector3D = *face_normal;
-                if axis.get_length() < epsilon {
+                if axis.get_length() <= epsilon {
                     continue;
                 }
                 let (min_a, max_a): (f64, f64) = self.project_onto_axis(&axis);
@@ -92,20 +287,41 @@ impl BVHNode {
                 }
 
                 let overlap: f64 = (max_a - min_b).min(max_b - min_a);
-                if overlap < min_overlap && overlap > epsilon {
+                if overlap < min_overlap {
                     min_overlap = overlap;
                     let center_a: Vector3D = self.get_center();
                     let center_b: Vector3D = other.get_center();
                     let direction: Vector3D = center_b.subtract_vector(&center_a).normalize();
-                    if direction.dot_product(&axis) < 0.0 {
+                    if direction.dot_product(&axis) <= 0.0 {
                         axis = axis.multiply(-1.0);
                     }
                     mtv = Some(axis.multiply(min_overlap));
+
+                    let mut avg_contact: Vector3D = Vector3D::new(0.0, 0.0, 0.0);
+                    let mut count: i32 = 0;
+                    for vertex in &self.vertices {
+                        let dist: f64 = vertex.dot_product(&axis);
+                        if dist >= min_a && dist <= max_b {
+                            avg_contact = avg_contact.add_vector(vertex);
+                            count += 1;
+                        }
+                    }
+                    for vertex in &other.vertices {
+                        let dist: f64 = vertex.dot_product(&axis);
+                        if dist <= max_a && dist >= min_b {
+                            avg_contact = avg_contact.add_vector(vertex);
+                            count += 1;
+                        }
+                    }
+                    if count > 0 {
+                        avg_contact = avg_contact.multiply(1.0 / count as f64);
+                        contact_point = Some(avg_contact);
+                    }
                 }
             }
         }
 
-        if mtv.is_none() {
+        if mtv.is_none() || contact_point.is_none() {
             return None;
         }
 
@@ -118,7 +334,7 @@ impl BVHNode {
                 let mtv_unwrap: Vector3D = mtv.unwrap();
                 let mut axis: Vector3D = edge.cross_product(&mtv_unwrap).normalize();
 
-                if axis.get_length() < epsilon {
+                if axis.get_length() <= epsilon {
                     continue;
                 }
 
@@ -130,12 +346,12 @@ impl BVHNode {
                 }
 
                 let overlap: f64 = (max_a - min_b).min(max_b - min_a);
-                if overlap <= min_overlap && overlap > epsilon {
+                if overlap < min_overlap {
                     min_overlap = overlap;
                     let center_a: Vector3D = self.get_center();
                     let center_b: Vector3D = other.get_center();
                     let direction: Vector3D = center_b.subtract_vector(&center_a).normalize();
-                    if direction.dot_product(&axis) < 0.0 {
+                    if direction.dot_product(&axis) <= 0.0 {
                         axis = axis.multiply(-1.0);
                     }
                     mtv = Some(axis.multiply(min_overlap));
@@ -143,10 +359,27 @@ impl BVHNode {
             }
         }
 
-        mtv
+        let mut closest_vertices: Option<(Vector3D, Vector3D)> = None;
+        let mut min_distance: f64 = f64::MAX;
+
+        for vertex_a in &self.vertices {
+            for vertex_b in &other.vertices {
+                let distance: f64 = vertex_a.get_distance(vertex_b);
+                if distance < min_distance {
+                    min_distance = distance;
+                    closest_vertices = Some((*vertex_a, *vertex_b));
+                }
+            }
+        }
+
+        if let Some((vertex_a, vertex_b)) = closest_vertices {
+            contact_point = Some(vertex_a.add_vector(&vertex_b).multiply(0.5));
+        }
+
+        Some((mtv.unwrap(), contact_point.unwrap()))
     }
 
-    pub fn is_intersecting(&self, other: &BVHNode) -> Option<Vector3D> {
+    pub fn is_intersecting(&self, other: &BVHNode) -> Option<(Vector3D, Vector3D)> {
         self.sat_intersection(other)
     }
 

@@ -4,7 +4,8 @@ use crate::components::shape::Shape;
 
 pub trait Body {
     fn physics(&mut self) -> &mut Physics;
-    fn mesh_cluster(&self) -> &Vec<Mesh>;
+    fn mesh(&self) -> &Mesh;
+    fn mesh_cluster(&self) -> &Option<Vec<Mesh>>;
 }
 
 #[derive(Clone, Debug)]
@@ -18,7 +19,14 @@ impl Body for BodyType {
             BodyType::Shape(s) => s.physics(),
         }
     }
-    fn mesh_cluster(&self) -> &Vec<Mesh> {
+
+    fn mesh(&self) -> &Mesh {
+        match self {
+            BodyType::Shape(s) => s.mesh(),
+        }
+    }
+
+    fn mesh_cluster(&self) -> &Option<Vec<Mesh>> {
         match self {
             BodyType::Shape(s) => s.mesh_cluster(),
         }

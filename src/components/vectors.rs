@@ -13,12 +13,24 @@ pub struct Vector3D {
 
 impl Vector3D {
     pub fn new(x: f64, y: f64, z: f64) -> Self {
-        let hash_value: Option<u64> = None;
         Vector3D {
             x,
             y,
             z,
-            hash_value,
+            hash_value: None,
+        }
+    }
+
+    pub fn from_array(array: [f64; 3]) -> Self {
+        let x: f64 = array[0];
+        let y: f64 = array[1];
+        let z: f64 = array[2];
+
+        Vector3D {
+            x,
+            y,
+            z,
+            hash_value: None,
         }
     }
 
@@ -41,6 +53,22 @@ impl Vector3D {
         let y: f64 = self.y;
         let z: f64 = self.z;
         [x, y, z]
+    }
+
+    pub fn inverse(&self) -> Vector3D {
+        let x: f64 = 1.0 / self.x;
+        let y: f64 = 1.0 / self.y;
+        let z: f64 = 1.0 / self.z;
+
+        Vector3D::new(x, y, z)
+    }
+
+    pub fn negate(&self) -> Vector3D {
+        let x: f64 = -self.x;
+        let y: f64 = -self.y;
+        let z: f64 = -self.z;
+
+        Vector3D::new(x, y, z)
     }
 
     pub fn get_hash(&mut self) -> u64 {
@@ -68,6 +96,22 @@ impl Vector3D {
         let z: f64 = self.z.min(max_value).max(min_value);
 
         Vector3D::new(x, y, z)
+    }
+
+    pub fn component_min(&self, other: &Self) -> Self {
+        Vector3D::new(
+            self.x.min(other.x),
+            self.y.min(other.y),
+            self.z.min(other.z),
+        )
+    }
+
+    pub fn component_max(&self, other: &Self) -> Self {
+        Vector3D::new(
+            self.x.max(other.x),
+            self.y.max(other.y),
+            self.z.max(other.z),
+        )
     }
 
     pub fn add(&self, num: f64) -> Self {
@@ -245,6 +289,25 @@ impl Vector3D {
 
         x + y + z
     }
+
+    pub fn rotate_around_axis(&self, axis: &Vector3D, angle: f64) -> Self {
+        let half_angle = angle / 2.0;
+        let sin_half_angle = half_angle.sin();
+        let cos_half_angle = half_angle.cos();
+
+        let q = Quaternion::new(
+            cos_half_angle,
+            axis.x * sin_half_angle,
+            axis.y * sin_half_angle,
+            axis.z * sin_half_angle,
+        );
+
+        let p = Quaternion::new(0.0, self.x, self.y, self.z);
+        let q_conjugate = q.conjugate();
+
+        let rotated_p = q.multiply(&p).multiply(&q_conjugate);
+        Vector3D::new(rotated_p.x, rotated_p.y, rotated_p.z)
+    }
 }
 
 impl Hash for Vector3D {
@@ -269,11 +332,29 @@ impl PartialEq for Vector3D {
 
 impl Eq for Vector3D {}
 
+// impl PartialOrd for Vector3D {
+//     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+//         if (self.x - other.x).abs() <= EPSILON {
+//             if (self.y - other.y).abs() <= EPSILON {
+//                 if (self.z - other.z).abs() <= EPSILON {
+//                     Some(Ordering::Equal)
+//                 } else {
+//                     self.z.partial_cmp(&other.z)
+//                 }
+//             } else {
+//                 self.y.partial_cmp(&other.y)
+//             }
+//         } else {
+//             self.x.partial_cmp(&other.x)
+//         }
+//     }
+// }
+
 impl PartialOrd for Vector3D {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        if (self.x - other.x).abs() <= EPSILON {
-            if (self.y - other.y).abs() <= EPSILON {
-                if (self.z - other.z).abs() <= EPSILON {
+        if self.x == other.x {
+            if self.y == other.y {
+                if self.z == other.z {
                     Some(Ordering::Equal)
                 } else {
                     self.z.partial_cmp(&other.z)
@@ -284,5 +365,32 @@ impl PartialOrd for Vector3D {
         } else {
             self.x.partial_cmp(&other.x)
         }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Quaternion {
+    pub w: f64,
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+}
+
+impl Quaternion {
+    pub fn new(w: f64, x: f64, y: f64, z: f64) -> Self {
+        Self { w, x, y, z }
+    }
+
+    pub fn multiply(&self, other: &Quaternion) -> Self {
+        let w = self.w * other.w - self.x * other.x - self.y * other.y - self.z * other.z;
+        let x = self.w * other.x + self.x * other.w + self.y * other.z - self.z * other.y;
+        let y = self.w * other.y - self.x * other.z + self.y * other.w + self.z * other.x;
+        let z = self.w * other.z + self.x * other.y - self.y * other.x + self.z * other.w;
+
+        Self::new(w, x, y, z)
+    }
+
+    pub fn conjugate(&self) -> Self {
+        Self::new(self.w, -self.x, -self.y, -self.z)
     }
 }

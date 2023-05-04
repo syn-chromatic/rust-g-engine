@@ -15,7 +15,7 @@ pub mod simulation;
 pub mod text_writer;
 pub mod vectors;
 pub mod vertices;
-pub mod z_buffer;
+pub mod buffer_sort;
 pub mod bvh;
 pub mod convex_hull;
 pub mod decomposition;

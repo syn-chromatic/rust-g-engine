@@ -133,8 +133,8 @@ impl Frustum {
         distance < 0.0
     }
 
-    fn is_point_in_frustum(&self, point: Vector3D, planes: &[Plane]) -> bool {
-        for plane in planes {
+    pub fn is_point_in_frustum(&self, point: Vector3D) -> bool {
+        for plane in &self.planes {
             if self.is_point_behind_plane(point, plane) {
                 return false;
             }

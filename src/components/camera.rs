@@ -55,7 +55,7 @@ impl Camera {
         self.camera_target = position.add_elements(0.0, 0.0, -1.0);
     }
 
-    fn apply_view_transform(&mut self, position: Vector3D) -> Vector3D {
+    pub fn apply_view_transform(&mut self, position: Vector3D) -> Vector3D {
         let look_dir: Vector3D = self.look_direction;
         let side_dir: Vector3D = self.side_direction;
         let up_dir: Vector3D = self.up_direction;
@@ -69,7 +69,7 @@ impl Camera {
         translated_point
     }
 
-    fn ndc_to_screen_coordinates(&self, position: Vector3D) -> Vector3D {
+    pub fn ndc_to_screen_coordinates(&self, position: Vector3D) -> Vector3D {
         let width: f64 = self.frustum.width as f64;
         let height: f64 = self.frustum.height as f64;
 
@@ -81,7 +81,7 @@ impl Camera {
         screen_coordinates
     }
 
-    fn calculate_perspective_projection(&self, position: Vector3D) -> Vector3D {
+    pub fn calculate_perspective_projection(&self, position: Vector3D) -> Vector3D {
         let width: f64 = self.frustum.width as f64;
         let height: f64 = self.frustum.height as f64;
         let fov_degrees: f64 = self.frustum.fov;

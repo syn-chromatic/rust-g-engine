@@ -18,8 +18,8 @@ impl FrameTimeHandler {
     }
 
     pub fn tick(&mut self) {
-        let frame_start = self.frame_start;
-        let frame_time = Instant::now().duration_since(frame_start);
+        let frame_start: Instant = self.frame_start;
+        let frame_time: Duration = Instant::now().duration_since(frame_start);
         self.frame_start = Instant::now();
 
         self.frame_times.push_back(frame_time);
@@ -32,13 +32,13 @@ impl FrameTimeHandler {
         if self.frame_times.is_empty() {
             return Duration::new(0, 0);
         } else {
-            let total_time = self.frame_times.iter().sum::<Duration>();
+            let total_time: Duration = self.frame_times.iter().sum();
             total_time / self.frame_times.len() as u32
         }
     }
 
     pub fn get_frames_per_second(&self) -> f64 {
-        let average_frame_time = self.get_average_frame_time().as_secs_f64();
+        let average_frame_time: f64 = self.get_average_frame_time().as_secs_f64();
         if average_frame_time == 0.0 {
             return average_frame_time;
         }

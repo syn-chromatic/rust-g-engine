@@ -60,8 +60,28 @@ impl LineDraw {
         LineDraw {
             points,
             color,
-            id,
             thickness,
+            id,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct CircleDraw {
+    point: (f64, f64),
+    color: RGBA,
+    radius: f64,
+    id: u32,
+}
+
+impl CircleDraw {
+    pub fn new(point: (f64, f64), color: RGBA, radius: f64) -> CircleDraw {
+        let id = 2;
+        CircleDraw {
+            point,
+            color,
+            radius,
+            id,
         }
     }
 }
@@ -156,6 +176,19 @@ impl Draw for LineDraw {
     }
 }
 
+impl Draw for CircleDraw {
+    fn draw(&self, graphics: &mut Graphics2D) {
+        let p: (f64, f64) = self.point;
+        let v: Vector2<f32> = Vector2::new(p.0 as f32, p.1 as f32);
+        let color: Color = self.color.to_sp2d_color();
+        let radius: f32 = self.radius as f32;
+        graphics.draw_circle(v, radius, color);
+    }
+    fn id(&self) -> u32 {
+        self.id
+    }
+}
+
 impl Draw for TextDraw {
     fn draw(&self, graphics: &mut Graphics2D) {
         let text: &String = &self.text;
@@ -197,6 +230,7 @@ enum DrawType {
     TriangleDraw(TriangleDraw),
     QuadDraw(QuadDraw),
     LineDraw(LineDraw),
+    CircleDraw(CircleDraw),
     TextDraw(TextDraw),
     FillDraw(FillDraw),
 }
@@ -207,6 +241,7 @@ impl Draw for DrawType {
             DrawType::TriangleDraw(s) => s.draw(graphics),
             DrawType::QuadDraw(s) => s.draw(graphics),
             DrawType::LineDraw(s) => s.draw(graphics),
+            DrawType::CircleDraw(s) => s.draw(graphics),
             DrawType::TextDraw(s) => s.draw(graphics),
             DrawType::FillDraw(s) => s.draw(graphics),
         }
@@ -217,6 +252,7 @@ impl Draw for DrawType {
             DrawType::TriangleDraw(s) => s.id(),
             DrawType::QuadDraw(s) => s.id(),
             DrawType::LineDraw(s) => s.id(),
+            DrawType::CircleDraw(s) => s.id(),
             DrawType::TextDraw(s) => s.id(),
             DrawType::FillDraw(s) => s.id(),
         }
@@ -416,6 +452,13 @@ impl Graphics {
         let p2: (f64, f64) = (v2.x, v2.y);
         let line_draw: LineDraw = LineDraw::new((p1, p2), color, thickness);
         let draw_type: DrawType = DrawType::LineDraw(line_draw);
+        self.push_to_buffer(draw_type);
+    }
+
+    pub fn draw_circle(&mut self, v: Vector3D, color: RGBA, radius: f64) {
+        let p: (f64, f64) = (v.x, v.y);
+        let circle_draw: CircleDraw = CircleDraw::new(p, color, radius);
+        let draw_type: DrawType = DrawType::CircleDraw(circle_draw);
         self.push_to_buffer(draw_type);
     }
 

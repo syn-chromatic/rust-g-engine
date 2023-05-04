@@ -11,14 +11,19 @@ impl Body for Shape {
     fn physics(&mut self) -> &mut Physics {
         &mut self.physics
     }
-    fn mesh_cluster(&self) -> &Vec<Mesh> {
+
+    fn mesh(&self) -> &Mesh {
+        &self.physics.mesh
+    }
+
+    fn mesh_cluster(&self) -> &Option<Vec<Mesh>> {
         &self.physics.mesh_cluster
     }
 }
 
 impl Shape {
-    pub fn new(meshes: Vec<Mesh>) -> Shape {
-        let physics: Physics = Physics::new(meshes);
+    pub fn new(mesh: Mesh, mesh_cluster: Option<Vec<Mesh>>) -> Shape {
+        let physics: Physics = Physics::new(mesh, mesh_cluster);
         Shape { physics }
     }
 }
