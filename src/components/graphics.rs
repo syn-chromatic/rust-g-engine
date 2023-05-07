@@ -9,6 +9,8 @@ use crate::components::polygons::Triangle;
 use crate::components::vectors::Vector3D;
 use speedy2d::color::Color;
 use speedy2d::dimen::Vector2;
+use speedy2d::error::BacktraceError;
+use speedy2d::error::ErrorMessage;
 use speedy2d::font::Font;
 use speedy2d::font::FormattedTextBlock;
 use speedy2d::font::TextLayout;
@@ -22,12 +24,12 @@ use std::rc::Rc;
 struct TriangleDraw {
     points: [(f64, f64); 3],
     color: RGBA,
-    id: u32,
+    id: usize,
 }
 
 impl TriangleDraw {
     pub fn new(points: [(f64, f64); 3], color: RGBA) -> TriangleDraw {
-        let id = 3;
+        let id: usize = 2;
         TriangleDraw { points, color, id }
     }
 }
@@ -36,12 +38,12 @@ impl TriangleDraw {
 struct QuadDraw {
     points: [(f64, f64); 4],
     color: RGBA,
-    id: u32,
+    id: usize,
 }
 
 impl QuadDraw {
     pub fn new(points: [(f64, f64); 4], color: RGBA) -> QuadDraw {
-        let id = 3;
+        let id: usize = 2;
         QuadDraw { points, color, id }
     }
 }
@@ -51,12 +53,12 @@ struct LineDraw {
     points: ((f64, f64), (f64, f64)),
     color: RGBA,
     thickness: f64,
-    id: u32,
+    id: usize,
 }
 
 impl LineDraw {
     pub fn new(points: ((f64, f64), (f64, f64)), color: RGBA, thickness: f64) -> LineDraw {
-        let id = 2;
+        let id: usize = 3;
         LineDraw {
             points,
             color,
@@ -71,12 +73,12 @@ struct CircleDraw {
     point: (f64, f64),
     color: RGBA,
     radius: f64,
-    id: u32,
+    id: usize,
 }
 
 impl CircleDraw {
     pub fn new(point: (f64, f64), color: RGBA, radius: f64) -> CircleDraw {
-        let id = 2;
+        let id: usize = 3;
         CircleDraw {
             point,
             color,
@@ -91,12 +93,12 @@ struct TextDraw {
     position: (f64, f64),
     text: String,
     font_settings: FontSettings,
-    id: u32,
+    id: usize,
 }
 
 impl TextDraw {
     pub fn new(position: (f64, f64), text: String, font_settings: FontSettings) -> TextDraw {
-        let id = 1;
+        let id: usize = 4;
         TextDraw {
             position,
             text,
@@ -109,12 +111,12 @@ impl TextDraw {
 #[derive(Debug)]
 struct FillDraw {
     color: RGBA,
-    id: u32,
+    id: usize,
 }
 
 impl FillDraw {
     pub fn new(color: RGBA) -> FillDraw {
-        let id = 4;
+        let id: usize = 1;
         FillDraw { color, id }
     }
 }
@@ -133,7 +135,7 @@ impl Draw for TriangleDraw {
         let color: Color = self.color.to_sp2d_color();
         graphics.draw_triangle(vertex_positions, color);
     }
-    fn id(&self) -> u32 {
+    fn id(&self) -> usize {
         self.id
     }
 }
@@ -154,7 +156,7 @@ impl Draw for QuadDraw {
         let color: Color = self.color.to_sp2d_color();
         graphics.draw_quad(vertex_positions, color);
     }
-    fn id(&self) -> u32 {
+    fn id(&self) -> usize {
         self.id
     }
 }
@@ -171,7 +173,7 @@ impl Draw for LineDraw {
         let thickness: f32 = self.thickness as f32;
         graphics.draw_line(v1, v2, thickness, color);
     }
-    fn id(&self) -> u32 {
+    fn id(&self) -> usize {
         self.id
     }
 }
@@ -184,7 +186,7 @@ impl Draw for CircleDraw {
         let radius: f32 = self.radius as f32;
         graphics.draw_circle(v, radius, color);
     }
-    fn id(&self) -> u32 {
+    fn id(&self) -> usize {
         self.id
     }
 }
@@ -205,7 +207,7 @@ impl Draw for TextDraw {
         let text_block: Rc<FormattedTextBlock> = font.layout_text(text, size, text_options);
         graphics.draw_text(position_f32, color, &text_block);
     }
-    fn id(&self) -> u32 {
+    fn id(&self) -> usize {
         self.id
     }
 }
@@ -215,14 +217,14 @@ impl Draw for FillDraw {
         let color: Color = self.color.to_sp2d_color();
         graphics.clear_screen(color);
     }
-    fn id(&self) -> u32 {
+    fn id(&self) -> usize {
         self.id
     }
 }
 
 trait Draw {
     fn draw(&self, graphics: &mut Graphics2D);
-    fn id(&self) -> u32;
+    fn id(&self) -> usize;
 }
 
 #[derive(Debug)]
@@ -247,7 +249,7 @@ impl Draw for DrawType {
         }
     }
 
-    fn id(&self) -> u32 {
+    fn id(&self) -> usize {
         match self {
             DrawType::TriangleDraw(s) => s.id(),
             DrawType::QuadDraw(s) => s.id(),
@@ -267,9 +269,9 @@ pub struct CursorGrab {
 
 impl CursorGrab {
     pub fn new() -> CursorGrab {
-        let is_grabbed = false;
-        let previous_state = false;
-        let first_pass = true;
+        let is_grabbed: bool = false;
+        let previous_state: bool = false;
+        let first_pass: bool = true;
         CursorGrab {
             is_grabbed,
             previous_state,
@@ -283,11 +285,13 @@ impl CursorGrab {
 
     pub fn apply_cursor_grab(&mut self, helper: &mut WindowHelper) {
         if self.is_grabbed != self.previous_state {
-            let grab = helper.set_cursor_grab(self.is_grabbed);
+            let grab: Result<(), BacktraceError<ErrorMessage>> =
+                helper.set_cursor_grab(self.is_grabbed);
             self.first_pass = false;
             if grab.is_err() {
                 self.is_grabbed = false;
                 self.first_pass = true;
+                println!("Error: {:?}", grab.err());
             }
         }
         self.previous_state = self.is_grabbed;
@@ -362,13 +366,12 @@ impl Graphics {
     }
 
     fn sort_buffer(&mut self) {
-        self.buffer.sort_by(|a, b| a.id().cmp(&b.id()).reverse());
+        self.buffer.sort_by(|a, b| a.id().cmp(&b.id()));
     }
 
-    fn push_to_buffer(&mut self, draw_type: DrawType) {
+    pub fn push_to_buffer(&mut self, draw_type: DrawType) {
         self.buffer.push(draw_type);
     }
-
     fn set_title(&self, title: String) {}
 
     fn get_screensize(&self) {}

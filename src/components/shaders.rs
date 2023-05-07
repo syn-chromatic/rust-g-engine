@@ -48,7 +48,7 @@ impl Light {
         let ambient: Vector3D = Vector3D::new(0.2, 0.2, 0.2);
         let diffuse: Vector3D = Vector3D::new(0.6, 0.6, 0.6);
         let specular: Vector3D = Vector3D::new(0.6, 0.6, 0.6);
-        let lumens: f64 = 300_000.0;
+        let lumens: f64 = 800_000.0;
 
         let light: Light = Light::new(position, target, ambient, diffuse, specular, lumens);
         light
