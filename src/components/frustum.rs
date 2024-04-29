@@ -172,6 +172,31 @@ impl Frustum {
         false
     }
 
+    pub fn is_polygon_crossing_frustum(&self, polygon: &Polygon) -> bool {
+        let triangle_vertices: [Vector3D; 3];
+        let quad_vertices: [Vector3D; 4];
+        let vertices: &[Vector3D] = match polygon {
+            Polygon::Triangle(triangle) => {
+                triangle_vertices = triangle.vertices;
+                &triangle_vertices
+            }
+            Polygon::Quad(quad) => {
+                quad_vertices = quad.vertices;
+                &quad_vertices
+            }
+        };
+
+        for plane in &self.planes {
+            for point in vertices {
+                if self.is_point_behind_plane(*point, plane) {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
     fn get_faces(&self, vertex_length: usize) -> Vec<(usize, usize, usize)> {
         let mut faces: Vec<(usize, usize, usize)> = Vec::new();
         for i in 1..(vertex_length - 1) {
@@ -183,7 +208,7 @@ impl Frustum {
 
     pub fn clip_polygon_against_plane(
         &self,
-        polygon: Polygon,
+        polygon: &Polygon,
         plane: &Plane,
     ) -> [Option<Polygon>; 3] {
         let mut output_polygons: [Option<Polygon>; 3] = [None, None, None];
@@ -294,14 +319,14 @@ impl Frustum {
         output_polygons
     }
 
-    pub fn clip_polygon_against_frustum(&self, polygon: Polygon) -> Vec<Polygon> {
-        let mut clipped_polygons: Vec<Polygon> = vec![polygon];
+    pub fn clip_polygon_against_frustum(&self, polygon: &Polygon) -> Vec<Polygon> {
+        let mut clipped_polygons: Vec<Polygon> = vec![polygon.clone()];
 
         for plane in &self.planes {
-            let mut new_polygons: Vec<Polygon> = Vec::new();
+            let mut new_polygons: Vec<Polygon> = Vec::with_capacity(2);
             for poly in clipped_polygons {
                 let clipped_result: [Option<Polygon>; 3] =
-                    self.clip_polygon_against_plane(poly, plane);
+                    self.clip_polygon_against_plane(&poly, plane);
                 for clipped_poly in clipped_result {
                     if let Some(polygon) = clipped_poly {
                         new_polygons.push(polygon);

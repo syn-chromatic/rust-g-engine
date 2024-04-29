@@ -1,4 +1,3 @@
-use crate::components::polygons::Mesh;
 use crate::components::polygons::Polygon;
 use crate::components::vectors::Vector3D;
 use std::cmp::Ordering::Equal;
@@ -16,16 +15,13 @@ impl ZBufferSort {
         distance
     }
 
-    pub fn get_sorted_polygons(&self, mut mesh: Mesh, camera_position: Vector3D) -> Mesh {
-        let polygons = &mut mesh.polygons;
-
+    pub fn sort_polygons(&self, polygons: &mut Vec<Polygon>, camera_position: Vector3D) {
         polygons.sort_unstable_by(|a, b| {
             let dist_a = self.get_centroid_distance(a, &camera_position);
             let dist_b = self.get_centroid_distance(b, &camera_position);
 
             dist_b.partial_cmp(&dist_a).unwrap_or(Equal)
         });
-        mesh
     }
 }
 
@@ -43,16 +39,13 @@ impl PainterBufferSort {
             .fold(f64::MIN, f64::max)
     }
 
-    pub fn get_sorted_polygons(&self, mut mesh: Mesh, camera_position: Vector3D) -> Mesh {
-        let polygons = &mut mesh.polygons;
-
+    pub fn sort_polygons(&self, polygons: &mut Vec<Polygon>, camera_position: Vector3D) {
         polygons.sort_unstable_by(|a, b| {
             let dist_a = self.get_max_vertex_distance(&a.get_vertices(), &camera_position);
             let dist_b = self.get_max_vertex_distance(&b.get_vertices(), &camera_position);
 
             dist_b.partial_cmp(&dist_a).unwrap_or(Equal)
         });
-        mesh
     }
 }
 
@@ -129,28 +122,5 @@ impl BSPNode {
         }
 
         polygons
-    }
-}
-
-struct BSPBufferSort;
-
-impl BSPBufferSort {
-    pub fn new() -> Self {
-        Self {}
-    }
-
-    pub fn get_sorted_polygons(&self, mesh: Mesh, camera_position: Vector3D) -> Mesh {
-        let mut root = BSPNode::new(None);
-
-        for polygon in mesh.polygons {
-            root.insert(polygon);
-        }
-
-        let sorted_polygons = root.traverse(&camera_position);
-        Mesh {
-            polygons: sorted_polygons,
-            bvh_node: mesh.bvh_node,
-            light: mesh.light,
-        }
     }
 }

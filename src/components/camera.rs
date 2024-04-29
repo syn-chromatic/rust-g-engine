@@ -1,5 +1,4 @@
 use crate::components::frustum::Frustum;
-use crate::components::polygons::Mesh;
 use crate::components::polygons::Polygon;
 use crate::components::vectors::Vector3D;
 
@@ -134,80 +133,79 @@ impl Camera {
         None
     }
 
-    pub fn clip_line(&self, v1: Vector3D, v2: Vector3D) {}
-
-    fn apply_polygon_view_transform(&mut self, polygon: Polygon) -> Polygon {
+    fn apply_polygon_view_transform(&mut self, polygon: &mut Polygon) {
         match polygon {
-            Polygon::Triangle(mut triangle) => {
+            Polygon::Triangle(ref mut triangle) => {
                 for vertex in &mut triangle.vertices {
-                    *vertex = self.apply_view_transform(*vertex);
+                    *vertex = self.apply_view_transform(vertex.clone());
                 }
-                Polygon::Triangle(triangle)
             }
-            Polygon::Quad(mut quad) => {
+            Polygon::Quad(ref mut quad) => {
                 for vertex in &mut quad.vertices {
-                    *vertex = self.apply_view_transform(*vertex);
+                    *vertex = self.apply_view_transform(vertex.clone());
                 }
-                Polygon::Quad(quad)
             }
         }
     }
 
-    fn apply_polygon_perspective_transform(&mut self, polygon: Polygon) -> Polygon {
+    fn apply_polygon_perspective_transform(&mut self, polygon: &mut Polygon) {
         match polygon {
-            Polygon::Triangle(mut triangle) => {
+            Polygon::Triangle(ref mut triangle) => {
                 for vertex in &mut triangle.vertices {
                     *vertex = self.calculate_perspective_projection(*vertex);
                 }
-                Polygon::Triangle(triangle)
             }
-            Polygon::Quad(mut quad) => {
+            Polygon::Quad(ref mut quad) => {
                 for vertex in &mut quad.vertices {
                     *vertex = self.calculate_perspective_projection(*vertex);
                 }
-                Polygon::Quad(quad)
             }
         }
     }
 
-    fn apply_polygon_screen_transform(&mut self, polygon: Polygon) -> Polygon {
+    fn apply_polygon_screen_transform(&mut self, polygon: &mut Polygon) {
         match polygon {
-            Polygon::Triangle(mut triangle) => {
+            Polygon::Triangle(ref mut triangle) => {
                 for vertex in &mut triangle.vertices {
                     *vertex = self.ndc_to_screen_coordinates(*vertex);
                 }
-                Polygon::Triangle(triangle)
             }
-            Polygon::Quad(mut quad) => {
+            Polygon::Quad(ref mut quad) => {
                 for vertex in &mut quad.vertices {
                     *vertex = self.ndc_to_screen_coordinates(*vertex);
                 }
-                Polygon::Quad(quad)
             }
         }
     }
 
-    pub fn apply_projection_polygons(&mut self, mut mesh: Mesh) -> Mesh {
-        let polygon_count: usize = mesh.polygons.len();
-        let mut transformed_polygons: Vec<Polygon> = Vec::with_capacity(polygon_count);
+    pub fn apply_projection_polygons(&mut self, polygons: &mut Vec<Polygon>) {
+        let mut projected_polygons: Vec<Polygon> = Vec::with_capacity(polygons.len());
 
-        for polygon in mesh.polygons {
-            let polygon: Polygon = self.apply_polygon_view_transform(polygon);
+        for mut polygon in polygons.drain(..) {
+            self.apply_polygon_view_transform(&mut polygon);
+
             if self.frustum.is_polygon_outside_frustum(&polygon) {
                 continue;
             }
 
-            let clipped_polygons: Vec<Polygon> = self.frustum.clip_polygon_against_frustum(polygon);
+            if self.frustum.is_polygon_crossing_frustum(&polygon) {
+                let mut clipped_polygons: Vec<Polygon> =
+                    self.frustum.clip_polygon_against_frustum(&polygon);
 
-            for mut clipped_polygon in clipped_polygons {
-                clipped_polygon = self.apply_polygon_perspective_transform(clipped_polygon);
-                clipped_polygon = self.apply_polygon_screen_transform(clipped_polygon);
-                transformed_polygons.push(clipped_polygon);
+                for mut clipped_polygon in clipped_polygons.drain(..) {
+                    self.apply_polygon_perspective_transform(&mut clipped_polygon);
+                    self.apply_polygon_screen_transform(&mut clipped_polygon);
+                    projected_polygons.push(clipped_polygon);
+                }
+                continue;
             }
+
+            self.apply_polygon_perspective_transform(&mut polygon);
+            self.apply_polygon_screen_transform(&mut polygon);
+            projected_polygons.push(polygon);
         }
 
-        mesh.polygons = transformed_polygons;
-        mesh
+        polygons.extend(projected_polygons);
     }
 
     pub fn handle_mouse_movement(&mut self, dx: f64, dy: f64) {

@@ -1,8 +1,7 @@
 # Ignore
-/.vscode
 /target
 *.obj
-
+*.lock
 
 # Allow
 !/assets/town_square.obj

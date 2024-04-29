@@ -1,4 +1,4 @@
-use crate::components::polygons::Mesh;
+use crate::components::polygons::Polygon;
 use crate::components::vectors::Vector3D;
 
 pub struct BackfaceCulling;
@@ -8,8 +8,8 @@ impl BackfaceCulling {
         BackfaceCulling {}
     }
 
-    pub fn cull_backfaces(&self, mut mesh: Mesh, camera_position: &Vector3D) -> Mesh {
-        mesh.polygons.retain(|polygon| {
+    pub fn cull_backfaces(&self, polygons: &mut Vec<Polygon>, camera_position: &Vector3D) {
+        polygons.retain(|polygon| {
             let normal: Vector3D = polygon.get_normal();
             let centroid: Vector3D = polygon.get_centroid();
             let view_vector: Vector3D = centroid.subtract_vector(camera_position);
@@ -18,7 +18,5 @@ impl BackfaceCulling {
 
             dot_product < 0.0
         });
-
-        mesh
     }
 }

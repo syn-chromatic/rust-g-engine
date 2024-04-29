@@ -263,7 +263,7 @@ impl Shaders {
         light: &Light,
         polygon: &Polygon,
         viewer_position: &Vector3D,
-        mesh: &Mesh,
+        polygons: &Vec<Polygon>,
     ) -> Vector3D {
         let light_dir: Vector3D = light.target.subtract_vector(&light.position);
         let light_dir: Vector3D = light_dir.normalize();
@@ -321,16 +321,14 @@ impl Shaders {
 
     pub fn apply_pbr_lighting(
         &self,
-        mut mesh: Mesh,
+        polygons: &mut Vec<Polygon>,
         light: &Light,
         viewer_position: &Vector3D,
-    ) -> Mesh {
-        for i in 0..mesh.polygons.len() {
-            let shader_vec = self.get_pbr_shader(light, &mesh.polygons[i], viewer_position, &mesh);
+    ) {
+        for i in 0..polygons.len() {
+            let shader_vec = self.get_pbr_shader(light, &polygons[i], viewer_position, &polygons);
             let shader = RGBA::from_vector(shader_vec);
-            mesh.polygons[i].set_shader(shader);
+            polygons[i].set_shader(shader);
         }
-
-        mesh
     }
 }

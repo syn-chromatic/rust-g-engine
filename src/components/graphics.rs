@@ -204,7 +204,7 @@ impl Draw for TextDraw {
         let size: f32 = font_settings.font_size as f32;
         let font: &Font = font_type.get_sp2d_font();
         let color: Color = font_color.to_sp2d_color();
-        let text_block: Rc<FormattedTextBlock> = font.layout_text(text, size, text_options);
+        let text_block: FormattedTextBlock = font.layout_text(text, size, text_options);
         graphics.draw_text(position_f32, color, &text_block);
     }
     fn id(&self) -> usize {
@@ -395,8 +395,8 @@ impl Graphics {
         self.draw_line(top, bottom, color, 1.0);
     }
 
-    pub fn draw_polygons(&mut self, mesh: Mesh) {
-        for polygon in mesh.polygons {
+    pub fn draw_polygons(&mut self, polygons: Vec<Polygon>) {
+        for polygon in polygons {
             match polygon {
                 Polygon::Triangle(triangle) => {
                     self.draw_triangle(triangle);
