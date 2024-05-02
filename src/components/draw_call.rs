@@ -97,7 +97,7 @@ impl DrawCall {
     }
 
     fn draw_bounding_box(graphics: &mut Graphics, camera: &mut Camera, meshes: &Vec<&Mesh>) {
-        let color: RGBA = RGBA::from_rgb(0.6, 1.0, 0.6);
+        let color: RGBA = RGBA::from_rgb(1.0, 0.6, 0.6);
         let thickness = 1.0;
 
         for mesh in meshes {
@@ -339,14 +339,13 @@ impl DrawCall {
             .flat_map(|mesh| mesh.polygons.clone())
             .collect();
 
-        Self::draw_contact_points(graphics, camera, objects);
-        Self::draw_bounding_box(graphics, camera, &meshes);
-
+        // Self::draw_contact_points(graphics, camera, objects);
         // self.draw_center_of_masses();
         // self.draw_inertias();
 
         if self.simulation.draw_mesh {
             Self::draw_convex_hulls(graphics, camera, &meshes);
+            Self::draw_bounding_box(graphics, camera, &meshes);
         }
 
         if self.simulation.draw_polygons {
