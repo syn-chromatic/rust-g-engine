@@ -8,7 +8,11 @@ pub struct Shape {
 }
 
 impl Body for Shape {
-    fn physics(&mut self) -> &mut Physics {
+    fn physics(&self) -> &Physics {
+        &self.physics
+    }
+
+    fn physics_mut(&mut self) -> &mut Physics {
         &mut self.physics
     }
 

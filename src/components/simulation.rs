@@ -102,7 +102,7 @@ impl Simulation {
         self.camera.set_camera_position(camera_position);
 
         for object in self.objects.iter_mut() {
-            let physics = object.physics();
+            let physics = object.physics_mut();
             let mut mesh_vec = Vec::new();
             let mesh = &physics.mesh;
             mesh_vec.push(mesh.clone());
@@ -143,12 +143,12 @@ impl Simulation {
         let mesh = sphere.get_triangle_mesh();
 
         let mut body = Shape::new(mesh, None);
-        body.physics()
+        body.physics_mut()
             .set_position(camera_position.x, camera_position.y, camera_position.z);
-        body.physics().set_mass(mass);
+        body.physics_mut().set_mass(mass);
         let velocity = camera_dir.multiply(200_000.0);
         //  let velocity = camera_dir.multiply(1.0);
-        body.physics()
+        body.physics_mut()
             .set_velocity(velocity.x, velocity.y, velocity.z);
         let body_type = BodyType::Shape(body);
         self.objects.push(body_type);
@@ -162,17 +162,17 @@ impl Simulation {
             for j in (i + 1)..objects.len() {
                 let (physics1, physics2) = {
                     let (left, right) = objects.split_at_mut(j);
-                    (left[i].physics(), right[0].physics())
+                    (left[i].physics_mut(), right[0].physics_mut())
                 };
 
                 physics1.apply_forces(physics2, timestep);
             }
         }
 
-        for object in self.objects.iter_mut() {
-            let physics: &mut Physics = object.physics();
-            physics.update(timestep);
-        }
+        // for object in self.objects.iter_mut() {
+        //     let physics: &mut Physics = object.physics();
+        //     physics.update(timestep);
+        // }
     }
 
     fn get_timestep_text(&self) -> String {

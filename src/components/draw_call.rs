@@ -77,7 +77,7 @@ impl DrawCall {
         meshes
     }
 
-    fn draw_convex_hulls(camera: &mut Camera, graphics: &mut Graphics, meshes: &[&Mesh]) {
+    fn draw_convex_hulls(graphics: &mut Graphics, camera: &mut Camera, meshes: &[&Mesh]) {
         let color: RGBA = RGBA::from_rgb(0.6, 1.0, 0.6);
         let thickness = 1.0;
 
@@ -96,8 +96,7 @@ impl DrawCall {
         }
     }
 
-    fn draw_bounding_box(&mut self, meshes: &Vec<Mesh>) {
-        let camera: &mut Camera = &mut self.simulation.camera;
+    fn draw_bounding_box(graphics: &mut Graphics, camera: &mut Camera, meshes: &Vec<&Mesh>) {
         let color: RGBA = RGBA::from_rgb(0.6, 1.0, 0.6);
         let thickness = 1.0;
 
@@ -125,7 +124,7 @@ impl DrawCall {
                 let line: Option<(Vector3D, Vector3D)> = camera.transform_line(v1, v2);
                 if line.is_some() {
                     let (v1, v2): (Vector3D, Vector3D) = line.unwrap();
-                    self.graphics.draw_line(v1, v2, color, thickness);
+                    graphics.draw_line(v1, v2, color, thickness);
                 }
             }
         }
@@ -168,12 +167,11 @@ impl DrawCall {
         }
     }
 
-    fn draw_contact_points(&mut self) {
-        let camera: &mut Camera = &mut self.simulation.camera;
+    fn draw_contact_points(graphics: &mut Graphics, camera: &mut Camera, objects: &Vec<BodyType>) {
         let color: RGBA = RGBA::from_rgb(0.6, 1.0, 0.6);
         let radius: f64 = 5.0;
 
-        for object in self.simulation.objects.iter_mut() {
+        for object in objects.iter() {
             let last_contact_point: Option<Vector3D> = object.physics().last_contact_point;
             if last_contact_point.is_some() {
                 let contact_point: Vector3D = last_contact_point.unwrap();
@@ -189,7 +187,7 @@ impl DrawCall {
                     camera.calculate_perspective_projection(contact_point);
                 let contact_point: Vector3D = camera.ndc_to_screen_coordinates(contact_point);
 
-                self.graphics.draw_circle(contact_point, color, radius);
+                graphics.draw_circle(contact_point, color, radius);
             }
         }
     }
@@ -222,7 +220,7 @@ impl DrawCall {
         let radius: f64 = 5.0;
 
         for object in self.simulation.objects.iter_mut() {
-            let inertia = object.physics().moment_of_inertia;
+            let inertia = object.physics_mut().moment_of_inertia;
 
             let inertia: Vector3D = camera.apply_view_transform(inertia);
 
@@ -332,22 +330,23 @@ impl DrawCall {
 
     pub fn draw_meshes(&mut self) {
         let camera: &mut Camera = &mut self.simulation.camera;
-        let objects: &Vec<BodyType> = &self.simulation.objects;
+        let objects: &mut Vec<BodyType> = &mut self.simulation.objects;
         let graphics: &mut Graphics = &mut self.graphics;
 
-        let mut meshes: Vec<&Mesh> = objects.iter().map(|body| body.mesh()).collect();
+        let meshes: Vec<&Mesh> = objects.iter().map(|body| body.mesh()).collect();
         let mut polygons: Vec<Polygon> = meshes
-            .drain(..)
+            .iter()
             .flat_map(|mesh| mesh.polygons.clone())
             .collect();
 
-        // self.draw_contact_points();
+        Self::draw_contact_points(graphics, camera, objects);
+        Self::draw_bounding_box(graphics, camera, &meshes);
+
         // self.draw_center_of_masses();
         // self.draw_inertias();
-        // self.draw_bounding_box(&meshes);
 
         if self.simulation.draw_mesh {
-            Self::draw_convex_hulls(camera, graphics, &meshes);
+            Self::draw_convex_hulls(graphics, camera, &meshes);
         }
 
         if self.simulation.draw_polygons {
