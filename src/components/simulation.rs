@@ -169,10 +169,10 @@ impl Simulation {
             }
         }
 
-        // for object in self.objects.iter_mut() {
-        //     let physics: &mut Physics = object.physics();
-        //     physics.update(timestep);
-        // }
+        for object in self.objects.iter_mut() {
+            let physics: &mut Physics = object.physics_mut();
+            physics.update(timestep);
+        }
     }
 
     fn get_timestep_text(&self) -> String {
